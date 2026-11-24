@@ -27,13 +27,17 @@ Data\Commerce.lua
 Data\Sources.lua
 Data\Guides.lua
 Data\Recipes\alchemy.lua
+Data\Recipes\blacksmithing.lua
 Data\Recipes\comprehension.lua
 Data\Recipes\cooking.lua
 Data\Recipes\enchanting.lua
 Data\Recipes\engineering.lua
+Data\Recipes\first-aid.lua
+Data\Recipes\fishing.lua
 Data\Recipes\leatherworking.lua
 Data\Recipes\mining.lua
 Data\Recipes\poisons.lua
+Data\Recipes\tailoring.lua
 Config\ProfessionsConfig.lua
 Config\PricingConfig.lua
 Config\SolverConfig.lua
