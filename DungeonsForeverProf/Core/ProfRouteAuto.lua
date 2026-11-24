@@ -2246,6 +2246,71 @@ local function fixedPendingResult(slug, start, target)
     return res
 end
 
+local function buildGuideFixedSteps(slug, start, target)
+    local DS = getDS()
+    if not DS or type(DS.LevelingGuide) ~= "function" then return nil, false end
+    local guide = DS.LevelingGuide(slug)
+    if type(guide) ~= "table" or type(guide.steps) ~= "table" or #guide.steps == 0 then
+        return nil, false
+    end
+    local catalog = loadCatalogRecipes(slug)
+    local catalogRecipes = catalog and catalog.recipes or nil
+    if type(catalogRecipes) ~= "table" then return nil, false end
+
+    local out = {}
+    local clipped = false
+    for _, row in ipairs(guide.steps) do
+        if type(row) == "table" then
+            local from = tonumber(row.from) or 1
+            local to = tonumber(row.to) or target
+            local isCheckpoint = (row.checkpoint == true) or (row.kind == "disenchant") or (row.kind == "note")
+            if to > start or (from == to and from >= start and from <= target) then
+                if from >= target and not isCheckpoint then break end
+                if from > target then break end
+                local effFrom = math.max(from, start)
+                local effTo = math.min(to, target)
+                if effFrom < effTo or (isCheckpoint and effFrom <= effTo) or (from == to and effFrom == effTo) then
+                    local stepClipped = (effFrom > from) or (effTo < to)
+                    if stepClipped then clipped = true end
+                    if isCheckpoint then
+                        out[#out + 1] = {
+                            effFrom,
+                            effTo,
+                            0,
+                            0,
+                            checkpoint = true,
+                            kind = row.kind or "note",
+                            note = row.note,
+                            _clip = stepClipped or nil,
+                        }
+                    else
+                        local spellID = tonumber(row.spellID)
+                        if not spellID or catalogRecipes[spellID] == nil then
+                            return nil, false
+                        end
+                        local origCrafts = tonumber(row.crafts) or math.max(1, to - from)
+                        local crafts = origCrafts
+                        if stepClipped then
+                            local fullSpan = math.max(1, to - from)
+                            local subSpan = math.max(1, effTo - effFrom)
+                            crafts = math.max(1, math.ceil(origCrafts * subSpan / fullSpan - 1e-9))
+                        end
+                        out[#out + 1] = {
+                            effFrom,
+                            effTo,
+                            spellID,
+                            crafts,
+                            _clip = stepClipped or nil,
+                        }
+                    end
+                end
+            end
+        end
+    end
+    if #out == 0 then return nil, false end
+    return out, clipped
+end
+
 local function baseFixedPlan(slug, supplied)
     if type(slug) ~= "string" or slug == "" then return nil end
     local opts = {}
@@ -2256,7 +2321,7 @@ local function baseFixedPlan(slug, supplied)
     opts.target, opts.start, opts.scheme, opts.profession = target, start, "fixed", slug
     if slug == "first-aid" then opts.recoveryEnabled = false end
 
-    local steps, clipped = {}, false
+    local steps, clipped, guideSource = {}, false, nil
     if type(opts.steps) == "table" and #opts.steps > 0 then
         for _, row in ipairs(opts.steps) do
             local from, to = tonumber(row[1]) or 1, tonumber(row[2]) or target
@@ -2284,28 +2349,35 @@ local function baseFixedPlan(slug, supplied)
         end
         steps = synth
     else
-        local cands, _, blockedCount, learningGaps = BuildCandidates(slug, opts)
-        if not cands or #cands == 0 then
-            if isFixedOnly(slug) then
-                return fixedPendingResult(slug, start, target)
+        local guideSteps, guideClipped = buildGuideFixedSteps(slug, start, target)
+        if guideSteps and #guideSteps > 0 then
+            steps = guideSteps
+            clipped = guideClipped
+            guideSource = "wowhead"
+        else
+            local cands, _, blockedCount, learningGaps = BuildCandidates(slug, opts)
+            if not cands or #cands == 0 then
+                if isFixedOnly(slug) then
+                    return fixedPendingResult(slug, start, target)
+                end
+                return nil
             end
-            return nil
-        end
-        local rawSteps, gaps = Simulate(cands, start, target, true, "cheapest")
-        if #gaps > 0 then
-            rawSteps, gaps = FillGaps(cands, rawSteps, gaps, "cheapest", true)
-        end
-        if #rawSteps == 0 then
-            local pending = fixedPendingResult(slug, start, target)
-            if #learningGaps > 0 then
-                pending.diagnostics = learningGaps
-                pending.learningGaps = learningGaps
-            elseif blockedCount > 0 then
-                pending.diagnostics = { { code = "specializationRequired", profession = slug } }
+            local rawSteps, gaps = Simulate(cands, start, target, true, "cheapest")
+            if #gaps > 0 then
+                rawSteps, gaps = FillGaps(cands, rawSteps, gaps, "cheapest", true)
             end
-            return pending
+            if #rawSteps == 0 then
+                local pending = fixedPendingResult(slug, start, target)
+                if #learningGaps > 0 then
+                    pending.diagnostics = learningGaps
+                    pending.learningGaps = learningGaps
+                elseif blockedCount > 0 then
+                    pending.diagnostics = { { code = "specializationRequired", profession = slug } }
+                end
+                return pending
+            end
+            steps = ToReached(rawSteps)
         end
-        steps = ToReached(rawSteps)
     end
 
     local result = RA.SummarizeSteps(steps, slug, opts)
@@ -2316,6 +2388,7 @@ local function baseFixedPlan(slug, supplied)
     result.slug = slug
     result.planVersion = result.planVersion or 2
     result.mode, result.scheme, result.target = "fixed", "fixed", target
+    if guideSource then result.guideSource = guideSource end
     if slug == "first-aid" and result.clientPending then result.referenceOnly = true end
     if slug ~= "poisons" then
         local solver = getSolver()

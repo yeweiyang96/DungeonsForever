@@ -547,5 +547,15 @@ function DS.FishingGuide()
   return guides().fishingGuides
 end
 
+function DS.LevelingGuides()
+  return guides().levelingGuides or newReadOnlyEmpty()
+end
+
+function DS.LevelingGuide(slug)
+  if type(slug) ~= "string" then return nil end
+  local t = guides().levelingGuides
+  return type(t) == "table" and t[slug] or nil
+end
+
 ns.ProfDataStore = DS
 syncBridge(getRoot())
