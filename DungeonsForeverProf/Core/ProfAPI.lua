@@ -62,6 +62,32 @@ function API.ProfessionList()
   return out
 end
 
+local function normalizeIconValue(icon)
+  if type(icon) == "number" then
+    return icon > 0 and icon or nil
+  end
+  if type(icon) == "string" and icon ~= "" then
+    if icon:match("^%d+$") then
+      local num = tonumber(icon)
+      return (num and num > 0) and num or nil
+    end
+    return icon
+  end
+  return nil
+end
+
+local function normalizeIconTexture(icon)
+  local norm = normalizeIconValue(icon)
+  if type(norm) == "number" then return norm end
+  if type(norm) == "string" and norm ~= "" then
+    if not norm:find("[/\\]") then
+      return "Interface\\Icons\\" .. norm
+    end
+    return norm
+  end
+  return nil
+end
+
 function API.ProfessionInfo(slug)
   if type(slug) ~= "string" then return nil end
   local cfg = getProfCfg()
@@ -86,7 +112,7 @@ function API.ProfessionInfo(slug)
     navGroup = srcCfg.navGroup or (pdata and pdata.kind),
     section = srcCfg.section,
     guideKey = srcCfg.guideKey,
-    icon = (pdata and pdata.icon ~= "" and pdata.icon) or srcCfg.icon,
+    icon = normalizeIconValue(pdata and pdata.icon) or normalizeIconValue(srcCfg.icon),
     maxSkillCap = pdata and pdata.maxSkillCap or nil,
     categories = pdata and pdata.categories or nil,
     perkKeys = pdata and pdata.perkKeys or nil,
@@ -363,11 +389,9 @@ function API.CrateIcon()
     if ok and tex and tex ~= "" then return tex end
   end
   local item = DS.Item(firstID)
-  if type(item) == "table" and type(item.icon) == "string" and item.icon ~= "" then
-    if not item.icon:find("[/\\]") then
-      return "Interface\\Icons\\" .. item.icon
-    end
-    return item.icon
+  if type(item) == "table" then
+    local tex = normalizeIconTexture(item.icon)
+    if tex then return tex end
   end
   return nil
 end

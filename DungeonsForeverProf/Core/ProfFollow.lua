@@ -82,8 +82,9 @@ local function vendorLocOf(npcID)
     local ds = getDS()
     local npc = ds and type(ds.Npc) == "function" and ds.Npc(npcID) or nil
     local sp = npc and type(npc.spawns) == "table" and npc.spawns[1] or nil
-    if sp and (sp.uiMapID or sp.zoneID) then
-        return { sp.zoneID, sp.uiMapID, sp.x, sp.y }
+    local aid = sp and (sp.areaID or sp.zoneID) or nil
+    if sp and (sp.uiMapID or aid) then
+        return { aid, sp.uiMapID, sp.x, sp.y }
     end
     return nil
 end

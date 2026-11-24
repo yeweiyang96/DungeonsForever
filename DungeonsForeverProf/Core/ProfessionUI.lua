@@ -1378,7 +1378,9 @@ end
 
 function PD.VendorCostText(o)
     if type(o) ~= "table" then return nil end
-    if o.options or o.hasExtendedCost or o.currencies or o.costItems then return PD.FormulaCostText(o) end
+    local hasCur = type(o.currencies) == "table" and #o.currencies > 0
+    local hasCostItems = type(o.costItems) == "table" and #o.costItems > 0
+    if o.options or o.hasExtendedCost or hasCur or hasCostItems then return PD.FormulaCostText(o) end
     local cid = tonumber(o.currencyID) or 0
     if cid > 0 then
         local am = tonumber(o.currencyAmount) or 0
@@ -1407,8 +1409,11 @@ function PD.VendorBestOffer(vs, offers)
             pr = tonumber(o.price) or 0
             am = tonumber(o.currencyAmount) or 0
         end
+        local hasExt = o and (o.options or o.hasExtendedCost
+            or (type(o.currencies) == "table" and #o.currencies > 0)
+            or (type(o.costItems) == "table" and #o.costItems > 0))
         local kind, key
-        if o and (o.options or o.hasExtendedCost or o.currencies or o.costItems) then
+        if hasExt then
             kind, key = 1, i
         elseif cid == 0 and pr > 0 then
             kind, key = 0, pr
@@ -1770,7 +1775,9 @@ local function SetIcon(tex, name)
     if type(name) == "number" then
         tex:SetTexture(name)
     elseif type(name) == "string" and name ~= "" then
-        if name:find("\\", 1, true) then
+        if name:match("^%d+$") then
+            tex:SetTexture(tonumber(name))
+        elseif name:find("\\", 1, true) or name:find("/", 1, true) then
             tex:SetTexture(name)
         else
             tex:SetTexture("Interface\\Icons\\" .. name)
@@ -1940,8 +1947,15 @@ function PD.ItemIcon(id)
     if not tex or tex == FALLBACK_ICON then
         local DS = getDS()
         local item = DS and type(DS.Item) == "function" and DS.Item(id) or nil
-        if type(item) == "table" and type(item.icon) == "string" and item.icon ~= "" then
-            tex = item.icon:find("[/\\]") and item.icon or ("Interface\\Icons\\" .. item.icon)
+        local ic = type(item) == "table" and item.icon or nil
+        if type(ic) == "number" and ic > 0 then
+            tex = ic
+        elseif type(ic) == "string" and ic ~= "" then
+            if ic:match("^%d+$") then
+                tex = tonumber(ic)
+            else
+                tex = ic:find("[/\\]") and ic or ("Interface\\Icons\\" .. ic)
+            end
         end
     end
     tex = tex or FALLBACK_ICON
@@ -2861,7 +2875,10 @@ function PD.PCApply(r, spec, w, h)
             r.icon:SetDesaturated(false)
             r.icon:SetAlpha(d.on and 1 or 0.45)
             local tex = d.icon
-            if type(tex) == "number" and DG.ItemIcon then tex = DG.ItemIcon(tex) end
+            if type(tex) == "number" and not d.iconIsFileID then
+                local itTex = PD.ItemIcon and PD.ItemIcon(tex) or (DG.ItemIcon and DG.ItemIcon(tex))
+                if itTex and itTex ~= FALLBACK_ICON then tex = itTex end
+            end
             SetIcon(r.icon, tex)
         else
             r.icon:Hide()
@@ -2960,7 +2977,10 @@ function PD.PCApply(r, spec, w, h)
         r.icon:Show()
         r.__pcNumBg:Hide()
         local tex = d.icon
-        if type(tex) == "number" and DG.ItemIcon then tex = DG.ItemIcon(tex) end
+        if type(tex) == "number" and not d.iconIsFileID then
+            local itTex = PD.ItemIcon and PD.ItemIcon(tex) or (DG.ItemIcon and DG.ItemIcon(tex))
+            if itTex and itTex ~= FALLBACK_ICON then tex = itTex end
+        end
         SetIcon(r.icon, tex)
     else
         r.icon:Hide()
@@ -4954,10 +4974,10 @@ function PD.FillBonusTable()
                     bucket, tag = t3, format("(%d)", lv)
                 end
                 bucket[#bucket + 1] = campNameOf(c) .. (tag or "")
-                local btxt = ds.RawText and ds.RawText("camp", c.campKey, "buff") or ""
+                local btxt = (ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))) or ""
                 if btxt ~= "" and buffTxt == "" then
                     buffTxt = btxt
-                    cmpName = ds.RawText("camp", c.campKey, "buffName") or ""
+                    cmpName = (ds.RawText and ds.RawText("camp", c.campKey, "buffName")) or ""
                 end
                 if c.campfireCapacity and tostring(c.campfireCapacity) ~= "" then
                     caps[#caps + 1] = tostring(c.campfireCapacity)
@@ -4968,7 +4988,7 @@ function PD.FillBonusTable()
             r.cells[1]:SetText(table.concat(t1, "、"))
             r.cells[2]:SetText(table.concat(t2, "、"))
             r.cells[3]:SetText(table.concat(t3, "、"))
-            local firstDesc = (ds.RawText and ds.RawText("camp", camp[1].campKey, "description")) or ""
+            local firstDesc = (ds.RawText and (ds.RawText("camp", camp[1].campKey, "description") or ds.RawText("camp", camp[1].campKey, "desc"))) or ""
             if buffTxt ~= "" then
                 r.cmp1:SetText(cmpName ~= "" and cmpName or L["营地增益"])
                 r.cmp1:SetTextColor(Unpack(C_GREY))
@@ -4983,11 +5003,11 @@ function PD.FillBonusTable()
             local lines = {}
             for _, c in ipairs(camp) do
                 lines[#lines + 1] = { campNameOf(c), 1, 0.82, 0 }
-                local desc = ds.RawText and ds.RawText("camp", c.campKey, "description")
+                local desc = ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))
                 if desc and desc ~= "" then
                     lines[#lines + 1] = { desc, 0.88, 0.88, 0.88 }
                 end
-                local buff = ds.RawText and ds.RawText("camp", c.campKey, "buff")
+                local buff = ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
                 if buff and buff ~= "" then
                     lines[#lines + 1] = { format(L["增益：%s"], buff), 0.5, 0.9, 0.5 }
                 end
@@ -5183,7 +5203,7 @@ function PD.FillTrainerBoard()
                         local npcID = tr.npcID
                         local npc = ds and ds.Npc and ds.Npc(npcID)
                         local sp = npc and npc.spawns and npc.spawns[1]
-                        local locTxt = sp and TrZoneOf(sp.uiMapID, sp.zoneID) or ""
+                        local locTxt = sp and TrZoneOf(sp.uiMapID, sp.areaID or sp.zoneID) or ""
                         local npcName = (ds and ds.NpcName and ds.NpcName(npcID)) or ("NPC #" .. tostring(npcID))
                         chipN = chipN + 1
                         local c = root.__chips[chipN]
@@ -8292,7 +8312,9 @@ function PD.PerkTipLines(pk, lvs, cur)
     if type(nm) == "string" and nm ~= "" then
         lines[#lines + 1] = { nm, 1, 0.82, 0 }
     end
-    local head = lvs[cur] or (pk.perkKey and ds and ds.RawText and ds.RawText("perk", pk.perkKey, "description")) or ""
+    local head = lvs[cur]
+        or (pk.perkKey and ds and ds.RawText and (ds.RawText("perk", pk.perkKey, "description") or ds.RawText("perk", pk.perkKey, "desc")))
+        or ""
     if head ~= "" then lines[#lines + 1] = { head } end
     if #lines == 0 then return nil end
     return lines
@@ -8371,11 +8393,12 @@ function PD.PushPerkCards(rows, slug)
             if type(cur) ~= "number" or cur < 1 or cur > maxLv then cur = maxLv end
             PD.perkLv[pid] = cur
             local pName = (ds and ds.PerkText and ds.PerkText(pid, "name")) or pid
-            local desc = (ds and ds.RawText and ds.RawText("perk", pid, "description")) or ""
+            local desc = (ds and ds.RawText and (ds.RawText("perk", pid, "description") or ds.RawText("perk", pid, "desc"))) or ""
             list[#list + 1] = {
                 key = pid,
                 name = pName,
                 icon = pk.icon,
+                iconIsFileID = type(pk.icon) == "number" or (type(pk.icon) == "string" and pk.icon:match("^%d+$") ~= nil),
                 right = format(L["满级 %s"], tostring(maxLv)),
                 maxLv = maxLv,
                 lv = cur,
@@ -8401,8 +8424,8 @@ function PD.CampTipLines(c)
             lines[#lines + 1] = { label .. "：" .. v }
         end
     end
-    local desc = c.campKey and ds and ds.RawText and ds.RawText("camp", c.campKey, "description")
-    local buff = c.campKey and ds and ds.RawText and ds.RawText("camp", c.campKey, "buff")
+    local desc = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))
+    local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
     local repName = c.replacesCampKey and ((ds and ds.RawText and ds.RawText("camp", c.replacesCampKey, "name")) or c.replacesCampKey)
     local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
     add(L["描述"], desc)
@@ -8425,7 +8448,7 @@ end
 function PD.CampTagText(c)
     local ds = getDS()
     local t = {}
-    local buff = c.campKey and ds and ds.RawText and ds.RawText("camp", c.campKey, "buff")
+    local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
     local repName = c.replacesCampKey and ((ds and ds.RawText and ds.RawText("camp", c.replacesCampKey, "name")) or c.replacesCampKey)
     local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
     if type(buff) == "string" and buff ~= "" then t[#t + 1] = buff end
@@ -8451,9 +8474,11 @@ function PD.PushCampCards(rows, slug)
             url = c.wowheadURL,
         }) or {}
         card.name = nm
-        card.icon = (c.icon and c.icon ~= "" and c.icon) or c.itemID or card.icon
+        local hasCampIcon = c.icon ~= nil and c.icon ~= ""
+        card.icon = (hasCampIcon and c.icon) or c.itemID or card.icon
+        card.iconIsFileID = hasCampIcon and (type(c.icon) == "number" or (type(c.icon) == "string" and c.icon:match("^%d+$") ~= nil))
         card.right = (c.tier and format(L["档位 %d"], c.tier) .. " · " or "") .. format(L["技能 %d"], c.reqSkill or 0)
-        card.tx = (ds and c.campKey and ds.RawText and ds.RawText("camp", c.campKey, "description")) or ""
+        card.tx = (ds and c.campKey and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))) or ""
         card.tags = PD.CampTagText(c)
         card.tipLines = PD.CampTipLines(c)
         list[#list + 1] = card
@@ -8551,7 +8576,9 @@ function PD.PushGuideTopics(rows, p)
         local cname = PD.ItemName(cert.itemID)
         local card = PD.GuideReference({ kind = "item", id = cert.itemID, name = cname })
         if card then
-            card.icon = (cert.icon and cert.icon ~= "" and cert.icon) or cert.itemID
+            local hasCertIcon = cert.icon ~= nil and cert.icon ~= ""
+            card.icon = (hasCertIcon and cert.icon) or cert.itemID
+            card.iconIsFileID = hasCertIcon and (type(cert.icon) == "number" or (type(cert.icon) == "string" and cert.icon:match("^%d+$") ~= nil))
             local text = {}
             if cert.reqSkill then text[#text + 1] = format(L["技能要求：%s"], tostring(cert.reqSkill)) end
             local title = ds.RawText and ds.RawText("certification", PD.cur, "title")
@@ -8892,14 +8919,20 @@ function PD.VendorLocOf(src)
         local id = v.id or v.npcID
         local npc = id and ds and ds.Npc and ds.Npc(id)
         local sp = npc and npc.spawns and npc.spawns[1]
-        if sp and (sp.uiMapID or sp.zoneID) then
-            return { sp.zoneID, sp.uiMapID, sp.x, sp.y }, PD.VendorName(v)
+        local aid = sp and (sp.areaID or sp.zoneID) or nil
+        if sp and (sp.uiMapID or aid) then
+            return { aid, sp.uiMapID, sp.x, sp.y }, PD.VendorName(v)
         end
     end
     return nil
 end
 
 function PD.CampZoneName(areaID, fallback)
+    if areaID then
+        local ds = getDS()
+        local zn = ds and ds.RawText and ds.RawText("zone", areaID)
+        if type(zn) == "string" and zn ~= "" then return zn end
+    end
     local f = C_Map and C_Map.GetMapInfoFromAreaID
     if f and areaID then
         local ok, mi = pcall(f, areaID)
@@ -10713,7 +10746,8 @@ function PD.VendorEntries(s)
         local vid = v.id or v.npcID
         local npc = vid and ds and ds.Npc and ds.Npc(vid)
         local sp = npc and npc.spawns and npc.spawns[1]
-        local loc = sp and (sp.uiMapID or sp.zoneID) and { sp.zoneID, sp.uiMapID, sp.x, sp.y } or nil
+        local aid = sp and (sp.areaID or sp.zoneID) or nil
+        local loc = sp and (sp.uiMapID or aid) and { aid, sp.uiMapID, sp.x, sp.y } or nil
         if loc then
             local zone = v.zone
             if not zone or zone == "" then
@@ -10775,8 +10809,9 @@ function PD.TeachRoster(spell)
         local npc = ds.Npc and ds.Npc(nid)
         local sp = npc and npc.spawns and npc.spawns[1]
         local mp = sp and sp.uiMapID
-        local loc = (sp and (mp or sp.zoneID) and sp.x and sp.y) and { sp.zoneID, mp, sp.x, sp.y } or nil
-        local zn = (sp and sp.zoneID and ds.RawText and ds.RawText("zone", sp.zoneID))
+        local aid = sp and (sp.areaID or sp.zoneID) or nil
+        local loc = (sp and (mp or aid) and sp.x and sp.y) and { aid, mp, sp.x, sp.y } or nil
+        local zn = (aid and ds.RawText and ds.RawText("zone", aid))
             or (mp and PD.MapName(mp, "")) or ""
         out[#out + 1] = {
             npcID = nid,
@@ -10878,7 +10913,8 @@ end
 function PD.DropZone(dd, uiMap)
     if dd and dd.zone and dd.zone ~= "" then return dd.zone end
     local ds = getDS()
-    local zn = dd and dd.zoneID and ds and ds.RawText and ds.RawText("zone", dd.zoneID)
+    local aid = dd and (dd.areaID or dd.zoneID) or nil
+    local zn = aid and ds and ds.RawText and ds.RawText("zone", aid)
     if zn and zn ~= "" then return zn end
     local z = uiMap and PD.MapName(uiMap, nil) or nil
     return z or ""
@@ -10899,7 +10935,7 @@ function PD.DropEntries(s)
             if not seen[key] then
                 seen[key] = true
                 out[#out + 1] = {
-                    loc = { sp.zoneID, ui, x, y },
+                    loc = { sp.areaID or sp.zoneID, ui, x, y },
                     name = PD.DropName(dd),
                     zone = PD.DropZone(dd, ui),
                 }
@@ -11947,13 +11983,13 @@ function PD.DropRowsOf(itemID)
     local out, seen = {}, {}
     for i = 1, #d do
         local dd = d[i]
-        if type(dd) == "table" and (dd.npcID or dd.npc or dd.zoneID or dd.area) then
+        if type(dd) == "table" and (dd.npcID or dd.npc or dd.areaID or dd.zoneID or dd.area) then
             local nm = PD.DropNPCText(dd)
-            local area = dd.zoneID or dd.area
+            local area = dd.areaID or dd.zoneID or dd.area
             local key = nm .. "|" .. tostring(area or "")
             if not seen[key] then
                 seen[key] = true
-                out[#out + 1] = { name = nm, area = area, pct = dd.ratePct or dd.pct }
+                out[#out + 1] = { name = nm, area = area, pct = dd.dropRatePct or dd.ratePct or dd.pct }
             end
         end
     end
@@ -12629,7 +12665,11 @@ function PD.ScrollSpec(ce)
     local ds = getDS()
     local req = ce.reqSkill
     local grey = ce.greySkill
-    local tierName = ce.categoryKey and ds and ds.RawText and ds.RawText("comprehension_tier", ce.categoryKey) or ce.categoryKey or ""
+        local tierName = ce.categoryKey and ds and ds.RawText and ds.RawText("comprehension_tier", ce.categoryKey)
+        if not tierName or tierName == "" then
+            local lv = type(ce.categoryKey) == "string" and ce.categoryKey:match("^tier_(%d+)$")
+            tierName = lv and format(L["%s 级理解"], lv) or (ce.categoryKey or "")
+        end
     return {
         kind = "row", isScroll = true, entryKey = ce.entryKey, is_new = ce.isNew,
         it = itemID and { itemID } or nil, qItem = itemID,
@@ -17072,7 +17112,8 @@ function PD.PushTripGroups(rows, data)
             or (g.npcID and format(L["商人 NPC #%d"], g.npcID))
             or L["位置未收录的商人"]
         local sp = npc and npc.spawns and npc.spawns[1]
-        local loc = sp and (sp.uiMapID or sp.zoneID) and { sp.zoneID, sp.uiMapID, sp.x, sp.y } or nil
+        local aid = sp and (sp.areaID or sp.zoneID) or nil
+        local loc = sp and (sp.uiMapID or aid) and { aid, sp.uiMapID, sp.x, sp.y } or nil
         local hasLoc = type(loc) == "table"
         PushHead(rows, name, 1)
         rows[#rows].right = hasLoc and format("%s %.1f, %.1f", TripMapName(loc), loc[3] or 0, loc[4] or 0)
@@ -17187,7 +17228,8 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
     local sp = (source == "vendor" or source == "npc")
         and e.npcID and ds and ds.Npc and ds.Npc(e.npcID)
     sp = sp and sp.spawns and sp.spawns[1] or nil
-    local vendorLoc = sp and (sp.uiMapID or sp.zoneID) and { sp.zoneID, sp.uiMapID, sp.x, sp.y } or nil
+    local vAid = sp and (sp.areaID or sp.zoneID) or nil
+    local vendorLoc = sp and (sp.uiMapID or vAid) and { vAid, sp.uiMapID, sp.x, sp.y } or nil
     rows[#rows + 1] = {
         kind = "row", h = PD.ROW_H2, col = 1, it = { id },
         fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,

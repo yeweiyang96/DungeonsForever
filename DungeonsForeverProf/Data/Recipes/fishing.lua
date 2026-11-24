@@ -1,9 +1,10 @@
 local _, ns = ...
 if type(ns) ~= "table" then ns = _G.DF_NS or {} end
 
+local _E = ns.Data._empty
 ns.Data._recipeLoaders["fishing"] = function()
   return {
-    catalogEntries = {},
+    catalogEntries = _E,
     recipes = {
       [1229745] = {
         availability = "live",
@@ -22,8 +23,8 @@ ns.Data._recipeLoaders["fishing"] = function()
           { count = 1, itemID = 3371 },
           { count = 1, itemID = 6291 },
         },
-        recommendedSpecs = {},
-        requiredTools = {},
+        recommendedSpecs = _E,
+        requiredTools = _E,
         skillLineID = 356,
         spellID = 1229745,
         yellow = 20,
@@ -46,8 +47,8 @@ ns.Data._recipeLoaders["fishing"] = function()
           { count = 2, itemID = 8365 },
           { count = 1, itemID = 8925 },
         },
-        recommendedSpecs = {},
-        requiredTools = {},
+        recommendedSpecs = _E,
+        requiredTools = _E,
         skillLineID = 356,
         spellID = 1262990,
         yellow = 140,
@@ -70,8 +71,8 @@ ns.Data._recipeLoaders["fishing"] = function()
           { count = 2, itemID = 14048 },
           { count = 1, itemID = 273295 },
         },
-        recommendedSpecs = {},
-        requiredTools = {},
+        recommendedSpecs = _E,
+        requiredTools = _E,
         skillLineID = 356,
         spellID = 1262998,
         yellow = 300,

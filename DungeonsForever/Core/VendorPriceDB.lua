@@ -41,10 +41,12 @@ function VDB.IsCapitalOffer(offer)
     local npc = ds and type(ds.Npc) == "function" and ds.Npc(id) or nil
     local found = false
     if type(npc) == "table" then
-        if capitalAreas[npc.zoneID] then found = true end
+        local npcArea = npc.areaID or npc.zoneID
+        if npcArea and capitalAreas[npcArea] then found = true end
         if not found and type(npc.spawns) == "table" then
             for _, sp in ipairs(npc.spawns) do
-                if type(sp) == "table" and (capitalMaps[sp.uiMapID] or capitalAreas[sp.zoneID]) then
+                local spArea = type(sp) == "table" and (sp.areaID or sp.zoneID) or nil
+                if type(sp) == "table" and (capitalMaps[sp.uiMapID] or (spArea and capitalAreas[spArea])) then
                     found = true
                     break
                 end

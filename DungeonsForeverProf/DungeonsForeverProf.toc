@@ -19,8 +19,8 @@
 Data\Meta.lua
 Data\Recipes\Index.lua
 Data\Locales\enUS.lua
-Data\Locales\zhCN.lua [AllowLoadTextLocale zhCN]
-Data\Locales\zhTW.lua [AllowLoadTextLocale zhTW]
+Data\Locales\zhCN.lua
+Data\Locales\zhTW.lua
 Data\Entities.lua
 Data\Systems.lua
 Data\Commerce.lua

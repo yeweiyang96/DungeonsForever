@@ -1,13 +1,14 @@
 local _, ns = ...
 if type(ns) ~= "table" then ns = _G.DF_NS or {} end
 
+local _E = ns.Data._empty
 ns.Data._loaders["systems"] = function()
   return {
     camping = {
       camp_spell_1229432 = {
         campKey = "camp_spell_1229432",
-        formulaItemIDs = {},
-        icon = "134250",
+        formulaItemIDs = _E,
+        icon = 134250,
         itemID = 279978,
         profession = "leatherworking",
         reagents = {
@@ -21,8 +22,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1229504 = {
         campKey = "camp_spell_1229504",
-        formulaItemIDs = {},
-        icon = "132484",
+        formulaItemIDs = _E,
+        icon = 132484,
         itemID = 279972,
         profession = "tailoring",
         reagents = {
@@ -37,8 +38,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1229517 = {
         campKey = "camp_spell_1229517",
-        formulaItemIDs = {},
-        icon = "132761",
+        formulaItemIDs = _E,
+        icon = 132761,
         itemID = 279979,
         profession = "skinning",
         reagents = {
@@ -52,8 +53,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1229705 = {
         campKey = "camp_spell_1229705",
-        formulaItemIDs = {},
-        icon = "133751",
+        formulaItemIDs = _E,
+        icon = 133751,
         itemID = 279962,
         profession = "herbalism",
         reagents = {
@@ -68,8 +69,8 @@ ns.Data._loaders["systems"] = function()
       camp_spell_1229737 = {
         campKey = "camp_spell_1229737",
         campfireCapacity = 3,
-        formulaItemIDs = {},
-        icon = "7808148",
+        formulaItemIDs = _E,
+        icon = 7808148,
         itemID = 279981,
         profession = "cooking",
         reagents = {
@@ -83,8 +84,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1229745 = {
         campKey = "camp_spell_1229745",
-        formulaItemIDs = {},
-        icon = "4777763",
+        formulaItemIDs = _E,
+        icon = 4777763,
         itemID = 279967,
         profession = "fishing",
         reagents = {
@@ -99,8 +100,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1230117 = {
         campKey = "camp_spell_1230117",
-        formulaItemIDs = {},
-        icon = "133681",
+        formulaItemIDs = _E,
+        icon = 133681,
         itemID = 279968,
         profession = "first-aid",
         reagents = {
@@ -115,8 +116,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1230161 = {
         campKey = "camp_spell_1230161",
-        formulaItemIDs = {},
-        icon = "134419",
+        formulaItemIDs = _E,
+        icon = 134419,
         itemID = 279960,
         profession = "mining",
         reagents = {
@@ -131,8 +132,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1230171 = {
         campKey = "camp_spell_1230171",
-        formulaItemIDs = {},
-        icon = "135243",
+        formulaItemIDs = _E,
+        icon = 135243,
         itemID = 279944,
         profession = "blacksmithing",
         reagents = {
@@ -147,8 +148,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1230564 = {
         campKey = "camp_spell_1230564",
-        formulaItemIDs = {},
-        icon = "135738",
+        formulaItemIDs = _E,
+        icon = 135738,
         itemID = 279956,
         profession = "alchemy",
         reagents = {
@@ -163,8 +164,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1230643 = {
         campKey = "camp_spell_1230643",
-        formulaItemIDs = {},
-        icon = "4631367",
+        formulaItemIDs = _E,
+        icon = 4631367,
         itemID = 279976,
         profession = "enchanting",
         reagents = {
@@ -179,8 +180,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1230656 = {
         campKey = "camp_spell_1230656",
-        formulaItemIDs = {},
-        icon = "133871",
+        formulaItemIDs = _E,
+        icon = 133871,
         itemID = 279950,
         profession = "engineering",
         reagents = {
@@ -195,8 +196,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262975 = {
         campKey = "camp_spell_1262975",
-        formulaItemIDs = {},
-        icon = "134385",
+        formulaItemIDs = _E,
+        icon = 134385,
         itemID = 279948,
         profession = "mining",
         reagents = {
@@ -212,8 +213,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262978 = {
         campKey = "camp_spell_1262978",
-        formulaItemIDs = {},
-        icon = "2066011",
+        formulaItemIDs = _E,
+        icon = 2066011,
         itemID = 279957,
         profession = "cooking",
         reagents = {
@@ -229,8 +230,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262980 = {
         campKey = "camp_spell_1262980",
-        formulaItemIDs = {},
-        icon = "134188",
+        formulaItemIDs = _E,
+        icon = 134188,
         itemID = 279964,
         profession = "herbalism",
         reagents = {
@@ -245,8 +246,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262982 = {
         campKey = "camp_spell_1262982",
-        formulaItemIDs = {},
-        icon = "5948139",
+        formulaItemIDs = _E,
+        icon = 5948139,
         itemID = 279938,
         profession = "skinning",
         reagents = {
@@ -261,8 +262,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262985 = {
         campKey = "camp_spell_1262985",
-        formulaItemIDs = {},
-        icon = "133735",
+        formulaItemIDs = _E,
+        icon = 133735,
         itemID = 279969,
         profession = "skinning",
         reagents = {
@@ -277,8 +278,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262990 = {
         campKey = "camp_spell_1262990",
-        formulaItemIDs = {},
-        icon = "1053359",
+        formulaItemIDs = _E,
+        icon = 1053359,
         itemID = 279965,
         profession = "fishing",
         reagents = {
@@ -294,8 +295,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262996 = {
         campKey = "camp_spell_1262996",
-        formulaItemIDs = {},
-        icon = "463860",
+        formulaItemIDs = _E,
+        icon = 463860,
         itemID = 279940,
         profession = "first-aid",
         reagents = {
@@ -311,8 +312,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262998 = {
         campKey = "camp_spell_1262998",
-        formulaItemIDs = {},
-        icon = "132930",
+        formulaItemIDs = _E,
+        icon = 132930,
         itemID = 279966,
         profession = "fishing",
         reagents = {
@@ -328,8 +329,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263001 = {
         campKey = "camp_spell_1263001",
-        formulaItemIDs = {},
-        icon = "4626285",
+        formulaItemIDs = _E,
+        icon = 4626285,
         itemID = 279951,
         profession = "first-aid",
         reagents = {
@@ -345,8 +346,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263005 = {
         campKey = "camp_spell_1263005",
-        formulaItemIDs = {},
-        icon = "3566827",
+        formulaItemIDs = _E,
+        icon = 3566827,
         itemID = 279970,
         profession = "alchemy",
         reagents = {
@@ -362,8 +363,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263031 = {
         campKey = "camp_spell_1263031",
-        formulaItemIDs = {},
-        icon = "4559256",
+        formulaItemIDs = _E,
+        icon = 4559256,
         itemID = 279941,
         profession = "leatherworking",
         reagents = {
@@ -379,8 +380,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263032 = {
         campKey = "camp_spell_1263032",
-        formulaItemIDs = {},
-        icon = "4777839",
+        formulaItemIDs = _E,
+        icon = 4777839,
         itemID = 279943,
         profession = "tailoring",
         reagents = {
@@ -396,8 +397,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263034 = {
         campKey = "camp_spell_1263034",
-        formulaItemIDs = {},
-        icon = "1336885",
+        formulaItemIDs = _E,
+        icon = 1336885,
         itemID = 279949,
         profession = "engineering",
         reagents = {
@@ -413,8 +414,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263041 = {
         campKey = "camp_spell_1263041",
-        formulaItemIDs = {},
-        icon = "1020356",
+        formulaItemIDs = _E,
+        icon = 1020356,
         itemID = 279988,
         profession = "blacksmithing",
         reagents = {
@@ -430,8 +431,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263056 = {
         campKey = "camp_spell_1263056",
-        formulaItemIDs = {},
-        icon = "986482",
+        formulaItemIDs = _E,
+        icon = 986482,
         itemID = 279985,
         profession = "enchanting",
         reagents = {
@@ -446,8 +447,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263067 = {
         campKey = "camp_spell_1263067",
-        formulaItemIDs = {},
-        icon = "629055",
+        formulaItemIDs = _E,
+        icon = 629055,
         itemID = 279982,
         profession = "cooking",
         reagents = {
@@ -463,8 +464,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263070 = {
         campKey = "camp_spell_1263070",
-        formulaItemIDs = {},
-        icon = "656440",
+        formulaItemIDs = _E,
+        icon = 656440,
         itemID = 279947,
         profession = "herbalism",
         reagents = {
@@ -479,8 +480,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263071 = {
         campKey = "camp_spell_1263071",
-        formulaItemIDs = {},
-        icon = "5931157",
+        formulaItemIDs = _E,
+        icon = 5931157,
         itemID = 279952,
         profession = "mining",
         reagents = {
@@ -496,8 +497,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263073 = {
         campKey = "camp_spell_1263073",
-        formulaItemIDs = {},
-        icon = "4374708",
+        formulaItemIDs = _E,
+        icon = 4374708,
         itemID = 279955,
         profession = "blacksmithing",
         reagents = {
@@ -513,8 +514,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263078 = {
         campKey = "camp_spell_1263078",
-        formulaItemIDs = {},
-        icon = "4777830",
+        formulaItemIDs = _E,
+        icon = 4777830,
         itemID = 279990,
         profession = "alchemy",
         reagents = {
@@ -530,8 +531,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263079 = {
         campKey = "camp_spell_1263079",
-        formulaItemIDs = {},
-        icon = "3622223",
+        formulaItemIDs = _E,
+        icon = 3622223,
         itemID = 279945,
         profession = "leatherworking",
         reagents = {
@@ -547,8 +548,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263080 = {
         campKey = "camp_spell_1263080",
-        formulaItemIDs = {},
-        icon = "2067081",
+        formulaItemIDs = _E,
+        icon = 2067081,
         itemID = 279959,
         profession = "tailoring",
         reagents = {
@@ -564,8 +565,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263082 = {
         campKey = "camp_spell_1263082",
-        formulaItemIDs = {},
-        icon = "3622205",
+        formulaItemIDs = _E,
+        icon = 3622205,
         itemID = 279987,
         profession = "enchanting",
         reagents = {
@@ -581,8 +582,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263083 = {
         campKey = "camp_spell_1263083",
-        formulaItemIDs = {},
-        icon = "4624728",
+        formulaItemIDs = _E,
+        icon = 4624728,
         itemID = 279989,
         profession = "engineering",
         reagents = {
@@ -597,8 +598,8 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263425 = {
         campKey = "camp_spell_1263425",
-        formulaItemIDs = {},
-        icon = "132484",
+        formulaItemIDs = _E,
+        icon = 132484,
         itemID = 279973,
         profession = "tailoring",
         reagents = {
@@ -613,30 +614,30 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1278062 = {
         campKey = "camp_spell_1278062",
-        formulaItemIDs = {},
-        icon = "134435",
+        formulaItemIDs = _E,
+        icon = 134435,
         profession = "herbalism",
-        reagents = {},
+        reagents = _E,
         reagentsKnown = true,
         reqSkill = 1,
         tier = 4,
       },
       camp_spell_1278067 = {
         campKey = "camp_spell_1278067",
-        formulaItemIDs = {},
-        icon = "466035",
+        formulaItemIDs = _E,
+        icon = 466035,
         profession = "fishing",
-        reagents = {},
+        reagents = _E,
         reagentsKnown = true,
         reqSkill = 1,
         tier = 4,
       },
       camp_spell_1278068 = {
         campKey = "camp_spell_1278068",
-        formulaItemIDs = {},
-        icon = "4777838",
+        formulaItemIDs = _E,
+        icon = 4777838,
         profession = "skinning",
-        reagents = {},
+        reagents = _E,
         reagentsKnown = true,
         reqSkill = 1,
         tier = 4,
@@ -644,8 +645,8 @@ ns.Data._loaders["systems"] = function()
       camp_spell_1283400 = {
         campKey = "camp_spell_1283400",
         campfireCapacity = 5,
-        formulaItemIDs = {},
-        icon = "7808148",
+        formulaItemIDs = _E,
+        icon = 7808148,
         itemID = 279961,
         profession = "cooking",
         reagents = {
@@ -660,8 +661,8 @@ ns.Data._loaders["systems"] = function()
       camp_spell_1291341 = {
         campKey = "camp_spell_1291341",
         campfireCapacity = 10,
-        formulaItemIDs = {},
-        icon = "7808148",
+        formulaItemIDs = _E,
+        icon = 7808148,
         itemID = 279974,
         profession = "cooking",
         reagents = {
@@ -675,12 +676,12 @@ ns.Data._loaders["systems"] = function()
       },
     },
     certifications = {
-      alchemy = { icon = "237450", itemID = 271621, profession = "alchemy", reqSkill = 300 },
-      blacksmithing = { icon = "237450", itemID = 271622, profession = "blacksmithing", reqSkill = 300 },
-      enchanting = { icon = "237450", itemID = 271624, profession = "enchanting", reqSkill = 300 },
-      engineering = { icon = "237450", itemID = 271625, profession = "engineering", reqSkill = 300 },
-      leatherworking = { icon = "237450", itemID = 271626, profession = "leatherworking", reqSkill = 300 },
-      tailoring = { icon = "237450", itemID = 271627, profession = "tailoring", reqSkill = 300 },
+      alchemy = { icon = 237450, itemID = 271621, profession = "alchemy", reqSkill = 300 },
+      blacksmithing = { icon = 237450, itemID = 271622, profession = "blacksmithing", reqSkill = 300 },
+      enchanting = { icon = 237450, itemID = 271624, profession = "enchanting", reqSkill = 300 },
+      engineering = { icon = 237450, itemID = 271625, profession = "engineering", reqSkill = 300 },
+      leatherworking = { icon = 237450, itemID = 271626, profession = "leatherworking", reqSkill = 300 },
+      tailoring = { icon = 237450, itemID = 271627, profession = "tailoring", reqSkill = 300 },
     },
     comprehension = {
       bundle = {
@@ -816,23 +817,23 @@ ns.Data._loaders["systems"] = function()
     legacyPerks = {
       legacy_node_110284 = {
         category = "profession",
-        icon = "133740",
+        icon = 133740,
         maxRank = 1,
         perkKey = "legacy_node_110284",
-        professions = {},
+        professions = _E,
         traitNodeID = 110284,
       },
       legacy_node_110286 = {
         category = "profession",
-        icon = "133789",
+        icon = 133789,
         maxRank = 2,
         perkKey = "legacy_node_110286",
-        professions = {},
+        professions = _E,
         traitNodeID = 110286,
       },
       legacy_node_110289 = {
         category = "profession",
-        icon = "236571",
+        icon = 236571,
         maxRank = 5,
         perkKey = "legacy_node_110289",
         professions = { "cooking" },
@@ -840,15 +841,15 @@ ns.Data._loaders["systems"] = function()
       },
       legacy_node_110290 = {
         category = "profession",
-        icon = "134378",
+        icon = 134378,
         maxRank = 5,
         perkKey = "legacy_node_110290",
-        professions = {},
+        professions = _E,
         traitNodeID = 110290,
       },
       legacy_node_110291 = {
         category = "profession",
-        icon = "133651",
+        icon = 133651,
         maxRank = 5,
         perkKey = "legacy_node_110291",
         professions = { "mining", "herbalism", "skinning" },
@@ -856,7 +857,7 @@ ns.Data._loaders["systems"] = function()
       },
       legacy_node_110292 = {
         category = "profession",
-        icon = "135725",
+        icon = 135725,
         maxRank = 3,
         perkKey = "legacy_node_110292",
         professions = { "alchemy", "blacksmithing", "enchanting", "engineering", "leatherworking", "tailoring" },
@@ -864,7 +865,7 @@ ns.Data._loaders["systems"] = function()
       },
       legacy_node_110293 = {
         category = "profession",
-        icon = "237270",
+        icon = 237270,
         maxRank = 2,
         perkKey = "legacy_node_110293",
         professions = { "fishing" },
@@ -872,25 +873,25 @@ ns.Data._loaders["systems"] = function()
       },
       legacy_node_113506 = {
         category = "profession",
-        icon = "134400",
+        icon = 134400,
         maxRank = 1,
         perkKey = "legacy_node_113506",
-        professions = {},
+        professions = _E,
         traitNodeID = 113506,
       },
       legacy_node_113508 = {
         category = "profession",
-        icon = "134400",
+        icon = 134400,
         maxRank = 1,
         perkKey = "legacy_node_113508",
-        professions = {},
+        professions = _E,
         traitNodeID = 113508,
       },
     },
     ranks = {
       alchemy = {
         {
-          conditions = {},
+          conditions = _E,
           method = "trainer",
           profession = "alchemy",
           rankIndex = 1,
@@ -974,7 +975,7 @@ ns.Data._loaders["systems"] = function()
           },
         },
         {
-          conditions = {},
+          conditions = _E,
           method = "trainer",
           profession = "alchemy",
           rankIndex = 2,
@@ -1027,7 +1028,7 @@ ns.Data._loaders["systems"] = function()
           },
         },
         {
-          conditions = {},
+          conditions = _E,
           method = "trainer",
           profession = "alchemy",
           rankIndex = 3,
@@ -1055,7 +1056,7 @@ ns.Data._loaders["systems"] = function()
           },
         },
         {
-          conditions = {},
+          conditions = _E,
           method = "trainer",
           profession = "alchemy",
           rankIndex = 4,
@@ -1078,10 +1079,376 @@ ns.Data._loaders["systems"] = function()
           },
         },
       },
+      blacksmithing = {
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "blacksmithing",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2836,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3355,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4258,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 28694,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "blacksmithing",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2836,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3355,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4258,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 28694,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "blacksmithing",
+          rankIndex = 3,
+          rankKey = "expert",
+          reqLevel = 20,
+          reqSkill = 125,
+          routeReminderSkill = 125,
+          skillCap = 225,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3355,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4258,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 28694,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "blacksmithing",
+          rankIndex = 4,
+          rankKey = "artisan",
+          reqLevel = 35,
+          reqSkill = 200,
+          routeReminderSkill = 200,
+          skillCap = 300,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2836,
+            },
+          },
+        },
+      },
       cooking = {
         {
+          conditions = _E,
+          method = "trainer",
+          profession = "cooking",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1355,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 1382,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1430,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1699,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3026,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3067,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3087,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3399,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4210,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4552,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5159,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5482,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6286,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 244512,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 249968,
+            },
+            { npcID = 251905 },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 252084,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 256655,
+            },
+            { npcID = 257006 },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 265944,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "cooking",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1355,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 1382,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1430,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1699,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3026,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3067,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3087,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3399,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4210,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4552,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5159,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5482,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6286,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 244512,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 249968,
+            },
+            { npcID = 251905 },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 252084,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 256655,
+            },
+            { npcID = 257006 },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 265944,
+            },
+          },
+        },
+        {
           bookItemID = 16072,
-          conditions = {},
+          conditions = _E,
           method = "book",
           profession = "cooking",
           rankIndex = 3,
@@ -1450,8 +1817,203 @@ ns.Data._loaders["systems"] = function()
       },
       ["first-aid"] = {
         {
+          conditions = _E,
+          method = "trainer",
+          profession = "first-aid",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2326,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2327,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2329,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2798,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3181,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3373,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4211,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4591,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5150,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5759,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5939,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5943,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6094,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 251977,
+            },
+            { npcID = 257007 },
+            { npcID = 257018 },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "first-aid",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2326,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2327,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2329,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2798,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3181,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3373,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4211,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4591,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5150,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5759,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5939,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5943,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6094,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 251977,
+            },
+            { npcID = 257007 },
+            { npcID = 257018 },
+          },
+        },
+        {
           bookItemID = 16084,
-          conditions = {},
+          conditions = _E,
           method = "book",
           profession = "first-aid",
           rankIndex = 3,
@@ -1486,8 +2048,279 @@ ns.Data._loaders["systems"] = function()
       },
       fishing = {
         {
+          conditions = _E,
+          method = "trainer",
+          profession = "fishing",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1651,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1680,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1683,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1700,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2367,
+            },
+            { npcID = 2834 },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3028,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3179,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3332,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3607,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4156,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4573,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5161,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5493,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5690,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5938,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5941,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 7946,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12032,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12961,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 14740,
+            },
+            { npcID = 251992 },
+            { npcID = 257008 },
+            { npcID = 260558 },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "fishing",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1651,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1680,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1683,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1700,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 2367,
+            },
+            { npcID = 2834 },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3028,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3179,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3332,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3607,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4156,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4573,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5161,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5493,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5690,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5938,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 5941,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 7946,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12032,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12961,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 14740,
+            },
+            { npcID = 251992 },
+            { npcID = 257008 },
+            { npcID = 260558 },
+          },
+        },
+        {
           bookItemID = 16083,
-          conditions = {},
+          conditions = _E,
           method = "book",
           profession = "fishing",
           rankIndex = 3,
@@ -1516,9 +2349,1741 @@ ns.Data._loaders["systems"] = function()
           },
         },
       },
+      herbalism = {
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "herbalism",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 812,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 908,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1218,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1458,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1473,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2114,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2390,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2856,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3013,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3185,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3404,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3604,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3965,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4204,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4614,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4898,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5502,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5566,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8146,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 12025,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 247223,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 254345,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257021,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267326,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267329,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267332,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 267335,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 267338,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 275321,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "herbalism",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 812,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 908,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1218,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1458,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1473,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2114,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2390,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2856,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3013,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3185,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3404,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3604,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3965,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4204,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4614,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4898,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5502,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5566,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8146,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 12025,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 254345,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257021,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 275321,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "herbalism",
+          rankIndex = 3,
+          rankKey = "expert",
+          reqLevel = 20,
+          reqSkill = 125,
+          routeReminderSkill = 125,
+          skillCap = 225,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 812,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 908,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1218,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1458,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1473,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2114,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2390,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2856,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3013,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3185,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3404,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3604,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3965,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4204,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4614,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4898,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5502,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5566,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8146,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 12025,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 254345,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257021,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 275321,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "herbalism",
+          rankIndex = 4,
+          rankKey = "artisan",
+          reqLevel = 35,
+          reqSkill = 200,
+          routeReminderSkill = 200,
+          skillCap = 300,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 812,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 908,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1218,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1458,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1473,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2114,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2390,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2856,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3013,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3185,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3404,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3604,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3965,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4204,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4614,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4898,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5502,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5566,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8146,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 12025,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 254345,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257021,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 275321,
+            },
+          },
+        },
+      },
+      leatherworking = {
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "leatherworking",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3007,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4212,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7088,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 11097,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 11098,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "leatherworking",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3007,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4212,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 11097,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 11098,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "leatherworking",
+          rankIndex = 3,
+          rankKey = "expert",
+          reqLevel = 20,
+          reqSkill = 125,
+          routeReminderSkill = 125,
+          skillCap = 225,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3007,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4212,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "leatherworking",
+          rankIndex = 4,
+          rankKey = "artisan",
+          reqLevel = 35,
+          reqSkill = 200,
+          routeReminderSkill = 200,
+          skillCap = 300,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 11097,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 11098,
+            },
+          },
+        },
+      },
+      mining = {
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "mining",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1681,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1701,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3001,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3175,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3357,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3555,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4254,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4598,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5392,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5513,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6297,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 247226,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267325,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267328,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267331,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 267334,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 267337,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "mining",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1681,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1701,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3001,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3175,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3357,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3555,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4254,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4598,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5392,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5513,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6297,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "mining",
+          rankIndex = 3,
+          rankKey = "expert",
+          reqLevel = 20,
+          reqSkill = 125,
+          routeReminderSkill = 125,
+          skillCap = 225,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1681,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1701,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3001,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3175,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3357,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3555,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4254,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4598,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5392,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5513,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6297,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "mining",
+          rankIndex = 4,
+          rankKey = "artisan",
+          reqLevel = 35,
+          reqSkill = 200,
+          routeReminderSkill = 200,
+          skillCap = 300,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1681,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1701,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3001,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 3137,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3175,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3357,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3555,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4254,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 4598,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5392,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 5513,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6297,
+            },
+          },
+        },
+      },
+      skinning = {
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "skinning",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6287,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6288,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6289,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6290,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6291,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6295,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6306,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6387,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7087,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7088,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7089,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8144,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12030,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 247227,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257003,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257024,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267324,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267327,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 267330,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 267333,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 267336,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "skinning",
+          rankIndex = 2,
+          rankKey = "journeyman",
+          reqLevel = 10,
+          reqSkill = 50,
+          routeReminderSkill = 50,
+          skillCap = 150,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6287,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6288,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6289,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6290,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6291,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6295,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6306,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6387,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7087,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7088,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7089,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8144,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12030,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257003,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257024,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "skinning",
+          rankIndex = 3,
+          rankKey = "expert",
+          reqLevel = 20,
+          reqSkill = 125,
+          routeReminderSkill = 125,
+          skillCap = 225,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6287,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6288,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6289,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6290,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6291,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6295,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6306,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6387,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7087,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7088,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7089,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8144,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12030,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257003,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257024,
+            },
+          },
+        },
+        {
+          conditions = _E,
+          method = "trainer",
+          profession = "skinning",
+          rankIndex = 4,
+          rankKey = "artisan",
+          reqLevel = 35,
+          reqSkill = 200,
+          routeReminderSkill = 200,
+          skillCap = 300,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6287,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6288,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6289,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6290,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6291,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6292,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6295,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 6306,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 6387,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7087,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7088,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 7089,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 8144,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 12030,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257003,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 257024,
+            },
+          },
+        },
+      },
       tailoring = {
         {
-          conditions = {},
+          conditions = _E,
+          method = "trainer",
+          profession = "tailoring",
+          rankIndex = 1,
+          rankKey = "apprentice",
+          skillCap = 75,
+          trainers = {
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1103,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1300,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 1703,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 2855,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3484,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 3523,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 4193,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 11048,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "A" },
+              },
+              npcID = 11050,
+            },
+            {
+              conditions = {
+                { kind = "faction", side = "H" },
+              },
+              npcID = 11051,
+            },
+          },
+        },
+        {
+          conditions = _E,
           method = "trainer",
           profession = "tailoring",
           rankIndex = 2,
@@ -1540,7 +4105,7 @@ ns.Data._loaders["systems"] = function()
           },
         },
         {
-          conditions = {},
+          conditions = _E,
           method = "trainer",
           profession = "tailoring",
           rankIndex = 3,
@@ -1559,7 +4124,7 @@ ns.Data._loaders["systems"] = function()
           },
         },
         {
-          conditions = {},
+          conditions = _E,
           method = "trainer",
           profession = "tailoring",
           rankIndex = 4,
@@ -1580,7 +4145,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 200,
         profession = "blacksmithing",
         specKey = "weaponsmith",
-        variants = {},
+        variants = _E,
       },
       [9788] = {
         abilitySpellID = 9788,
@@ -1589,7 +4154,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 200,
         profession = "blacksmithing",
         specKey = "armorsmith",
-        variants = {},
+        variants = _E,
       },
       [10656] = {
         abilitySpellID = 10656,
@@ -1598,7 +4163,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 225,
         profession = "leatherworking",
         specKey = "dragonscale",
-        variants = {},
+        variants = _E,
       },
       [10658] = {
         abilitySpellID = 10658,
@@ -1607,7 +4172,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 225,
         profession = "leatherworking",
         specKey = "elemental",
-        variants = {},
+        variants = _E,
       },
       [10660] = {
         abilitySpellID = 10660,
@@ -1616,7 +4181,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 225,
         profession = "leatherworking",
         specKey = "tribal",
-        variants = {},
+        variants = _E,
       },
       [17039] = {
         abilitySpellID = 17039,
@@ -1625,7 +4190,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 200,
         profession = "blacksmithing",
         specKey = "master_swordsmith",
-        variants = {},
+        variants = _E,
       },
       [17040] = {
         abilitySpellID = 17040,
@@ -1634,7 +4199,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 200,
         profession = "blacksmithing",
         specKey = "master_hammersmith",
-        variants = {},
+        variants = _E,
       },
       [17041] = {
         abilitySpellID = 17041,
@@ -1643,7 +4208,7 @@ ns.Data._loaders["systems"] = function()
         minSkill = 200,
         profession = "blacksmithing",
         specKey = "master_axesmith",
-        variants = {},
+        variants = _E,
       },
       [20219] = {
         abilitySpellID = 20219,
@@ -1654,7 +4219,7 @@ ns.Data._loaders["systems"] = function()
         specKey = "gnomish",
         variants = {
           N = {
-            prereqQuestGroups = {},
+            prereqQuestGroups = _E,
             questID = 3647,
             turnInItems = {
               { count = 1, itemID = 11423 },
@@ -1671,7 +4236,7 @@ ns.Data._loaders["systems"] = function()
         specKey = "goblin",
         variants = {
           N = {
-            prereqQuestGroups = {},
+            prereqQuestGroups = _E,
             questID = 3644,
             turnInItems = {
               { count = 1, itemID = 11422 },
