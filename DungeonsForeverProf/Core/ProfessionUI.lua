@@ -4920,6 +4920,94 @@ local function btLines(fs, est)
     return est
 end
 
+local CAMP_STATION_EXCLUDED = {
+    anvil = true,
+    forge = true,
+    cooking_fire = true,
+}
+local STATION_KEY_PREFIX = "__station:"
+
+function PD.StationCampOf(stationKey, slug)
+    if type(stationKey) ~= "string" or stationKey == "" or CAMP_STATION_EXCLUDED[stationKey] then
+        return nil
+    end
+    local ds = getDS()
+    if not (ds and ds.CampByStation) then return nil end
+    return ds.CampByStation(stationKey, slug or PD.cur)
+end
+
+function PD.StationLabel(stationKey, slug, withTier)
+    if type(stationKey) ~= "string" or stationKey == "" then return nil end
+    local ds = getDS()
+    local raw = ds and ds.RawText and ds.RawText("station", stationKey)
+    local base
+    if type(raw) == "string" and raw ~= "" then
+        base = raw
+    else
+        local fb = {
+            anvil = L["铁砧"],
+            forge = L["熔炉"],
+            black_forge = L["黑熔炉"],
+            black_anvil = L["黑铁砧"],
+            cooking_fire = L["烹饪用火"],
+            molten_foundry = L["熔火铸造厂"],
+            alchemy_lab = L["炼金实验室"],
+            fermenter = L["发酵桶"],
+            master_forge = L["大师级熔炉"],
+            arcane_forge = L["奥术熔炉"],
+            anarchists_workbench = L["无政府主义者的工作台"],
+            tanning_rack = L["制革架"],
+            sewing_machine = L["缝纫机"],
+            spinning_wheel = L["纺车"],
+            loom = L["织布机"],
+            iron_oven = L["铁炉"],
+        }
+        base = fb[stationKey] or stationKey
+    end
+    if withTier then
+        local camp = PD.StationCampOf(stationKey, slug)
+        if camp and type(camp.tier) == "number" and camp.tier > 0 then
+            return format(L["%s · T%d营地"], base, camp.tier)
+        end
+    end
+    return base
+end
+
+function PD.CountRecipesByStation(slug, stationKey)
+    if type(slug) ~= "string" or type(stationKey) ~= "string" or stationKey == "" then return 0 end
+    local ds = getDS()
+    local d = ds and ds.Recipes and ds.Recipes(slug)
+    if type(d) ~= "table" or type(d.recipes) ~= "table" then return 0 end
+    local n = 0
+    for sid, r in pairs(d.recipes) do
+        if type(sid) == "number" and type(r) == "table"
+           and r.availability == "live" and r.stationKey == stationKey then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+function PD.FilterByCampStation(slug, stationKey)
+    if type(slug) ~= "string" or type(stationKey) ~= "string" or stationKey == "" then return end
+    if PD.cur ~= slug then
+        PD.Show(slug)
+    end
+    PD.setOpen = false
+    PD.subTabSlug = nil
+    PD.moneyKey = nil
+    PD.searchQ = ""
+    if PD.searchBox then
+        PD.searchBox.eb:SetText("")
+        PD.searchBox.eb:ClearFocus()
+    end
+    PD.toolKey = STATION_KEY_PREFIX .. stationKey
+    if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+    PD.tab = "recipe"
+    playSoundSafe(1)
+    PD.RequestRender()
+end
+
 local function campNameOf(c)
     local ds = getDS()
     local nm = ds and c.campKey and ds.RawText and ds.RawText("camp", c.campKey, "name")
@@ -4960,11 +5048,23 @@ function PD.FillBonusTable()
             local t1, t2, t3, caps = {}, {}, {}, {}
             local buffTxt, cmpName = "", ""
             for _, c in ipairs(camp) do
+                local tier = tonumber(c.tier)
                 local lv = c.reqSkill or 0
                 local bucket, tag
-                if lv == 20 or lv == 1 then
+                if tier == 0 or tier == 1 then
                     bucket = t1
-                elseif lv == 140 or lv == 150 then
+                    if lv > 0 and lv ~= 20 and lv ~= 1 then tag = format("(%d)", lv) end
+                elseif tier == 2 then
+                    bucket = t2
+                    if lv > 0 and lv ~= 140 and lv ~= 150 then tag = format("(%d)", lv) end
+                elseif tier == 3 then
+                    bucket = t3
+                    if lv > 0 and lv ~= 300 then tag = format("(%d)", lv) end
+                elseif tier == 4 then
+                    bucket = nil
+                elseif lv == 20 or lv == 1 then
+                    bucket = t1
+                elseif lv == 140 or lv == 150 or lv == 125 then
                     bucket = t2
                 elseif lv == 300 then
                     bucket = t3
@@ -4973,7 +5073,9 @@ function PD.FillBonusTable()
                 else
                     bucket, tag = t3, format("(%d)", lv)
                 end
-                bucket[#bucket + 1] = campNameOf(c) .. (tag or "")
+                if bucket then
+                    bucket[#bucket + 1] = campNameOf(c) .. (tag or "")
+                end
                 local btxt = (ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))) or ""
                 if btxt ~= "" and buffTxt == "" then
                     buffTxt = btxt
@@ -8441,6 +8543,16 @@ function PD.CampTipLines(c)
     if c.formulaItemIDs and c.formulaItemIDs[1] then
         lines[#lines + 1] = { format(L["图纸：%s"], PD.ItemName(c.formulaItemIDs[1])) }
     end
+    local stKey = c.stationKey
+    if type(stKey) == "string" and stKey ~= "" and not CAMP_STATION_EXCLUDED[stKey] then
+        local stCnt = PD.CountRecipesByStation(c.profession, stKey)
+        if stCnt > 0 then
+            lines[#lines + 1] = { format(L["需要此设施：%d 配方（点击筛选）"], stCnt), 0.45, 0.85, 1 }
+            if c.wowheadURL then
+                lines[#lines + 1] = { L["Shift+点击复制资料链接"], 0.65, 0.65, 0.65 }
+            end
+        end
+    end
     if #lines == 0 then return nil end
     return lines
 end
@@ -8448,6 +8560,13 @@ end
 function PD.CampTagText(c)
     local ds = getDS()
     local t = {}
+    local stKey = c.stationKey
+    if type(stKey) == "string" and stKey ~= "" and not CAMP_STATION_EXCLUDED[stKey] then
+        local stCnt = PD.CountRecipesByStation(c.profession, stKey)
+        if stCnt > 0 then
+            t[#t + 1] = format(L["需要此设施：%d 配方（点击筛选）"], stCnt)
+        end
+    end
     local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
     local repName = c.replacesCampKey and ((ds and ds.RawText and ds.RawText("camp", c.replacesCampKey, "name")) or c.replacesCampKey)
     local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
@@ -8481,6 +8600,20 @@ function PD.PushCampCards(rows, slug)
         card.tx = (ds and c.campKey and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))) or ""
         card.tags = PD.CampTagText(c)
         card.tipLines = PD.CampTipLines(c)
+        local stKey = c.stationKey
+        if type(stKey) == "string" and stKey ~= "" and not CAMP_STATION_EXCLUDED[stKey] then
+            local stCnt = PD.CountRecipesByStation(slug, stKey)
+            if stCnt > 0 then
+                local origUrl = c.wowheadURL
+                card.act = function()
+                    if IsShiftKeyDown and IsShiftKeyDown() and origUrl then
+                        PD.ShowGuideSource(origUrl)
+                        return
+                    end
+                    PD.FilterByCampStation(slug, stKey)
+                end
+            end
+        end
         list[#list + 1] = card
     end
     PD.PushCardRow(rows, list)
@@ -11515,9 +11648,11 @@ function PD.EnchantSpec(en)
         dact = PD.DropAct(src)
         vlines = PD.DropLines(src)
     end
+    local enchStation = isV2 and PD.StationLabel(en.stationKey, en.profession or PD.cur, true) or nil
     local titleName = (isV2 and (SpellName(spell) or ("#" .. tostring(spell)))) or en[2] or en[1] or "?"
     local lines = PD.RecipeSourceLines({ { titleName } }, resolved)
     if effectTx ~= "" then lines[#lines + 1] = { effectTx } end
+    if enchStation and enchStation ~= "" then lines[#lines + 1] = { L["需求"] .. ": " .. enchStation, 0.45, 0.85, 1 } end
     if learningCard then
         for _, line in ipairs(learningCard.lines) do lines[#lines + 1] = line end
     elseif vlines then
@@ -11532,7 +11667,7 @@ function PD.EnchantSpec(en)
         icon = SpellIcon(spell),
         qItem = learningItem or outItem,
         text = titleName,
-        sub = table.concat(PD.UniqList({ slotLabel, effectShort }), " · "),
+        sub = table.concat(PD.UniqList({ slotLabel, effectShort, enchStation }), " · "),
         mats = clientPending and L["客户端数据待读取"] or matCol,
         matSegs = matSg,
         right = not colors and format(L["学 %s"], tostring(resolved.learn or "—")) or nil,
@@ -12470,18 +12605,8 @@ function PD.AhPct(ah, cost)
     return { text = tostring(v) .. "%", color = AH_PCT_GREEN }
 end
 
-local function stationLabel(stationKey)
-    if not stationKey or stationKey == "" then return nil end
-    local ds = getDS()
-    local raw = ds and ds.RawText and ds.RawText("station", stationKey)
-    if raw and raw ~= "" then return raw end
-    local fb = {
-        forge = L["熔炉"],
-        blackForge = L["黑铁熔炉"],
-        moltenFoundry = L["熔火铸造厂"],
-        alchemy_lab = L["炼金实验室"],
-    }
-    return fb[stationKey] or stationKey
+local function stationLabel(stationKey, slug, withTier)
+    return PD.StationLabel(stationKey, slug, withTier)
 end
 
 function PD.RecipeSpec(r)
@@ -12493,7 +12618,7 @@ function PD.RecipeSpec(r)
     local orange = resolved.orange or resolved.learn
     local colors = PD.RecipeColors(orange, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
-    local station = isV2 and stationLabel(r.stationKey) or nil
+    local station = isV2 and stationLabel(r.stationKey, r.profession or PD.cur, true) or nil
     local ra = getRA()
     local learningCard = PD.RecipeLearningCard(resolved, false)
     local src = learningCard and learningCard.source
@@ -12913,6 +13038,9 @@ end
 
 function PD.RowKeyOK(r, fk)
     if not fk then return true end
+    if type(fk) == "string" and fk:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX then
+        return r.stationKey == fk:sub(#STATION_KEY_PREFIX + 1)
+    end
     if fk == "__writ" then
         local t = PD.WritTargetMap()
         return r.outputItemID and t[r.outputItemID] and true or false
@@ -13031,6 +13159,29 @@ function PD.RecipeTypeItems(d)
         for i = #items, keep + 1, -1 do table.remove(items, i) end
         items[#items + 1] = { v = "__rest", text = format(L["其他 %d"], rest) }
     end
+    -- 在普通分类后追加本专业营地专属制造台筛选项（不受 PD.TOOL_MAX 截断）
+    local campStations = (ds and ds.CampStationsByProfession and ds.CampStationsByProfession(PD.cur)) or {}
+    if #campStations > 0 then
+        local stCounts = {}
+        for _, r in ipairs(rows) do
+            if type(r.stationKey) == "string" and r.stationKey ~= "" then
+                stCounts[r.stationKey] = (stCounts[r.stationKey] or 0) + 1
+            end
+        end
+        for _, e in ipairs(enchants) do
+            if type(e.stationKey) == "string" and e.stationKey ~= "" then
+                stCounts[e.stationKey] = (stCounts[e.stationKey] or 0) + 1
+            end
+        end
+        for _, camp in ipairs(campStations) do
+            local sk = camp.stationKey
+            local cnt = (type(sk) == "string" and not CAMP_STATION_EXCLUDED[sk]) and (stCounts[sk] or 0) or 0
+            if cnt > 0 then
+                local lbl = PD.StationLabel(sk, PD.cur, false) or sk
+                items[#items + 1] = { v = STATION_KEY_PREFIX .. sk, text = format(L["营地·%s %d"], lbl, cnt) }
+            end
+        end
+    end
     return items
 end
 
@@ -13129,7 +13280,11 @@ function PD.RecipeTool(d)
     if not d then return {}, nil end
     local tItems = PD.RecipeTypeItems(d)
     local cItems = PD.RecipeCurItems(d)
-    local showType = #tItems > 2
+    local showType = (#tItems > 2) or (
+        #tItems == 2
+        and type(tItems[2].v) == "string"
+        and tItems[2].v:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX
+    )
     if PD.moneyKey ~= nil then
         PD.toolKey = "all"
     elseif PD.toolKey == nil then
@@ -13226,6 +13381,25 @@ function PD.RecipeList(limit, q)
                 if #out < cap then
                     local sp = PD.FavorSpec(f, d.recipes)
                     if PD.LvStartHit(f.reqSkill) and PD.SearchHit(sp, q) then out[#out + 1] = sp end
+                end
+            end
+        end
+        return out
+    end
+    if type(key) == "string" and key:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX then
+        local wantSt = key:sub(#STATION_KEY_PREFIX + 1)
+        for _, r in ipairs(rows) do
+            if r.stationKey == wantSt and PD.RawHit(r, q) then
+                out[#out + 1] = PD.RecipeSpec(r)
+                if #out >= cap then return out end
+            end
+        end
+        for _, e in ipairs(enchants) do
+            if e.stationKey == wantSt and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                local sp = PD.EnchantSpec(e)
+                if (not q) or PD.SearchHit(sp, q) then
+                    out[#out + 1] = sp
+                    if #out >= cap then return out end
                 end
             end
         end
@@ -13330,8 +13504,10 @@ function PD.RawHit(r, q)
     end
     local title = PD.SpellTitle(r.spellID)
     if title and title ~= "" and string.find(string.lower(title), q, 1, true) then return true end
-    local st = stationLabel(r.stationKey) or ""
+    local st = stationLabel(r.stationKey, r.profession or PD.cur, true) or ""
     if st ~= "" and string.find(string.lower(st), q, 1, true) then return true end
+    local stBase = stationLabel(r.stationKey, r.profession or PD.cur, false) or ""
+    if stBase ~= "" and stBase ~= st and string.find(string.lower(stBase), q, 1, true) then return true end
     for _, m in ipairs(r.reagents or {}) do
         local iid = m.itemID or m[1]
         local mn = iid and PD.ItemName(iid)
@@ -13347,6 +13523,16 @@ function PD.EffKeyFilter(d, rows, scrolls, enchants)
     if not key or key == "all" or key == "__rest" then return nil end
     if not rows then rows = sortedRecipesOf(d) end
     if not scrolls then scrolls = sortedCatalogOf(d, "scroll") end
+    if type(key) == "string" and key:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX then
+        local wantSt = key:sub(#STATION_KEY_PREFIX + 1)
+        for _, r in ipairs(rows) do
+            if r.stationKey == wantSt then return key end
+        end
+        for _, e in ipairs(enchants or {}) do
+            if e.stationKey == wantSt then return key end
+        end
+        return nil
+    end
     if key == "__writ" then
         local t = PD.WritTargetMap()
         for _, r in ipairs(rows) do
@@ -13383,7 +13569,9 @@ function PD.ScanRecipe()
     local scrolls = sortedCatalogOf(d, "scroll")
     local favors = sortedCatalogOf(d, "favor_exchange")
     if #rows == 0 and #enchants == 0 and #scrolls == 0 then return nil end
-    if #rows == 0 and #scrolls == 0 then return nil end
+    if #rows == 0 and #scrolls == 0 and not (type(key) == "string" and key:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX) then
+        return nil
+    end
     local q = (PD.searchQ and PD.searchQ ~= "") and PD.searchQ or nil
     if PD.moneyKey ~= nil then
         local cn = 0
@@ -13402,6 +13590,39 @@ function PD.ScanRecipe()
         end
         return cn, nil
     end
+    if type(key) == "string" and key:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX then
+        local wantSt = key:sub(#STATION_KEY_PREFIX + 1)
+        local n, maxW = 0, 0
+        local cap = PD.capNow or PD.ROW_CAP
+        for _, r in ipairs(rows) do
+            if r.stationKey == wantSt and PD.RawHit(r, q) then
+                n = n + 1
+                if n <= cap then
+                    local nm = r.outputItemID and PD.ItemName(r.outputItemID) or SpellName(r.spellID)
+                    local w = (nm and nm ~= "" and PD.TextW(nm, 13)) or 0
+                    local st = stationLabel(r.stationKey, r.profession or PD.cur, true) or ""
+                    local sw = (st ~= "" and PD.TextW(st, 11) or 0) + (r.isNew and PD.RECIPE_BADGE_W or 0)
+                    if sw > w then w = sw end
+                    if w > maxW then maxW = w end
+                end
+            end
+        end
+        for _, e in ipairs(enchants) do
+            if e.stationKey == wantSt and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                local sp = PD.EnchantSpec(e)
+                if (not q) or PD.SearchHit(sp, q) then
+                    n = n + 1
+                    if n <= cap then
+                        local w = (sp.text and sp.text ~= "" and PD.TextW(sp.text, 13)) or 0
+                        local sw = (sp.sub and sp.sub ~= "" and PD.TextW(sp.sub, 11) or 0) + (e.isNew and PD.RECIPE_BADGE_W or 0)
+                        if sw > w then w = sw end
+                        if w > maxW then maxW = w end
+                    end
+                end
+            end
+        end
+        return n, maxW
+    end
     if #enchants > 0 and #rows == 0 and key ~= "__rest" then
         return nil
     end
@@ -13414,7 +13635,7 @@ function PD.ScanRecipe()
             if n <= cap then
                 local nm = r.outputItemID and PD.ItemName(r.outputItemID) or SpellName(r.spellID)
                 local w = (nm and nm ~= "" and PD.TextW(nm, 13)) or 0
-                local st = stationLabel(r.stationKey) or ""
+                local st = stationLabel(r.stationKey, r.profession or PD.cur, true) or ""
                 local sw = (st ~= "" and PD.TextW(st, 11) or 0) + (r.isNew and PD.RECIPE_BADGE_W or 0)
                 if sw > w then w = sw end
                 if w > maxW then maxW = w end

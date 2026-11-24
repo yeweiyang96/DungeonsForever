@@ -8,6 +8,8 @@ local boundRoot = nil
 local overrideLocale = nil
 local cacheRoot = nil
 local campByProfCache = nil
+local campByStationCache = nil
+local campStationsByProfCache = nil
 local writByItemCache = nil
 local writByTargetCache = nil
 
@@ -32,6 +34,8 @@ end
 local function resetCaches(root)
   cacheRoot = root
   campByProfCache = nil
+  campByStationCache = nil
+  campStationsByProfCache = nil
   writByItemCache = nil
   writByTargetCache = nil
 end
@@ -418,6 +422,81 @@ function DS.CampObjectsByProfession(slug)
     campByProfCache = idx
   end
   local list = campByProfCache[slug]
+  if type(list) ~= "table" then return newReadOnlyEmpty() end
+  local copy = {}
+  for i = 1, #list do
+    copy[i] = list[i]
+  end
+  return setmetatable(copy, _roMt)
+end
+
+local function ensureCampStationCaches()
+  if campByStationCache and campStationsByProfCache then return end
+  local bySt = { ["*"] = {} }
+  local byProf = {}
+  local function better(a, b)
+    if not b then return true end
+    local ta, tb = a.tier or 99, b.tier or 99
+    if ta ~= tb then return ta < tb end
+    local ra, rb = a.reqSkill or 9999, b.reqSkill or 9999
+    if ra ~= rb then return ra < rb end
+    return tostring(a.campKey) < tostring(b.campKey)
+  end
+  for _, obj in pairs(DS.CampObjects()) do
+    if type(obj) == "table" and type(obj.stationKey) == "string" and obj.stationKey ~= "" then
+      local sk = obj.stationKey
+      if better(obj, bySt["*"][sk]) then
+        bySt["*"][sk] = obj
+      end
+      if type(obj.profession) == "string" and obj.profession ~= "" then
+        local pm = bySt[obj.profession]
+        if not pm then
+          pm = {}
+          bySt[obj.profession] = pm
+        end
+        if better(obj, pm[sk]) then
+          pm[sk] = obj
+        end
+      end
+    end
+  end
+  for slug, pm in pairs(bySt) do
+    if slug ~= "*" then
+      local list = {}
+      for _, obj in pairs(pm) do
+        list[#list + 1] = obj
+      end
+      table.sort(list, function(a, b)
+        local ta, tb = a.tier or 0, b.tier or 0
+        if ta ~= tb then return ta < tb end
+        local ra, rb = a.reqSkill or 0, b.reqSkill or 0
+        if ra ~= rb then return ra < rb end
+        return tostring(a.stationKey) < tostring(b.stationKey)
+      end)
+      setmetatable(list, _roMt)
+      byProf[slug] = list
+    end
+  end
+  campByStationCache = bySt
+  campStationsByProfCache = byProf
+end
+
+function DS.CampByStation(stationKey, slug)
+  if type(stationKey) ~= "string" or stationKey == "" then return nil end
+  getRoot()
+  ensureCampStationCaches()
+  if type(slug) == "string" and slug ~= "" then
+    local pm = campByStationCache[slug]
+    if pm and pm[stationKey] then return pm[stationKey] end
+  end
+  return campByStationCache["*"][stationKey]
+end
+
+function DS.CampStationsByProfession(slug)
+  if type(slug) ~= "string" or slug == "" then return newReadOnlyEmpty() end
+  getRoot()
+  ensureCampStationCaches()
+  local list = campStationsByProfCache[slug]
   if type(list) ~= "table" then return newReadOnlyEmpty() end
   local copy = {}
   for i = 1, #list do

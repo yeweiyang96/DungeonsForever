@@ -27,12 +27,7 @@ local function _freeze(tbl, seen)
 end
 Data._freeze = _freeze
 
-Data.meta = _freeze({
-  branch = "forever",
-  contractVersion = 1,
-  fingerprint = "sha256:acd6bb85666cf651b85086a7b200e10bf366cd39233927f45fd762834421cf34",
-  foreverBuild = "1.60.1.71037",
-})
+Data.meta = _freeze({ branch = "forever", contractVersion = 1, fingerprint = "sha256:0793ba6dbae5c34cec6f5560cc0d88249728bc879f0bbcc4200ae2f01d40dfdb", foreverBuild = "1.60.1.71091" })
 
 Data.professions = _freeze({
   alchemy = {
@@ -100,15 +95,7 @@ Data.professions = _freeze({
     racialKeys = {},
     slug = "blacksmithing",
   },
-  camping = {
-    categories = {},
-    icon = 135805,
-    kind = "system",
-    maxSkillCap = 300,
-    perkKeys = {},
-    racialKeys = {},
-    slug = "camping",
-  },
+  camping = { categories = {}, icon = 135805, kind = "system", maxSkillCap = 300, perkKeys = {}, racialKeys = {}, slug = "camping" },
   comprehension = {
     categories = {
       { icon = "", key = "tier_1", order = 900 },
@@ -196,6 +183,7 @@ Data.professions = _freeze({
       { icon = "inv_weapon_rifle_01", key = "ranged_weapons", order = 120 },
       { icon = "inv_misc_spyglass_02", key = "scopes", order = 130 },
       { icon = "inv_ammo_bullet_02", key = "ammunition", order = 140 },
+      { icon = "inv_misc_coin_16", key = "favor_exchange", order = 900 },
     },
     icon = 136243,
     kind = "primary",
@@ -252,6 +240,7 @@ Data.professions = _freeze({
       { icon = "inv_chest_leather_05", key = "leather_chestguards", order = 600 },
       { icon = "inv_bracer_06", key = "leather_bracers", order = 700 },
       { icon = "inv_gauntlets_05", key = "leather_gauntlets", order = 800 },
+      { icon = "inv_misc_coin_16", key = "favor_exchange", order = 900 },
       { icon = "inv_belt_04", key = "leather_belts", order = 900 },
       { icon = "inv_pants_02", key = "leather_legguards", order = 1000 },
       { icon = "inv_boots_05", key = "leather_boots", order = 1100 },
@@ -321,6 +310,7 @@ Data.professions = _freeze({
       { icon = "inv_shoulder_09", key = "spaulders", order = 700 },
       { icon = "inv_chest_cloth_21", key = "robes_and_vests", order = 800 },
       { icon = "inv_bracer_09", key = "bracers", order = 900 },
+      { icon = "inv_misc_coin_16", key = "favor_exchange", order = 900 },
       { icon = "inv_gauntlets_18", key = "gloves", order = 1000 },
       { icon = "inv_belt_06", key = "belts", order = 1100 },
       { icon = "inv_pants_01", key = "leggings", order = 1200 },
