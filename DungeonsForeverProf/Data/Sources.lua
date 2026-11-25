@@ -3545,6 +3545,9 @@ ns.Data._loaders["sources"] = function()
       [249521] = {
         { areaID = 1583, dropRatePct = 15.367, itemID = 249521, maxLevel = 59, minLevel = 59, npcID = 10596, sampleCount = 872 },
       },
+      [249522] = {
+        { areaID = 46, itemID = 249522, npcID = 9778 },
+      },
       [249523] = {
         { areaID = 2057, dropRatePct = 5.255, itemID = 249523, maxLevel = 60, minLevel = 58, npcID = 10498, sampleCount = 666 },
       },
@@ -4084,6 +4087,9 @@ ns.Data._loaders["sources"] = function()
       [252886] = {
         { areaID = 16, dropRatePct = 2.25, itemID = 252886, maxLevel = 54, minLevel = 53, npcID = 7885, sampleCount = 400 },
       },
+      [252887] = {
+        { areaID = 46, itemID = 252887, npcID = 9777 },
+      },
       [252888] = {
         { areaID = 46, dropRatePct = 2.03, itemID = 252888, maxLevel = 56, minLevel = 55, npcID = 7025, sampleCount = 591 },
       },
@@ -4095,6 +4101,9 @@ ns.Data._loaders["sources"] = function()
       },
       [252891] = {
         { areaID = 2557, dropRatePct = 6.725, itemID = 252891, maxLevel = 55, minLevel = 54, npcID = 11462, sampleCount = 684 },
+      },
+      [252892] = {
+        { areaID = 357, itemID = 252892, npcID = 11443 },
       },
       [252893] = {
         { areaID = 16554, dropRatePct = 5.96, itemID = 252893, npcID = 258516, sampleCount = 151 },
@@ -8199,6 +8208,9 @@ ns.Data._loaders["sources"] = function()
       [18418] = {
         { dropRatePct = 3.846, itemID = 18418, sampleCount = 52, sourceKind = "contained_in_object", targetID = 179501, targetType = "object" },
       },
+      [18514] = {
+        { itemID = 18514, sourceKind = "contained_in_object", targetID = 179501, targetType = "object" },
+      },
       [18515] = {
         { dropRatePct = 3.846, itemID = 18515, sampleCount = 52, sourceKind = "contained_in_object", targetID = 179501, targetType = "object" },
       },
@@ -8397,6 +8409,18 @@ ns.Data._loaders["sources"] = function()
         { dropRatePct = 4.481, itemID = 211855, sampleCount = 1339, sourceKind = "contained_in_object", targetID = 111095, targetType = "object" },
         { dropRatePct = 4.412, itemID = 211855, sampleCount = 68, sourceKind = "contained_in_object", targetID = 3714, targetType = "object" },
       },
+      [213548] = {
+        { dropRatePct = 4.837, itemID = 213548, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [213550] = {
+        { dropRatePct = 15.033, itemID = 213550, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [213564] = {
+        { dropRatePct = 37.438, itemID = 213564, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [217495] = {
+        { dropRatePct = 16.105, itemID = 217495, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
       [248815] = {
         { avgStack = 5.33, dropRatePct = 1.791, itemID = 248815, sampleCount = 335, sourceKind = "contained_in_item", targetID = 271994, targetType = "item" },
         { dropRatePct = 87.599, itemID = 248815, sampleCount = 1008, sourceKind = "mined", targetID = 566779, targetType = "object" },
@@ -8498,6 +8522,60 @@ ns.Data._loaders["sources"] = function()
         { avgStack = 1.41, dropRatePct = 85, itemID = 269716, sampleCount = 40, sourceKind = "disenchant", targetID = 10939, targetType = "item" },
         { avgStack = 2.6, dropRatePct = 12.5, itemID = 269716, sampleCount = 40, sourceKind = "disenchant", targetID = 10940, targetType = "item" },
       },
+      [274947] = {
+        { dropRatePct = 28.627, itemID = 274947, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [275067] = {
+        { dropRatePct = 17.02, itemID = 275067, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [275069] = {
+        { dropRatePct = 28.392, itemID = 275069, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277483] = {
+        { dropRatePct = 12.026, itemID = 277483, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277484] = {
+        { dropRatePct = 11.163, itemID = 277484, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277485] = {
+        { dropRatePct = 5.908, itemID = 277485, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277486] = {
+        { dropRatePct = 6.013, itemID = 277486, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277487] = {
+        { dropRatePct = 5.569, itemID = 277487, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277488] = {
+        { dropRatePct = 6.039, itemID = 277488, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277489] = {
+        { dropRatePct = 6.954, itemID = 277489, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277491] = {
+        { dropRatePct = 5.438, itemID = 277491, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277492] = {
+        { dropRatePct = 2.902, itemID = 277492, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277493] = {
+        { dropRatePct = 5.359, itemID = 277493, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277494] = {
+        { dropRatePct = 2.458, itemID = 277494, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277495] = {
+        { dropRatePct = 2.562, itemID = 277495, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277496] = {
+        { dropRatePct = 2.954, itemID = 277496, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277497] = {
+        { dropRatePct = 2.667, itemID = 277497, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
+      [277498] = {
+        { dropRatePct = 2.928, itemID = 277498, sampleCount = 3825, sourceKind = "contained_in_item", targetID = 277651, targetType = "item" },
+      },
       [286153] = {
         { dropRatePct = 100, itemID = 286153, sampleCount = 27, sourceKind = "contained_in_object", targetID = 694054, targetType = "object" },
       },
@@ -8507,6 +8585,15 @@ ns.Data._loaders["sources"] = function()
       },
     },
     learningRoutes = {
+      [818] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "cooking",
+        routes = {
+          { conditionsKnown = true, kind = "autoGrant", minSkillRank = 1, routeKey = "auto_grant", status = "confirmed" },
+        },
+        spellID = 818,
+      },
       [2149] = {
         coverage = "complete",
         missingReasons = _E,
@@ -9250,7 +9337,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:2697", status = "confirmed", teachingItemID = 2697 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 22 },
+            routeKey = "item:2697",
+            status = "confirmed",
+            teachingItemID = 2697,
+          },
         },
         spellID = 2542,
       },
@@ -9259,7 +9353,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:728", status = "confirmed", teachingItemID = 728 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 38 },
+            routeKey = "item:728",
+            status = "confirmed",
+            teachingItemID = 728,
+          },
         },
         spellID = 2543,
       },
@@ -9323,7 +9424,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:2699", status = "confirmed", teachingItemID = 2699 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92 },
+            routeKey = "item:2699",
+            status = "confirmed",
+            teachingItemID = 2699,
+          },
         },
         spellID = 2547,
       },
@@ -9341,7 +9449,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:2701", status = "confirmed", teachingItemID = 2701 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 90 },
+            routeKey = "item:2701",
+            status = "confirmed",
+            teachingItemID = 2701,
+          },
         },
         spellID = 2549,
       },
@@ -9809,7 +9924,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:2889", status = "confirmed", teachingItemID = 2889 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 384 },
+            routeKey = "item:2889",
+            status = "confirmed",
+            teachingItemID = 2889,
+          },
         },
         spellID = 2795,
       },
@@ -10423,7 +10545,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3609", status = "confirmed", teachingItemID = 3609 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1578 },
+            routeKey = "item:3609",
+            status = "confirmed",
+            teachingItemID = 3609,
+          },
         },
         spellID = 3321,
       },
@@ -10629,7 +10758,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3678", status = "confirmed", teachingItemID = 3678 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 385 },
+            routeKey = "item:3678",
+            status = "confirmed",
+            teachingItemID = 3678,
+          },
         },
         spellID = 3370,
       },
@@ -10638,7 +10774,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3679", status = "confirmed", teachingItemID = 3679 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 418 },
+            routeKey = "item:3679",
+            status = "confirmed",
+            teachingItemID = 3679,
+          },
         },
         spellID = 3371,
       },
@@ -10647,7 +10790,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3680", status = "confirmed", teachingItemID = 3680 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 127 },
+            routeKey = "item:3680",
+            status = "confirmed",
+            teachingItemID = 3680,
+          },
         },
         spellID = 3372,
       },
@@ -10656,7 +10806,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3681", status = "confirmed", teachingItemID = 3681 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 471 },
+            routeKey = "item:3681",
+            status = "confirmed",
+            teachingItemID = 3681,
+          },
         },
         spellID = 3373,
       },
@@ -10665,7 +10822,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3682", status = "confirmed", teachingItemID = 3682 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 296 },
+            routeKey = "item:3682",
+            status = "confirmed",
+            teachingItemID = 3682,
+          },
         },
         spellID = 3376,
       },
@@ -10674,7 +10838,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3683", status = "confirmed", teachingItemID = 3683 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 93 },
+            routeKey = "item:3683",
+            status = "confirmed",
+            teachingItemID = 3683,
+          },
         },
         spellID = 3377,
       },
@@ -10683,7 +10854,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3734", status = "confirmed", teachingItemID = 3734 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 498 },
+            routeKey = "item:3734",
+            status = "confirmed",
+            teachingItemID = 3734,
+          },
         },
         spellID = 3397,
       },
@@ -10692,7 +10870,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3735", status = "confirmed", teachingItemID = 3735 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 501 },
+            routeKey = "item:3735",
+            status = "confirmed",
+            teachingItemID = 3735,
+          },
         },
         spellID = 3398,
       },
@@ -10701,7 +10886,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3736", status = "confirmed", teachingItemID = 3736 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 564 },
+            routeKey = "item:3736",
+            status = "confirmed",
+            teachingItemID = 3736,
+          },
         },
         spellID = 3399,
       },
@@ -10710,7 +10902,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:3737", status = "confirmed", teachingItemID = 3737 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 555, 7321 },
+            routeKey = "item:3737",
+            status = "confirmed",
+            teachingItemID = 3737,
+          },
         },
         spellID = 3400,
       },
@@ -13105,7 +13304,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:4609", status = "confirmed", teachingItemID = 4609 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 703 },
+            routeKey = "item:4609",
+            status = "confirmed",
+            teachingItemID = 4609,
+          },
           {
             conditionsKnown = true,
             kind = "trainer",
@@ -13142,7 +13348,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:4597", status = "confirmed", teachingItemID = 4597 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 91920, 92110 },
+            routeKey = "item:4597",
+            status = "confirmed",
+            teachingItemID = 4597,
+          },
           {
             conditionsKnown = true,
             kind = "trainer",
@@ -13162,7 +13375,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:4624", status = "confirmed", teachingItemID = 4624 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 715 },
+            routeKey = "item:4624",
+            status = "confirmed",
+            teachingItemID = 4624,
+          },
         },
         spellID = 4942,
       },
@@ -13171,7 +13391,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:5083", status = "confirmed", teachingItemID = 5083 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 769 },
+            routeKey = "item:5083",
+            status = "confirmed",
+            teachingItemID = 5083,
+          },
         },
         spellID = 5244,
       },
@@ -13203,7 +13430,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:5482", status = "confirmed", teachingItemID = 5482 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 4161 },
+            routeKey = "item:5482",
+            status = "confirmed",
+            teachingItemID = 5482,
+          },
         },
         spellID = 6412,
       },
@@ -13239,7 +13473,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:5486", status = "confirmed", teachingItemID = 5486 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2178 },
+            routeKey = "item:5486",
+            status = "confirmed",
+            teachingItemID = 5486,
+          },
         },
         spellID = 6416,
       },
@@ -13248,7 +13489,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:5487", status = "confirmed", teachingItemID = 5487 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 862 },
+            routeKey = "item:5487",
+            status = "confirmed",
+            teachingItemID = 5487,
+          },
         },
         spellID = 6417,
       },
@@ -14682,7 +14930,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:6476", status = "confirmed", teachingItemID = 6476 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1487 },
+            routeKey = "item:6476",
+            status = "confirmed",
+            teachingItemID = 6476,
+          },
         },
         spellID = 7955,
       },
@@ -14709,7 +14964,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:6672", status = "confirmed", teachingItemID = 6672 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1559 },
+            routeKey = "item:6672",
+            status = "confirmed",
+            teachingItemID = 6672,
+          },
         },
         spellID = 8243,
       },
@@ -14718,7 +14980,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:6710", status = "confirmed", teachingItemID = 6710 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1582 },
+            routeKey = "item:6710",
+            status = "confirmed",
+            teachingItemID = 6710,
+          },
         },
         spellID = 8322,
       },
@@ -14759,7 +15028,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:6735", status = "confirmed", teachingItemID = 6735 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1618 },
+            routeKey = "item:6735",
+            status = "confirmed",
+            teachingItemID = 6735,
+          },
         },
         spellID = 8367,
       },
@@ -15819,7 +16095,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:18160", status = "confirmed", teachingItemID = 18160 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2359, 2478 },
+            routeKey = "item:18160",
+            status = "confirmed",
+            teachingItemID = 18160,
+          },
           { conditionsKnown = true, kind = "item", routeKey = "item:7678", status = "confirmed", teachingItemID = 7678 },
         },
         spellID = 9513,
@@ -15829,7 +16112,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7978", status = "confirmed", teachingItemID = 7978 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2752 },
+            routeKey = "item:7978",
+            status = "confirmed",
+            teachingItemID = 7978,
+          },
         },
         spellID = 9811,
       },
@@ -15838,7 +16128,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7979", status = "confirmed", teachingItemID = 7979 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2751 },
+            routeKey = "item:7979",
+            status = "confirmed",
+            teachingItemID = 7979,
+          },
         },
         spellID = 9813,
       },
@@ -15847,7 +16144,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7980", status = "confirmed", teachingItemID = 7980 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2754 },
+            routeKey = "item:7980",
+            status = "confirmed",
+            teachingItemID = 7980,
+          },
         },
         spellID = 9814,
       },
@@ -15856,7 +16160,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7981", status = "confirmed", teachingItemID = 7981 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2753 },
+            routeKey = "item:7981",
+            status = "confirmed",
+            teachingItemID = 7981,
+          },
         },
         spellID = 9818,
       },
@@ -15865,7 +16176,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7982", status = "confirmed", teachingItemID = 7982 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2755 },
+            routeKey = "item:7982",
+            status = "confirmed",
+            teachingItemID = 7982,
+          },
         },
         spellID = 9820,
       },
@@ -16069,7 +16387,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7983", status = "confirmed", teachingItemID = 7983 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2761 },
+            routeKey = "item:7983",
+            status = "confirmed",
+            teachingItemID = 7983,
+          },
         },
         spellID = 9945,
       },
@@ -16078,7 +16403,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7984", status = "confirmed", teachingItemID = 7984 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2762 },
+            routeKey = "item:7984",
+            status = "confirmed",
+            teachingItemID = 7984,
+          },
         },
         spellID = 9950,
       },
@@ -16087,7 +16419,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7985", status = "confirmed", teachingItemID = 7985 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2763 },
+            routeKey = "item:7985",
+            status = "confirmed",
+            teachingItemID = 7985,
+          },
         },
         spellID = 9952,
       },
@@ -16116,7 +16455,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:7994", status = "confirmed", teachingItemID = 7994 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2756 },
+            routeKey = "item:7994",
+            status = "confirmed",
+            teachingItemID = 7994,
+          },
         },
         spellID = 9957,
       },
@@ -16754,7 +17100,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:8403", status = "confirmed", teachingItemID = 8403 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2848, 2855 },
+            routeKey = "item:8403",
+            status = "confirmed",
+            teachingItemID = 8403,
+          },
         },
         spellID = 10529,
       },
@@ -16790,7 +17143,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:8404", status = "confirmed", teachingItemID = 8404 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2849, 2856, 82656, 82657 },
+            routeKey = "item:8404",
+            status = "confirmed",
+            teachingItemID = 8404,
+          },
         },
         spellID = 10544,
       },
@@ -16799,7 +17159,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:8405", status = "confirmed", teachingItemID = 8405 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2850, 2857 },
+            routeKey = "item:8405",
+            status = "confirmed",
+            teachingItemID = 8405,
+          },
         },
         spellID = 10546,
       },
@@ -16920,7 +17287,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:8406", status = "confirmed", teachingItemID = 8406 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2851, 2858 },
+            routeKey = "item:8406",
+            status = "confirmed",
+            teachingItemID = 8406,
+          },
         },
         spellID = 10566,
       },
@@ -16947,7 +17321,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:8407", status = "confirmed", teachingItemID = 8407 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2852, 2859 },
+            routeKey = "item:8407",
+            status = "confirmed",
+            teachingItemID = 8407,
+          },
         },
         spellID = 10572,
       },
@@ -16956,7 +17337,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:8408", status = "confirmed", teachingItemID = 8408 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2853, 2860 },
+            routeKey = "item:8408",
+            status = "confirmed",
+            teachingItemID = 8408,
+          },
         },
         spellID = 10574,
       },
@@ -17082,6 +17470,45 @@ ns.Data._loaders["sources"] = function()
           { conditionsKnown = true, kind = "item", routeKey = "item:16113", status = "confirmed", teachingItemID = 16113 },
         },
         spellID = 10840,
+      },
+      [10841] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "first-aid",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "trainer",
+            routeKey = "trainer",
+            status = "confirmed",
+            totalTrainerCount = 2,
+            trainers = {
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 6624 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 12939,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 6622 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 12920,
+              },
+            },
+          },
+        },
+        spellID = 10841,
       },
       [11341] = {
         coverage = "complete",
@@ -17312,6 +17739,21 @@ ns.Data._loaders["sources"] = function()
           },
         },
         spellID = 11451,
+      },
+      [11452] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "alchemy",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 2203 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 11452,
       },
       [11453] = {
         coverage = "complete",
@@ -17566,7 +18008,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:9367", status = "confirmed", teachingItemID = 9367 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 2758 },
+            routeKey = "item:9367",
+            status = "confirmed",
+            teachingItemID = 9367,
+          },
         },
         spellID = 11643,
       },
@@ -18140,7 +18589,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:10463", status = "confirmed", teachingItemID = 10463 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 3402 },
+            routeKey = "item:10463",
+            status = "confirmed",
+            teachingItemID = 10463,
+          },
         },
         spellID = 12086,
       },
@@ -19085,6 +19541,24 @@ ns.Data._loaders["sources"] = function()
           },
         },
         spellID = 13230,
+      },
+      [13240] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "engineering",
+        routes = {
+          {
+            conditions = {
+              { kind = "ability", spellID = 20222 },
+            },
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 3643 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 13240,
       },
       [13378] = {
         coverage = "complete",
@@ -20304,6 +20778,21 @@ ns.Data._loaders["sources"] = function()
         },
         spellID = 14810,
       },
+      [14891] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "mining",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 4083 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 14891,
+      },
       [14930] = {
         coverage = "complete",
         missingReasons = _E,
@@ -20708,7 +21197,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12687", status = "confirmed", teachingItemID = 12687 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7659 },
+            routeKey = "item:12687",
+            status = "confirmed",
+            teachingItemID = 12687,
+          },
         },
         spellID = 16646,
       },
@@ -20717,7 +21213,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12688", status = "confirmed", teachingItemID = 12688 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7653 },
+            routeKey = "item:12688",
+            status = "confirmed",
+            teachingItemID = 12688,
+          },
         },
         spellID = 16647,
       },
@@ -20735,7 +21238,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12690", status = "confirmed", teachingItemID = 12690 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7655 },
+            routeKey = "item:12690",
+            status = "confirmed",
+            teachingItemID = 12690,
+          },
         },
         spellID = 16649,
       },
@@ -20789,7 +21299,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12699", status = "confirmed", teachingItemID = 12699 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 5124 },
+            routeKey = "item:12699",
+            status = "confirmed",
+            teachingItemID = 12699,
+          },
         },
         spellID = 16655,
       },
@@ -20807,7 +21324,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12700", status = "confirmed", teachingItemID = 12700 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7654 },
+            routeKey = "item:12700",
+            status = "confirmed",
+            teachingItemID = 12700,
+          },
         },
         spellID = 16657,
       },
@@ -20816,7 +21340,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12701", status = "confirmed", teachingItemID = 12701 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7657 },
+            routeKey = "item:12701",
+            status = "confirmed",
+            teachingItemID = 12701,
+          },
         },
         spellID = 16658,
       },
@@ -20834,7 +21365,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12698", status = "confirmed", teachingItemID = 12698 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:12698",
+            status = "confirmed",
+            teachingItemID = 12698,
+          },
         },
         spellID = 16660,
       },
@@ -20861,7 +21401,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12705", status = "confirmed", teachingItemID = 12705 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7656 },
+            routeKey = "item:12705",
+            status = "confirmed",
+            teachingItemID = 12705,
+          },
         },
         spellID = 16663,
       },
@@ -20888,7 +21435,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12696", status = "confirmed", teachingItemID = 12696 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 5127 },
+            routeKey = "item:12696",
+            status = "confirmed",
+            teachingItemID = 12696,
+          },
         },
         spellID = 16667,
       },
@@ -20942,7 +21496,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12715", status = "confirmed", teachingItemID = 12715 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7658 },
+            routeKey = "item:12715",
+            status = "confirmed",
+            teachingItemID = 12715,
+          },
         },
         spellID = 16730,
       },
@@ -20979,7 +21540,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12725", status = "confirmed", teachingItemID = 12725 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7651 },
+            routeKey = "item:12725",
+            status = "confirmed",
+            teachingItemID = 12725,
+          },
         },
         spellID = 16742,
       },
@@ -20988,7 +21556,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12726", status = "confirmed", teachingItemID = 12726 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7650 },
+            routeKey = "item:12726",
+            status = "confirmed",
+            teachingItemID = 12726,
+          },
         },
         spellID = 16744,
       },
@@ -20997,7 +21572,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12727", status = "confirmed", teachingItemID = 12727 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7649 },
+            routeKey = "item:12727",
+            status = "confirmed",
+            teachingItemID = 12727,
+          },
         },
         spellID = 16745,
       },
@@ -21024,7 +21606,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12821", status = "confirmed", teachingItemID = 12821 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 5306 },
+            routeKey = "item:12821",
+            status = "confirmed",
+            teachingItemID = 12821,
+          },
         },
         spellID = 16970,
       },
@@ -21042,7 +21631,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12824", status = "confirmed", teachingItemID = 12824 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 5305, 8869 },
+            routeKey = "item:12824",
+            status = "confirmed",
+            teachingItemID = 12824,
+          },
         },
         spellID = 16973,
       },
@@ -21051,7 +21647,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:12825", status = "confirmed", teachingItemID = 12825 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 5307 },
+            routeKey = "item:12825",
+            status = "confirmed",
+            teachingItemID = 12825,
+          },
         },
         spellID = 16978,
       },
@@ -21260,7 +21863,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:13482", status = "confirmed", teachingItemID = 13482 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:13482",
+            status = "confirmed",
+            teachingItemID = 13482,
+          },
         },
         spellID = 17559,
       },
@@ -21278,7 +21890,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:13484", status = "confirmed", teachingItemID = 13484 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:13484",
+            status = "confirmed",
+            teachingItemID = 13484,
+          },
         },
         spellID = 17561,
       },
@@ -22015,6 +22636,84 @@ ns.Data._loaders["sources"] = function()
         },
         spellID = 18560,
       },
+      [18629] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "first-aid",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "trainer",
+            routeKey = "trainer",
+            status = "confirmed",
+            totalTrainerCount = 2,
+            trainers = {
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 6624 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 12939,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 6622 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 12920,
+              },
+            },
+          },
+        },
+        spellID = 18629,
+      },
+      [18630] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "first-aid",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "trainer",
+            routeKey = "trainer",
+            status = "confirmed",
+            totalTrainerCount = 2,
+            trainers = {
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 6624 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 12939,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 6622 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 12920,
+              },
+            },
+          },
+        },
+        spellID = 18630,
+      },
       [19047] = {
         coverage = "complete",
         missingReasons = _E,
@@ -22212,7 +22911,16 @@ ns.Data._loaders["sources"] = function()
         profession = "leatherworking",
         routes = {
           { conditionsKnown = true, kind = "item", routeKey = "item:15742", status = "confirmed", teachingItemID = 15742 },
-          { conditionsKnown = true, kind = "item", routeKey = "item:20253", status = "confirmed", teachingItemID = 20253 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20253",
+            status = "confirmed",
+            teachingItemID = 20253,
+          },
         },
         spellID = 19068,
       },
@@ -22311,7 +23019,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20254", status = "confirmed", teachingItemID = 20254 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20254",
+            status = "confirmed",
+            teachingItemID = 20254,
+          },
         },
         spellID = 19080,
       },
@@ -23120,7 +23837,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17017", status = "confirmed", teachingItemID = 17017 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17017",
+            status = "confirmed",
+            teachingItemID = 17017,
+          },
         },
         spellID = 20848,
       },
@@ -23129,7 +23855,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17018", status = "confirmed", teachingItemID = 17018 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17018",
+            status = "confirmed",
+            teachingItemID = 17018,
+          },
         },
         spellID = 20849,
       },
@@ -23138,7 +23873,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17022", status = "confirmed", teachingItemID = 17022 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17022",
+            status = "confirmed",
+            teachingItemID = 17022,
+          },
         },
         spellID = 20853,
       },
@@ -23147,7 +23891,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17023", status = "confirmed", teachingItemID = 17023 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17023",
+            status = "confirmed",
+            teachingItemID = 17023,
+          },
         },
         spellID = 20854,
       },
@@ -23156,7 +23909,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17025", status = "confirmed", teachingItemID = 17025 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17025",
+            status = "confirmed",
+            teachingItemID = 17025,
+          },
         },
         spellID = 20855,
       },
@@ -23165,7 +23927,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17049", status = "confirmed", teachingItemID = 17049 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17049",
+            status = "confirmed",
+            teachingItemID = 17049,
+          },
         },
         spellID = 20872,
       },
@@ -23174,7 +23945,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17053", status = "confirmed", teachingItemID = 17053 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17053",
+            status = "confirmed",
+            teachingItemID = 17053,
+          },
         },
         spellID = 20873,
       },
@@ -23183,7 +23963,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17051", status = "confirmed", teachingItemID = 17051 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17051",
+            status = "confirmed",
+            teachingItemID = 17051,
+          },
         },
         spellID = 20874,
       },
@@ -23192,7 +23981,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17052", status = "confirmed", teachingItemID = 17052 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17052",
+            status = "confirmed",
+            teachingItemID = 17052,
+          },
         },
         spellID = 20876,
       },
@@ -23201,7 +23999,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17059", status = "confirmed", teachingItemID = 17059 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17059",
+            status = "confirmed",
+            teachingItemID = 17059,
+          },
         },
         spellID = 20890,
       },
@@ -23210,7 +24017,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:17060", status = "confirmed", teachingItemID = 17060 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:17060",
+            status = "confirmed",
+            teachingItemID = 17060,
+          },
         },
         spellID = 20897,
       },
@@ -23246,7 +24062,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:18592", status = "confirmed", teachingItemID = 18592 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 7604 },
+            routeKey = "item:18592",
+            status = "confirmed",
+            teachingItemID = 18592,
+          },
         },
         spellID = 21161,
       },
@@ -23486,6 +24309,36 @@ ns.Data._loaders["sources"] = function()
         },
         spellID = 22808,
       },
+      [22813] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "tailoring",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 5518, 5519 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 22813,
+      },
+      [22815] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 5518, 5519 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 22815,
+      },
       [22866] = {
         coverage = "complete",
         missingReasons = _E,
@@ -23593,6 +24446,24 @@ ns.Data._loaders["sources"] = function()
           { conditionsKnown = true, kind = "item", routeKey = "item:18519", status = "confirmed", teachingItemID = 18519 },
         },
         spellID = 22928,
+      },
+      [22967] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "mining",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "trainer",
+            routeKey = "trainer",
+            status = "confirmed",
+            totalTrainerCount = 1,
+            trainers = {
+              { npcID = 14401 },
+            },
+          },
+        },
+        spellID = 22967,
       },
       [23066] = {
         coverage = "complete",
@@ -23762,7 +24633,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19202", status = "confirmed", teachingItemID = 19202 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19202",
+            status = "confirmed",
+            teachingItemID = 19202,
+          },
         },
         spellID = 23628,
       },
@@ -23771,7 +24651,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19204", status = "confirmed", teachingItemID = 19204 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19204",
+            status = "confirmed",
+            teachingItemID = 19204,
+          },
         },
         spellID = 23629,
       },
@@ -23780,7 +24669,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19203", status = "confirmed", teachingItemID = 19203 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19203",
+            status = "confirmed",
+            teachingItemID = 19203,
+          },
         },
         spellID = 23632,
       },
@@ -23789,7 +24687,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19205", status = "confirmed", teachingItemID = 19205 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19205",
+            status = "confirmed",
+            teachingItemID = 19205,
+          },
         },
         spellID = 23633,
       },
@@ -23798,7 +24705,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19206", status = "confirmed", teachingItemID = 19206 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19206",
+            status = "confirmed",
+            teachingItemID = 19206,
+          },
         },
         spellID = 23636,
       },
@@ -23807,7 +24723,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19207", status = "confirmed", teachingItemID = 19207 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19207",
+            status = "confirmed",
+            teachingItemID = 19207,
+          },
         },
         spellID = 23637,
       },
@@ -23816,7 +24741,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19208", status = "confirmed", teachingItemID = 19208 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19208",
+            status = "confirmed",
+            teachingItemID = 19208,
+          },
         },
         spellID = 23638,
       },
@@ -23825,7 +24759,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19209", status = "confirmed", teachingItemID = 19209 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19209",
+            status = "confirmed",
+            teachingItemID = 19209,
+          },
         },
         spellID = 23639,
       },
@@ -23834,7 +24777,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19210", status = "confirmed", teachingItemID = 19210 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19210",
+            status = "confirmed",
+            teachingItemID = 19210,
+          },
         },
         spellID = 23650,
       },
@@ -23843,7 +24795,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19211", status = "confirmed", teachingItemID = 19211 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19211",
+            status = "confirmed",
+            teachingItemID = 19211,
+          },
         },
         spellID = 23652,
       },
@@ -23852,7 +24813,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19212", status = "confirmed", teachingItemID = 19212 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19212",
+            status = "confirmed",
+            teachingItemID = 19212,
+          },
         },
         spellID = 23653,
       },
@@ -23861,7 +24831,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19215", status = "confirmed", teachingItemID = 19215 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19215",
+            status = "confirmed",
+            teachingItemID = 19215,
+          },
         },
         spellID = 23662,
       },
@@ -23870,7 +24849,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19218", status = "confirmed", teachingItemID = 19218 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19218",
+            status = "confirmed",
+            teachingItemID = 19218,
+          },
         },
         spellID = 23663,
       },
@@ -23879,8 +24867,26 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19216", status = "confirmed", teachingItemID = 19216 },
-          { conditionsKnown = true, kind = "item", routeKey = "item:227896", status = "confirmed", teachingItemID = 227896 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19216",
+            status = "confirmed",
+            teachingItemID = 19216,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:227896",
+            status = "confirmed",
+            teachingItemID = 227896,
+          },
         },
         spellID = 23664,
       },
@@ -23889,8 +24895,26 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19217", status = "confirmed", teachingItemID = 19217 },
-          { conditionsKnown = true, kind = "item", routeKey = "item:227897", status = "confirmed", teachingItemID = 227897 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19217",
+            status = "confirmed",
+            teachingItemID = 19217,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:227897",
+            status = "confirmed",
+            teachingItemID = 227897,
+          },
         },
         spellID = 23665,
       },
@@ -23899,7 +24923,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19219", status = "confirmed", teachingItemID = 19219 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19219",
+            status = "confirmed",
+            teachingItemID = 19219,
+          },
         },
         spellID = 23666,
       },
@@ -23908,7 +24941,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19220", status = "confirmed", teachingItemID = 19220 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19220",
+            status = "confirmed",
+            teachingItemID = 19220,
+          },
         },
         spellID = 23667,
       },
@@ -23917,7 +24959,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19326", status = "confirmed", teachingItemID = 19326 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19326",
+            status = "confirmed",
+            teachingItemID = 19326,
+          },
         },
         spellID = 23703,
       },
@@ -23926,7 +24977,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19327", status = "confirmed", teachingItemID = 19327 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19327",
+            status = "confirmed",
+            teachingItemID = 19327,
+          },
         },
         spellID = 23704,
       },
@@ -23935,7 +24995,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19328", status = "confirmed", teachingItemID = 19328 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19328",
+            status = "confirmed",
+            teachingItemID = 19328,
+          },
         },
         spellID = 23705,
       },
@@ -23944,8 +25013,26 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19329", status = "confirmed", teachingItemID = 19329 },
-          { conditionsKnown = true, kind = "item", routeKey = "item:227895", status = "confirmed", teachingItemID = 227895 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19329",
+            status = "confirmed",
+            teachingItemID = 19329,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:227895",
+            status = "confirmed",
+            teachingItemID = 227895,
+          },
         },
         spellID = 23706,
       },
@@ -23954,7 +25041,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19330", status = "confirmed", teachingItemID = 19330 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19330",
+            status = "confirmed",
+            teachingItemID = 19330,
+          },
         },
         spellID = 23707,
       },
@@ -23963,7 +25059,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19331", status = "confirmed", teachingItemID = 19331 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19331",
+            status = "confirmed",
+            teachingItemID = 19331,
+          },
         },
         spellID = 23708,
       },
@@ -23972,7 +25077,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19332", status = "confirmed", teachingItemID = 19332 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19332",
+            status = "confirmed",
+            teachingItemID = 19332,
+          },
         },
         spellID = 23709,
       },
@@ -23981,7 +25095,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19333", status = "confirmed", teachingItemID = 19333 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19333",
+            status = "confirmed",
+            teachingItemID = 19333,
+          },
         },
         spellID = 23710,
       },
@@ -23990,7 +25113,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "first-aid",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19442", status = "confirmed", teachingItemID = 19442 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19442",
+            status = "confirmed",
+            teachingItemID = 19442,
+          },
         },
         spellID = 23787,
       },
@@ -23999,7 +25131,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19444", status = "confirmed", teachingItemID = 19444 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19444",
+            status = "confirmed",
+            teachingItemID = 19444,
+          },
         },
         spellID = 23799,
       },
@@ -24008,7 +25149,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19445", status = "confirmed", teachingItemID = 19445 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19445",
+            status = "confirmed",
+            teachingItemID = 19445,
+          },
         },
         spellID = 23800,
       },
@@ -24017,7 +25167,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19446", status = "confirmed", teachingItemID = 19446 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19446",
+            status = "confirmed",
+            teachingItemID = 19446,
+          },
         },
         spellID = 23801,
       },
@@ -24026,7 +25185,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19447", status = "confirmed", teachingItemID = 19447 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19447",
+            status = "confirmed",
+            teachingItemID = 19447,
+          },
         },
         spellID = 23802,
       },
@@ -24035,7 +25203,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19448", status = "confirmed", teachingItemID = 19448 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19448",
+            status = "confirmed",
+            teachingItemID = 19448,
+          },
         },
         spellID = 23803,
       },
@@ -24044,7 +25221,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19449", status = "confirmed", teachingItemID = 19449 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19449",
+            status = "confirmed",
+            teachingItemID = 19449,
+          },
         },
         spellID = 23804,
       },
@@ -24053,7 +25239,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19764", status = "confirmed", teachingItemID = 19764 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19764",
+            status = "confirmed",
+            teachingItemID = 19764,
+          },
         },
         spellID = 24091,
       },
@@ -24062,7 +25257,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19765", status = "confirmed", teachingItemID = 19765 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19765",
+            status = "confirmed",
+            teachingItemID = 19765,
+          },
         },
         spellID = 24092,
       },
@@ -24071,7 +25275,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19766", status = "confirmed", teachingItemID = 19766 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19766",
+            status = "confirmed",
+            teachingItemID = 19766,
+          },
         },
         spellID = 24093,
       },
@@ -24080,7 +25293,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19769", status = "confirmed", teachingItemID = 19769 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19769",
+            status = "confirmed",
+            teachingItemID = 19769,
+          },
         },
         spellID = 24121,
       },
@@ -24089,7 +25311,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19770", status = "confirmed", teachingItemID = 19770 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19770",
+            status = "confirmed",
+            teachingItemID = 19770,
+          },
         },
         spellID = 24122,
       },
@@ -24098,7 +25329,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19771", status = "confirmed", teachingItemID = 19771 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19771",
+            status = "confirmed",
+            teachingItemID = 19771,
+          },
         },
         spellID = 24123,
       },
@@ -24107,7 +25347,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19772", status = "confirmed", teachingItemID = 19772 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19772",
+            status = "confirmed",
+            teachingItemID = 19772,
+          },
         },
         spellID = 24124,
       },
@@ -24116,7 +25365,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19773", status = "confirmed", teachingItemID = 19773 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19773",
+            status = "confirmed",
+            teachingItemID = 19773,
+          },
         },
         spellID = 24125,
       },
@@ -24125,7 +25383,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19776", status = "confirmed", teachingItemID = 19776 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19776",
+            status = "confirmed",
+            teachingItemID = 19776,
+          },
         },
         spellID = 24136,
       },
@@ -24134,7 +25401,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19777", status = "confirmed", teachingItemID = 19777 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19777",
+            status = "confirmed",
+            teachingItemID = 19777,
+          },
         },
         spellID = 24137,
       },
@@ -24143,7 +25419,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19778", status = "confirmed", teachingItemID = 19778 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19778",
+            status = "confirmed",
+            teachingItemID = 19778,
+          },
         },
         spellID = 24138,
       },
@@ -24152,7 +25437,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19779", status = "confirmed", teachingItemID = 19779 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19779",
+            status = "confirmed",
+            teachingItemID = 19779,
+          },
         },
         spellID = 24139,
       },
@@ -24161,7 +25455,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19780", status = "confirmed", teachingItemID = 19780 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19780",
+            status = "confirmed",
+            teachingItemID = 19780,
+          },
         },
         spellID = 24140,
       },
@@ -24170,7 +25473,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:19781", status = "confirmed", teachingItemID = 19781 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:19781",
+            status = "confirmed",
+            teachingItemID = 19781,
+          },
         },
         spellID = 24141,
       },
@@ -24179,7 +25491,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20000", status = "confirmed", teachingItemID = 20000 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20000",
+            status = "confirmed",
+            teachingItemID = 20000,
+          },
         },
         spellID = 24356,
       },
@@ -24188,7 +25509,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20001", status = "confirmed", teachingItemID = 20001 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20001",
+            status = "confirmed",
+            teachingItemID = 20001,
+          },
         },
         spellID = 24357,
       },
@@ -24197,7 +25527,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20011", status = "confirmed", teachingItemID = 20011 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20011",
+            status = "confirmed",
+            teachingItemID = 20011,
+          },
         },
         spellID = 24365,
       },
@@ -24206,7 +25545,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20012", status = "confirmed", teachingItemID = 20012 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20012",
+            status = "confirmed",
+            teachingItemID = 20012,
+          },
         },
         spellID = 24366,
       },
@@ -24215,7 +25563,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20013", status = "confirmed", teachingItemID = 20013 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20013",
+            status = "confirmed",
+            teachingItemID = 20013,
+          },
         },
         spellID = 24367,
       },
@@ -24224,7 +25581,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20014", status = "confirmed", teachingItemID = 20014 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20014",
+            status = "confirmed",
+            teachingItemID = 20014,
+          },
         },
         spellID = 24368,
       },
@@ -24233,7 +25599,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20040", status = "confirmed", teachingItemID = 20040 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20040",
+            status = "confirmed",
+            teachingItemID = 20040,
+          },
         },
         spellID = 24399,
       },
@@ -24421,8 +25796,26 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20732", status = "confirmed", teachingItemID = 20732 },
-          { conditionsKnown = true, kind = "item", routeKey = "item:229008", status = "confirmed", teachingItemID = 229008 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20732",
+            status = "confirmed",
+            teachingItemID = 20732,
+          },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:229008",
+            status = "confirmed",
+            teachingItemID = 229008,
+          },
         },
         spellID = 25081,
       },
@@ -24431,8 +25824,26 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20733", status = "confirmed", teachingItemID = 20733 },
-          { conditionsKnown = true, kind = "item", routeKey = "item:229009", status = "confirmed", teachingItemID = 229009 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20733",
+            status = "confirmed",
+            teachingItemID = 20733,
+          },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:229009",
+            status = "confirmed",
+            teachingItemID = 229009,
+          },
         },
         spellID = 25082,
       },
@@ -24513,7 +25924,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20756", status = "confirmed", teachingItemID = 20756 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20756",
+            status = "confirmed",
+            teachingItemID = 20756,
+          },
         },
         spellID = 25129,
       },
@@ -24522,7 +25942,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20757", status = "confirmed", teachingItemID = 20757 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20757",
+            status = "confirmed",
+            teachingItemID = 20757,
+          },
         },
         spellID = 25130,
       },
@@ -24531,7 +25960,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:20761", status = "confirmed", teachingItemID = 20761 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:20761",
+            status = "confirmed",
+            teachingItemID = 20761,
+          },
         },
         spellID = 25146,
       },
@@ -24540,7 +25978,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:21025", status = "confirmed", teachingItemID = 21025 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 8586 },
+            routeKey = "item:21025",
+            status = "confirmed",
+            teachingItemID = 21025,
+          },
         },
         spellID = 25659,
       },
@@ -24618,7 +26063,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:21722", status = "confirmed", teachingItemID = 21722 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 8878 },
+            routeKey = "item:21722",
+            status = "confirmed",
+            teachingItemID = 21722,
+          },
         },
         spellID = 26403,
       },
@@ -24627,7 +26079,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:21723", status = "confirmed", teachingItemID = 21723 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 8878 },
+            routeKey = "item:21723",
+            status = "confirmed",
+            teachingItemID = 21723,
+          },
         },
         spellID = 26407,
       },
@@ -24744,7 +26203,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:21738", status = "confirmed", teachingItemID = 21738 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 8877 },
+            routeKey = "item:21738",
+            status = "confirmed",
+            teachingItemID = 21738,
+          },
         },
         spellID = 26442,
       },
@@ -24753,7 +26219,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:21737", status = "confirmed", teachingItemID = 21737 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 8882 },
+            routeKey = "item:21737",
+            status = "confirmed",
+            teachingItemID = 21737,
+          },
         },
         spellID = 26443,
       },
@@ -24762,7 +26235,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22219", status = "confirmed", teachingItemID = 22219 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22219",
+            status = "confirmed",
+            teachingItemID = 22219,
+          },
         },
         spellID = 27586,
       },
@@ -24789,7 +26271,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22221", status = "confirmed", teachingItemID = 22221 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22221",
+            status = "confirmed",
+            teachingItemID = 22221,
+          },
         },
         spellID = 27590,
       },
@@ -24825,7 +26316,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22310", status = "confirmed", teachingItemID = 22310 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22310",
+            status = "confirmed",
+            teachingItemID = 22310,
+          },
         },
         spellID = 27724,
       },
@@ -24834,7 +26334,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22312", status = "confirmed", teachingItemID = 22312 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22312",
+            status = "confirmed",
+            teachingItemID = 22312,
+          },
         },
         spellID = 27725,
       },
@@ -24870,25 +26379,203 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22392", status = "confirmed", teachingItemID = 22392 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22392",
+            status = "confirmed",
+            teachingItemID = 22392,
+          },
         },
         spellID = 27837,
+      },
+      [28205] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "tailoring",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9239 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28205,
+      },
+      [28207] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "tailoring",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9240 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28207,
+      },
+      [28208] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "tailoring",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9237 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28208,
+      },
+      [28209] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "tailoring",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9238 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28209,
       },
       [28210] = {
         coverage = "complete",
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22683", status = "confirmed", teachingItemID = 22683 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22683",
+            status = "confirmed",
+            teachingItemID = 22683,
+          },
         },
         spellID = 28210,
+      },
+      [28219] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9243 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28219,
+      },
+      [28220] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9242 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28220,
+      },
+      [28221] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9241 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28221,
+      },
+      [28222] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9246 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28222,
+      },
+      [28223] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9245 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28223,
+      },
+      [28224] = {
+        coverage = "complete",
+        missingReasons = _E,
+        profession = "leatherworking",
+        routes = {
+          {
+            conditionsKnown = true,
+            kind = "quest",
+            questIDs = { 9244 },
+            routeKey = "quest",
+            status = "confirmed",
+          },
+        },
+        spellID = 28224,
       },
       [28242] = {
         coverage = "complete",
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22703", status = "confirmed", teachingItemID = 22703 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 8 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 9236 },
+            routeKey = "item:22703",
+            status = "confirmed",
+            teachingItemID = 22703,
+          },
         },
         spellID = 28242,
       },
@@ -24897,7 +26584,17 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22704", status = "confirmed", teachingItemID = 22704 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 9234 },
+            routeKey = "item:22704",
+            status = "confirmed",
+            teachingItemID = 22704,
+          },
         },
         spellID = 28243,
       },
@@ -24906,7 +26603,17 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22705", status = "confirmed", teachingItemID = 22705 },
+          {
+            conditions = {
+              { factionID = 749, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 9235 },
+            routeKey = "item:22705",
+            status = "confirmed",
+            teachingItemID = 22705,
+          },
         },
         spellID = 28244,
       },
@@ -24915,7 +26622,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22729", status = "confirmed", teachingItemID = 22729 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 9249 },
+            routeKey = "item:22729",
+            status = "confirmed",
+            teachingItemID = 22729,
+          },
         },
         spellID = 28327,
       },
@@ -24924,7 +26638,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22774", status = "confirmed", teachingItemID = 22774 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22774",
+            status = "confirmed",
+            teachingItemID = 22774,
+          },
         },
         spellID = 28480,
       },
@@ -24933,7 +26656,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22773", status = "confirmed", teachingItemID = 22773 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22773",
+            status = "confirmed",
+            teachingItemID = 22773,
+          },
         },
         spellID = 28481,
       },
@@ -24942,7 +26674,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:22772", status = "confirmed", teachingItemID = 22772 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:22772",
+            status = "confirmed",
+            teachingItemID = 22772,
+          },
         },
         spellID = 28482,
       },
@@ -25366,7 +27107,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:236754", status = "confirmed", teachingItemID = 236754 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 86927 },
+            routeKey = "item:236754",
+            status = "confirmed",
+            teachingItemID = 236754,
+          },
         },
         spellID = 1244421,
       },
@@ -25462,7 +27210,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "first-aid",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:255729", status = "confirmed", teachingItemID = 255729 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 96622 },
+            routeKey = "item:255729",
+            status = "confirmed",
+            teachingItemID = 255729,
+          },
         },
         spellID = 1244436,
       },
@@ -25610,7 +27365,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "enchanting",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:249486", status = "confirmed", teachingItemID = 249486 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92755 },
+            routeKey = "item:249486",
+            status = "confirmed",
+            teachingItemID = 249486,
+          },
         },
         spellID = 1248460,
       },
@@ -26331,7 +28093,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:250179", status = "confirmed", teachingItemID = 250179 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92433, 97119 },
+            routeKey = "item:250179",
+            status = "confirmed",
+            teachingItemID = 250179,
+          },
         },
         spellID = 1250148,
       },
@@ -26385,7 +28154,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:250185", status = "confirmed", teachingItemID = 250185 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 95697 },
+            routeKey = "item:250185",
+            status = "confirmed",
+            teachingItemID = 250185,
+          },
         },
         spellID = 1250154,
       },
@@ -26700,7 +28476,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:250979", status = "confirmed", teachingItemID = 250979 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92754 },
+            routeKey = "item:250979",
+            status = "confirmed",
+            teachingItemID = 250979,
+          },
         },
         spellID = 1251732,
       },
@@ -26754,7 +28537,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:250985", status = "confirmed", teachingItemID = 250985 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92754 },
+            routeKey = "item:250985",
+            status = "confirmed",
+            teachingItemID = 250985,
+          },
         },
         spellID = 1251738,
       },
@@ -26878,7 +28668,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "alchemy",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:250999", status = "confirmed", teachingItemID = 250999 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 89013, 91608 },
+            routeKey = "item:250999",
+            status = "confirmed",
+            teachingItemID = 250999,
+          },
         },
         spellID = 1251753,
       },
@@ -27409,7 +29206,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:251390", status = "confirmed", teachingItemID = 251390 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92818 },
+            routeKey = "item:251390",
+            status = "confirmed",
+            teachingItemID = 251390,
+          },
         },
         spellID = 1252287,
       },
@@ -28096,7 +29900,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:251458", status = "confirmed", teachingItemID = 251458 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92818 },
+            routeKey = "item:251458",
+            status = "confirmed",
+            teachingItemID = 251458,
+          },
         },
         spellID = 1252355,
       },
@@ -28114,7 +29925,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:251460", status = "confirmed", teachingItemID = 251460 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 96026 },
+            routeKey = "item:251460",
+            status = "confirmed",
+            teachingItemID = 251460,
+          },
         },
         spellID = 1252357,
       },
@@ -28186,7 +30004,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:251468", status = "confirmed", teachingItemID = 251468 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92189 },
+            routeKey = "item:251468",
+            status = "confirmed",
+            teachingItemID = 251468,
+          },
         },
         spellID = 1252365,
       },
@@ -28195,7 +30020,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:251469", status = "confirmed", teachingItemID = 251469 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:251469",
+            status = "confirmed",
+            teachingItemID = 251469,
+          },
         },
         spellID = 1252366,
       },
@@ -28204,7 +30038,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:251470", status = "confirmed", teachingItemID = 251470 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:251470",
+            status = "confirmed",
+            teachingItemID = 251470,
+          },
         },
         spellID = 1252367,
       },
@@ -28312,7 +30155,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:252933", status = "confirmed", teachingItemID = 252933 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 90854 },
+            routeKey = "item:252933",
+            status = "confirmed",
+            teachingItemID = 252933,
+          },
         },
         spellID = 1254974,
       },
@@ -28762,7 +30612,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:252883", status = "confirmed", teachingItemID = 252883 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92817 },
+            routeKey = "item:252883",
+            status = "confirmed",
+            teachingItemID = 252883,
+          },
         },
         spellID = 1255024,
       },
@@ -28816,7 +30673,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:252877", status = "confirmed", teachingItemID = 252877 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 90854 },
+            routeKey = "item:252877",
+            status = "confirmed",
+            teachingItemID = 252877,
+          },
         },
         spellID = 1255030,
       },
@@ -29203,7 +31067,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:252833", status = "confirmed", teachingItemID = 252833 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92817 },
+            routeKey = "item:252833",
+            status = "confirmed",
+            teachingItemID = 252833,
+          },
         },
         spellID = 1255074,
       },
@@ -30451,7 +32322,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:253974", status = "confirmed", teachingItemID = 253974 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92814 },
+            routeKey = "item:253974",
+            status = "confirmed",
+            teachingItemID = 253974,
+          },
         },
         spellID = 1257412,
       },
@@ -31216,7 +33094,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:254124", status = "confirmed", teachingItemID = 254124 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 95769 },
+            routeKey = "item:254124",
+            status = "confirmed",
+            teachingItemID = 254124,
+          },
         },
         spellID = 1257487,
       },
@@ -31347,7 +33232,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "first-aid",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:255731", status = "confirmed", teachingItemID = 255731 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 86812 },
+            routeKey = "item:255731",
+            status = "confirmed",
+            teachingItemID = 255731,
+          },
         },
         spellID = 1259345,
       },
@@ -31895,7 +33787,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:264233", status = "confirmed", teachingItemID = 264233 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 91564 },
+            routeKey = "item:264233",
+            status = "confirmed",
+            teachingItemID = 264233,
+          },
         },
         spellID = 1266936,
       },
@@ -31967,7 +33866,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:263511", status = "confirmed", teachingItemID = 263511 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92553 },
+            routeKey = "item:263511",
+            status = "confirmed",
+            teachingItemID = 263511,
+          },
         },
         spellID = 1270633,
       },
@@ -31976,7 +33882,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:263513", status = "confirmed", teachingItemID = 263513 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 93317 },
+            routeKey = "item:263513",
+            status = "confirmed",
+            teachingItemID = 263513,
+          },
         },
         spellID = 1270635,
       },
@@ -31994,7 +33907,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:269901", status = "confirmed", teachingItemID = 269901 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1371 },
+            routeKey = "item:269901",
+            status = "confirmed",
+            teachingItemID = 269901,
+          },
         },
         spellID = 1286792,
       },
@@ -32003,7 +33923,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:269903", status = "confirmed", teachingItemID = 269903 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 1371 },
+            routeKey = "item:269903",
+            status = "confirmed",
+            teachingItemID = 269903,
+          },
         },
         spellID = 1286796,
       },
@@ -32714,7 +34641,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:274972", status = "confirmed", teachingItemID = 274972 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 95121 },
+            routeKey = "item:274972",
+            status = "confirmed",
+            teachingItemID = 274972,
+          },
         },
         spellID = 1295805,
       },
@@ -32723,7 +34657,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "cooking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:274977", status = "confirmed", teachingItemID = 274977 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 95162 },
+            routeKey = "item:274977",
+            status = "confirmed",
+            teachingItemID = 274977,
+          },
         },
         spellID = 1295834,
       },
@@ -32732,7 +34673,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275580", status = "confirmed", teachingItemID = 275580 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275580",
+            status = "confirmed",
+            teachingItemID = 275580,
+          },
         },
         spellID = 1297120,
       },
@@ -32741,7 +34691,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275581", status = "confirmed", teachingItemID = 275581 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275581",
+            status = "confirmed",
+            teachingItemID = 275581,
+          },
         },
         spellID = 1297121,
       },
@@ -32750,7 +34709,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275582", status = "confirmed", teachingItemID = 275582 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275582",
+            status = "confirmed",
+            teachingItemID = 275582,
+          },
         },
         spellID = 1297122,
       },
@@ -32759,7 +34727,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275583", status = "confirmed", teachingItemID = 275583 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275583",
+            status = "confirmed",
+            teachingItemID = 275583,
+          },
         },
         spellID = 1297123,
       },
@@ -32768,7 +34745,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275584", status = "confirmed", teachingItemID = 275584 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275584",
+            status = "confirmed",
+            teachingItemID = 275584,
+          },
         },
         spellID = 1297124,
       },
@@ -32777,7 +34763,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275585", status = "confirmed", teachingItemID = 275585 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275585",
+            status = "confirmed",
+            teachingItemID = 275585,
+          },
         },
         spellID = 1297125,
       },
@@ -32786,7 +34781,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275586", status = "confirmed", teachingItemID = 275586 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275586",
+            status = "confirmed",
+            teachingItemID = 275586,
+          },
         },
         spellID = 1297126,
       },
@@ -32795,7 +34799,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275587", status = "confirmed", teachingItemID = 275587 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275587",
+            status = "confirmed",
+            teachingItemID = 275587,
+          },
         },
         spellID = 1297127,
       },
@@ -32804,7 +34817,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275588", status = "confirmed", teachingItemID = 275588 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275588",
+            status = "confirmed",
+            teachingItemID = 275588,
+          },
         },
         spellID = 1297128,
       },
@@ -32813,7 +34835,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275589", status = "confirmed", teachingItemID = 275589 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275589",
+            status = "confirmed",
+            teachingItemID = 275589,
+          },
         },
         spellID = 1297129,
       },
@@ -32822,7 +34853,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275590", status = "confirmed", teachingItemID = 275590 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275590",
+            status = "confirmed",
+            teachingItemID = 275590,
+          },
         },
         spellID = 1297130,
       },
@@ -32831,7 +34871,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275591", status = "confirmed", teachingItemID = 275591 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275591",
+            status = "confirmed",
+            teachingItemID = 275591,
+          },
         },
         spellID = 1297131,
       },
@@ -32840,7 +34889,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275592", status = "confirmed", teachingItemID = 275592 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275592",
+            status = "confirmed",
+            teachingItemID = 275592,
+          },
         },
         spellID = 1297132,
       },
@@ -32849,7 +34907,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275593", status = "confirmed", teachingItemID = 275593 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275593",
+            status = "confirmed",
+            teachingItemID = 275593,
+          },
         },
         spellID = 1297133,
       },
@@ -32858,7 +34925,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275594", status = "confirmed", teachingItemID = 275594 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275594",
+            status = "confirmed",
+            teachingItemID = 275594,
+          },
         },
         spellID = 1297134,
       },
@@ -32867,7 +34943,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275595", status = "confirmed", teachingItemID = 275595 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275595",
+            status = "confirmed",
+            teachingItemID = 275595,
+          },
         },
         spellID = 1297135,
       },
@@ -32876,7 +34961,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275596", status = "confirmed", teachingItemID = 275596 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275596",
+            status = "confirmed",
+            teachingItemID = 275596,
+          },
         },
         spellID = 1297136,
       },
@@ -32885,7 +34979,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275597", status = "confirmed", teachingItemID = 275597 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275597",
+            status = "confirmed",
+            teachingItemID = 275597,
+          },
         },
         spellID = 1297137,
       },
@@ -32894,7 +34997,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275598", status = "confirmed", teachingItemID = 275598 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275598",
+            status = "confirmed",
+            teachingItemID = 275598,
+          },
         },
         spellID = 1297138,
       },
@@ -32903,7 +35015,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275599", status = "confirmed", teachingItemID = 275599 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275599",
+            status = "confirmed",
+            teachingItemID = 275599,
+          },
         },
         spellID = 1297139,
       },
@@ -32912,7 +35033,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275600", status = "confirmed", teachingItemID = 275600 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275600",
+            status = "confirmed",
+            teachingItemID = 275600,
+          },
         },
         spellID = 1297140,
       },
@@ -32921,7 +35051,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275601", status = "confirmed", teachingItemID = 275601 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275601",
+            status = "confirmed",
+            teachingItemID = 275601,
+          },
         },
         spellID = 1297141,
       },
@@ -32930,7 +35069,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275602", status = "confirmed", teachingItemID = 275602 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275602",
+            status = "confirmed",
+            teachingItemID = 275602,
+          },
         },
         spellID = 1297142,
       },
@@ -32939,7 +35087,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:275603", status = "confirmed", teachingItemID = 275603 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:275603",
+            status = "confirmed",
+            teachingItemID = 275603,
+          },
         },
         spellID = 1297143,
       },
@@ -32984,7 +35141,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276928", status = "confirmed", teachingItemID = 276928 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276928",
+            status = "confirmed",
+            teachingItemID = 276928,
+          },
         },
         spellID = 1301421,
       },
@@ -32993,7 +35159,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276929", status = "confirmed", teachingItemID = 276929 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276929",
+            status = "confirmed",
+            teachingItemID = 276929,
+          },
         },
         spellID = 1301422,
       },
@@ -33002,7 +35177,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276930", status = "confirmed", teachingItemID = 276930 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276930",
+            status = "confirmed",
+            teachingItemID = 276930,
+          },
         },
         spellID = 1301423,
       },
@@ -33011,7 +35195,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276931", status = "confirmed", teachingItemID = 276931 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276931",
+            status = "confirmed",
+            teachingItemID = 276931,
+          },
         },
         spellID = 1301424,
       },
@@ -33020,7 +35213,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276932", status = "confirmed", teachingItemID = 276932 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276932",
+            status = "confirmed",
+            teachingItemID = 276932,
+          },
         },
         spellID = 1301425,
       },
@@ -33029,7 +35231,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276933", status = "confirmed", teachingItemID = 276933 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276933",
+            status = "confirmed",
+            teachingItemID = 276933,
+          },
         },
         spellID = 1301426,
       },
@@ -33038,7 +35249,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276934", status = "confirmed", teachingItemID = 276934 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276934",
+            status = "confirmed",
+            teachingItemID = 276934,
+          },
         },
         spellID = 1301427,
       },
@@ -33047,7 +35267,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276935", status = "confirmed", teachingItemID = 276935 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276935",
+            status = "confirmed",
+            teachingItemID = 276935,
+          },
         },
         spellID = 1301428,
       },
@@ -33056,7 +35285,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276936", status = "confirmed", teachingItemID = 276936 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276936",
+            status = "confirmed",
+            teachingItemID = 276936,
+          },
         },
         spellID = 1301429,
       },
@@ -33065,7 +35303,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276937", status = "confirmed", teachingItemID = 276937 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276937",
+            status = "confirmed",
+            teachingItemID = 276937,
+          },
         },
         spellID = 1301430,
       },
@@ -33074,7 +35321,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276938", status = "confirmed", teachingItemID = 276938 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276938",
+            status = "confirmed",
+            teachingItemID = 276938,
+          },
         },
         spellID = 1301431,
       },
@@ -33083,7 +35339,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276939", status = "confirmed", teachingItemID = 276939 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276939",
+            status = "confirmed",
+            teachingItemID = 276939,
+          },
         },
         spellID = 1301432,
       },
@@ -33092,7 +35357,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276940", status = "confirmed", teachingItemID = 276940 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276940",
+            status = "confirmed",
+            teachingItemID = 276940,
+          },
         },
         spellID = 1301433,
       },
@@ -33101,7 +35375,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276941", status = "confirmed", teachingItemID = 276941 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276941",
+            status = "confirmed",
+            teachingItemID = 276941,
+          },
         },
         spellID = 1301434,
       },
@@ -33110,7 +35393,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276942", status = "confirmed", teachingItemID = 276942 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276942",
+            status = "confirmed",
+            teachingItemID = 276942,
+          },
         },
         spellID = 1301435,
       },
@@ -33119,7 +35411,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276943", status = "confirmed", teachingItemID = 276943 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276943",
+            status = "confirmed",
+            teachingItemID = 276943,
+          },
         },
         spellID = 1301436,
       },
@@ -33128,7 +35429,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276944", status = "confirmed", teachingItemID = 276944 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276944",
+            status = "confirmed",
+            teachingItemID = 276944,
+          },
         },
         spellID = 1301437,
       },
@@ -33137,7 +35447,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276945", status = "confirmed", teachingItemID = 276945 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276945",
+            status = "confirmed",
+            teachingItemID = 276945,
+          },
         },
         spellID = 1301438,
       },
@@ -33146,7 +35465,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276946", status = "confirmed", teachingItemID = 276946 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276946",
+            status = "confirmed",
+            teachingItemID = 276946,
+          },
         },
         spellID = 1301439,
       },
@@ -33155,7 +35483,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276947", status = "confirmed", teachingItemID = 276947 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276947",
+            status = "confirmed",
+            teachingItemID = 276947,
+          },
         },
         spellID = 1301440,
       },
@@ -33164,7 +35501,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276948", status = "confirmed", teachingItemID = 276948 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276948",
+            status = "confirmed",
+            teachingItemID = 276948,
+          },
         },
         spellID = 1301441,
       },
@@ -33173,7 +35519,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276949", status = "confirmed", teachingItemID = 276949 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276949",
+            status = "confirmed",
+            teachingItemID = 276949,
+          },
         },
         spellID = 1301442,
       },
@@ -33182,7 +35537,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276950", status = "confirmed", teachingItemID = 276950 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276950",
+            status = "confirmed",
+            teachingItemID = 276950,
+          },
         },
         spellID = 1301443,
       },
@@ -33191,7 +35555,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276951", status = "confirmed", teachingItemID = 276951 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276951",
+            status = "confirmed",
+            teachingItemID = 276951,
+          },
         },
         spellID = 1301444,
       },
@@ -33200,7 +35573,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276952", status = "confirmed", teachingItemID = 276952 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276952",
+            status = "confirmed",
+            teachingItemID = 276952,
+          },
         },
         spellID = 1301445,
       },
@@ -33209,7 +35591,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276953", status = "confirmed", teachingItemID = 276953 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276953",
+            status = "confirmed",
+            teachingItemID = 276953,
+          },
         },
         spellID = 1301446,
       },
@@ -33218,7 +35609,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276954", status = "confirmed", teachingItemID = 276954 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276954",
+            status = "confirmed",
+            teachingItemID = 276954,
+          },
         },
         spellID = 1301447,
       },
@@ -33227,7 +35627,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276955", status = "confirmed", teachingItemID = 276955 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276955",
+            status = "confirmed",
+            teachingItemID = 276955,
+          },
         },
         spellID = 1301448,
       },
@@ -33236,7 +35645,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276956", status = "confirmed", teachingItemID = 276956 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276956",
+            status = "confirmed",
+            teachingItemID = 276956,
+          },
         },
         spellID = 1301449,
       },
@@ -33245,7 +35663,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276957", status = "confirmed", teachingItemID = 276957 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276957",
+            status = "confirmed",
+            teachingItemID = 276957,
+          },
         },
         spellID = 1301450,
       },
@@ -33254,7 +35681,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276958", status = "confirmed", teachingItemID = 276958 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276958",
+            status = "confirmed",
+            teachingItemID = 276958,
+          },
         },
         spellID = 1301451,
       },
@@ -33263,7 +35699,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276959", status = "confirmed", teachingItemID = 276959 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276959",
+            status = "confirmed",
+            teachingItemID = 276959,
+          },
         },
         spellID = 1301452,
       },
@@ -33272,7 +35717,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276960", status = "confirmed", teachingItemID = 276960 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276960",
+            status = "confirmed",
+            teachingItemID = 276960,
+          },
         },
         spellID = 1301453,
       },
@@ -33281,7 +35735,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276961", status = "confirmed", teachingItemID = 276961 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276961",
+            status = "confirmed",
+            teachingItemID = 276961,
+          },
         },
         spellID = 1301454,
       },
@@ -33290,7 +35753,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276962", status = "confirmed", teachingItemID = 276962 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276962",
+            status = "confirmed",
+            teachingItemID = 276962,
+          },
         },
         spellID = 1301455,
       },
@@ -33299,7 +35771,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276963", status = "confirmed", teachingItemID = 276963 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276963",
+            status = "confirmed",
+            teachingItemID = 276963,
+          },
         },
         spellID = 1301456,
       },
@@ -33308,7 +35789,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276964", status = "confirmed", teachingItemID = 276964 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276964",
+            status = "confirmed",
+            teachingItemID = 276964,
+          },
         },
         spellID = 1301457,
       },
@@ -33317,7 +35807,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276965", status = "confirmed", teachingItemID = 276965 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276965",
+            status = "confirmed",
+            teachingItemID = 276965,
+          },
         },
         spellID = 1301458,
       },
@@ -33326,7 +35825,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276966", status = "confirmed", teachingItemID = 276966 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276966",
+            status = "confirmed",
+            teachingItemID = 276966,
+          },
         },
         spellID = 1301459,
       },
@@ -33335,7 +35843,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276967", status = "confirmed", teachingItemID = 276967 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276967",
+            status = "confirmed",
+            teachingItemID = 276967,
+          },
         },
         spellID = 1301460,
       },
@@ -33344,7 +35861,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276968", status = "confirmed", teachingItemID = 276968 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276968",
+            status = "confirmed",
+            teachingItemID = 276968,
+          },
         },
         spellID = 1301461,
       },
@@ -33353,7 +35879,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276969", status = "confirmed", teachingItemID = 276969 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276969",
+            status = "confirmed",
+            teachingItemID = 276969,
+          },
         },
         spellID = 1301462,
       },
@@ -33362,7 +35897,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276970", status = "confirmed", teachingItemID = 276970 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276970",
+            status = "confirmed",
+            teachingItemID = 276970,
+          },
         },
         spellID = 1301463,
       },
@@ -33371,7 +35915,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276971", status = "confirmed", teachingItemID = 276971 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276971",
+            status = "confirmed",
+            teachingItemID = 276971,
+          },
         },
         spellID = 1301464,
       },
@@ -33380,7 +35933,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276972", status = "confirmed", teachingItemID = 276972 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276972",
+            status = "confirmed",
+            teachingItemID = 276972,
+          },
         },
         spellID = 1301465,
       },
@@ -33389,7 +35951,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276973", status = "confirmed", teachingItemID = 276973 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276973",
+            status = "confirmed",
+            teachingItemID = 276973,
+          },
         },
         spellID = 1301466,
       },
@@ -33398,7 +35969,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276974", status = "confirmed", teachingItemID = 276974 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276974",
+            status = "confirmed",
+            teachingItemID = 276974,
+          },
         },
         spellID = 1301468,
       },
@@ -33407,7 +35987,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276975", status = "confirmed", teachingItemID = 276975 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276975",
+            status = "confirmed",
+            teachingItemID = 276975,
+          },
         },
         spellID = 1301469,
       },
@@ -33416,7 +36005,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276976", status = "confirmed", teachingItemID = 276976 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276976",
+            status = "confirmed",
+            teachingItemID = 276976,
+          },
         },
         spellID = 1301526,
       },
@@ -33425,7 +36023,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276977", status = "confirmed", teachingItemID = 276977 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276977",
+            status = "confirmed",
+            teachingItemID = 276977,
+          },
         },
         spellID = 1301527,
       },
@@ -33434,7 +36041,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276978", status = "confirmed", teachingItemID = 276978 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276978",
+            status = "confirmed",
+            teachingItemID = 276978,
+          },
         },
         spellID = 1301528,
       },
@@ -33443,7 +36059,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276979", status = "confirmed", teachingItemID = 276979 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276979",
+            status = "confirmed",
+            teachingItemID = 276979,
+          },
         },
         spellID = 1301529,
       },
@@ -33452,7 +36077,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276980", status = "confirmed", teachingItemID = 276980 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276980",
+            status = "confirmed",
+            teachingItemID = 276980,
+          },
         },
         spellID = 1301530,
       },
@@ -33461,7 +36095,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276981", status = "confirmed", teachingItemID = 276981 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276981",
+            status = "confirmed",
+            teachingItemID = 276981,
+          },
         },
         spellID = 1301531,
       },
@@ -33470,7 +36113,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276982", status = "confirmed", teachingItemID = 276982 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276982",
+            status = "confirmed",
+            teachingItemID = 276982,
+          },
         },
         spellID = 1301532,
       },
@@ -33479,7 +36131,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276983", status = "confirmed", teachingItemID = 276983 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276983",
+            status = "confirmed",
+            teachingItemID = 276983,
+          },
         },
         spellID = 1301533,
       },
@@ -33488,7 +36149,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276984", status = "confirmed", teachingItemID = 276984 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276984",
+            status = "confirmed",
+            teachingItemID = 276984,
+          },
         },
         spellID = 1301534,
       },
@@ -33497,7 +36167,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276985", status = "confirmed", teachingItemID = 276985 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276985",
+            status = "confirmed",
+            teachingItemID = 276985,
+          },
         },
         spellID = 1301535,
       },
@@ -33506,7 +36185,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276986", status = "confirmed", teachingItemID = 276986 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276986",
+            status = "confirmed",
+            teachingItemID = 276986,
+          },
         },
         spellID = 1301536,
       },
@@ -33515,7 +36203,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276987", status = "confirmed", teachingItemID = 276987 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276987",
+            status = "confirmed",
+            teachingItemID = 276987,
+          },
         },
         spellID = 1301537,
       },
@@ -33524,7 +36221,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276988", status = "confirmed", teachingItemID = 276988 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276988",
+            status = "confirmed",
+            teachingItemID = 276988,
+          },
         },
         spellID = 1301538,
       },
@@ -33533,7 +36239,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276989", status = "confirmed", teachingItemID = 276989 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276989",
+            status = "confirmed",
+            teachingItemID = 276989,
+          },
         },
         spellID = 1301539,
       },
@@ -33542,7 +36257,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276990", status = "confirmed", teachingItemID = 276990 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276990",
+            status = "confirmed",
+            teachingItemID = 276990,
+          },
         },
         spellID = 1301540,
       },
@@ -33551,7 +36275,16 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "tailoring",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:276991", status = "confirmed", teachingItemID = 276991 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            conditionsKnown = true,
+            kind = "item",
+            routeKey = "item:276991",
+            status = "confirmed",
+            teachingItemID = 276991,
+          },
         },
         spellID = 1301541,
       },
@@ -33560,7 +36293,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "engineering",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:277470", status = "confirmed", teachingItemID = 277470 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 92911 },
+            routeKey = "item:277470",
+            status = "confirmed",
+            teachingItemID = 277470,
+          },
         },
         spellID = 1302161,
       },
@@ -33569,7 +36309,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "blacksmithing",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:277673", status = "confirmed", teachingItemID = 277673 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 95217, 96874 },
+            routeKey = "item:277673",
+            status = "confirmed",
+            teachingItemID = 277673,
+          },
         },
         spellID = 1302598,
       },
@@ -33578,7 +36325,14 @@ ns.Data._loaders["sources"] = function()
         missingReasons = _E,
         profession = "leatherworking",
         routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:277716", status = "confirmed", teachingItemID = 277716 },
+          {
+            conditionsKnown = true,
+            kind = "item",
+            questIDs = { 96875 },
+            routeKey = "item:277716",
+            status = "confirmed",
+            teachingItemID = 277716,
+          },
         },
         spellID = 1302604,
       },
@@ -35995,9 +38749,30 @@ ns.Data._loaders["sources"] = function()
       },
       [12698] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 23157 },
-          { maxStock = -1, npcID = 10857, priceCopper = 24750 },
-          { maxStock = -1, npcID = 11536, priceCopper = 24750 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 23157,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 24750,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 24750,
+          },
         },
       },
       [12703] = {
@@ -36102,9 +38877,30 @@ ns.Data._loaders["sources"] = function()
       },
       [13482] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 15882 },
-          { maxStock = -1, npcID = 10857, priceCopper = 15882 },
-          { maxStock = -1, npcID = 11536, priceCopper = 14294 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 15882,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 15882,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 14294,
+          },
         },
       },
       [13483] = {
@@ -36114,7 +38910,14 @@ ns.Data._loaders["sources"] = function()
       },
       [13484] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 14210 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 14210,
+          },
         },
       },
       [13485] = {
@@ -36553,27 +39356,62 @@ ns.Data._loaders["sources"] = function()
       },
       [17017] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 190588 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 190588,
+          },
         },
       },
       [17018] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 84705 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 84705,
+          },
         },
       },
       [17022] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 158823 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 158823,
+          },
         },
       },
       [17023] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 169411 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 169411,
+          },
         },
       },
       [17025] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 169411 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 169411,
+          },
         },
       },
       [17034] = {
@@ -36600,32 +39438,74 @@ ns.Data._loaders["sources"] = function()
       },
       [17049] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 95294,
+          },
         },
       },
       [17051] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 74117 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 74117,
+          },
         },
       },
       [17052] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 190588 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 190588,
+          },
         },
       },
       [17053] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 211764 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 211764,
+          },
         },
       },
       [17059] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 232941 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 232941,
+          },
         },
       },
       [17060] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 232941 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 232941,
+          },
         },
       },
       [17062] = {
@@ -36796,285 +39676,782 @@ ns.Data._loaders["sources"] = function()
       },
       [19202] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 20842 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 20842,
+          },
         },
       },
       [19203] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 20964 },
-          { maxStock = -1, npcID = 10857, priceCopper = 20964 },
-          { maxStock = -1, npcID = 11536, priceCopper = 20964 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 20964,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 20964,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 20964,
+          },
         },
       },
       [19204] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 37894 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 37894,
+          },
         },
       },
       [19205] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 38117 },
-          { maxStock = -1, npcID = 10857, priceCopper = 38117 },
-          { maxStock = -1, npcID = 11536, priceCopper = 38117 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 38117,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 38117,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 38117,
+          },
         },
       },
       [19206] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 63529 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 63529,
+          },
         },
       },
       [19207] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 84705 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 84705,
+          },
         },
       },
       [19208] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 74117 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 74117,
+          },
         },
       },
       [19209] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 74117 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 74117,
+          },
         },
       },
       [19210] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 108000 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 108000,
+          },
         },
       },
       [19211] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 135000 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 135000,
+          },
         },
       },
       [19212] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 135000 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 135000,
+          },
         },
       },
       [19215] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 20842 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 20842,
+          },
         },
       },
       [19216] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 20964 },
-          { maxStock = -1, npcID = 10857, priceCopper = 20964 },
-          { maxStock = -1, npcID = 11536, priceCopper = 20964 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 20964,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 20964,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 20964,
+          },
         },
       },
       [19217] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 38117 },
-          { maxStock = -1, npcID = 10857, priceCopper = 38117 },
-          { maxStock = -1, npcID = 11536, priceCopper = 38117 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 38117,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 38117,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 38117,
+          },
         },
       },
       [19218] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 37894 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 37894,
+          },
         },
       },
       [19219] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 63529 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 63529,
+          },
         },
       },
       [19220] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 95294,
+          },
         },
       },
       [19326] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 20842 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 20842,
+          },
         },
       },
       [19327] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 37894 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 37894,
+          },
         },
       },
       [19328] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 20964 },
-          { maxStock = -1, npcID = 10857, priceCopper = 20964 },
-          { maxStock = -1, npcID = 11536, priceCopper = 20964 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 20964,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 20964,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 20964,
+          },
         },
       },
       [19329] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 38117 },
-          { maxStock = -1, npcID = 10857, priceCopper = 38117 },
-          { maxStock = -1, npcID = 11536, priceCopper = 38117 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 38117,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 38117,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 38117,
+          },
         },
       },
       [19330] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 63529 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 63529,
+          },
         },
       },
       [19331] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 95294,
+          },
         },
       },
       [19332] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 95294,
+          },
         },
       },
       [19333] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 95294,
+          },
         },
       },
       [19442] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 95294 },
-          { maxStock = -1, npcID = 10857, priceCopper = 95294 },
-          { maxStock = -1, npcID = 11536, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 95294,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 95294,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 95294,
+          },
         },
       },
       [19444] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 31764 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 31764,
+          },
         },
       },
       [19445] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 28421 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 28421,
+          },
         },
       },
       [19446] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 28588 },
-          { maxStock = -1, npcID = 10857, priceCopper = 28588 },
-          { maxStock = -1, npcID = 11536, priceCopper = 28588 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 28588,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 28588,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 28588,
+          },
         },
       },
       [19447] = {
         offers = {
-          { maxStock = -1, npcID = 10856, priceCopper = 57176 },
-          { maxStock = -1, npcID = 10857, priceCopper = 57176 },
-          { maxStock = -1, npcID = 11536, priceCopper = 57176 },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10856,
+            priceCopper = 57176,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 10857,
+            priceCopper = 57176,
+          },
+          {
+            conditions = {
+              { factionID = 529, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11536,
+            priceCopper = 57176,
+          },
         },
       },
       [19448] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 84705 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 84705,
+          },
         },
       },
       [19449] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 105882 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 105882,
+          },
         },
       },
       [19764] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 52941,
+          },
         },
       },
       [19765] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19766] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19769] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19770] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 52941,
+          },
         },
       },
       [19771] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19772] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19773] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19776] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19777] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 50000 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 50000,
+          },
         },
       },
       [19778] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19779] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [19780] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 52941,
+          },
         },
       },
       [19781] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 52941,
+          },
         },
       },
       [20000] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 135000 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 135000,
+          },
         },
       },
       [20001] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [20011] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [20012] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [20013] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 8 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 56250,
+          },
         },
       },
       [20014] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 52941,
+          },
         },
       },
       [20040] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 90000 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 8 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 90000,
+          },
         },
       },
       [20075] = {
@@ -37084,12 +40461,26 @@ ns.Data._loaders["sources"] = function()
       },
       [20253] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 15157 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 15157,
+          },
         },
       },
       [20254] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 18947 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 18947,
+          },
         },
       },
       [20576] = {
@@ -37099,12 +40490,26 @@ ns.Data._loaders["sources"] = function()
       },
       [20732] = {
         offers = {
-          { maxStock = -1, npcID = 15419, priceCopper = 90000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15419,
+            priceCopper = 90000,
+          },
         },
       },
       [20733] = {
         offers = {
-          { maxStock = -1, npcID = 15419, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15419,
+            priceCopper = 105263,
+          },
         },
       },
       [20752] = {
@@ -37143,12 +40548,26 @@ ns.Data._loaders["sources"] = function()
       },
       [20756] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 45000 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 45000,
+          },
         },
       },
       [20757] = {
         offers = {
-          { maxStock = -1, npcID = 14921, priceCopper = 45000 },
+          {
+            conditions = {
+              { factionID = 270, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 14921,
+            priceCopper = 45000,
+          },
         },
       },
       [20758] = {
@@ -37164,7 +40583,14 @@ ns.Data._loaders["sources"] = function()
       },
       [20761] = {
         offers = {
-          { maxStock = 1, npcID = 12944, priceCopper = 127058 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = 1,
+            npcID = 12944,
+            priceCopper = 127058,
+          },
         },
       },
       [21099] = {
@@ -37197,12 +40623,26 @@ ns.Data._loaders["sources"] = function()
       },
       [22219] = {
         offers = {
-          { maxStock = 1, npcID = 15471, priceCopper = 44444 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = 1,
+            npcID = 15471,
+            priceCopper = 44444,
+          },
         },
       },
       [22221] = {
         offers = {
-          { maxStock = 1, npcID = 15471, priceCopper = 71111 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 8 },
+            },
+            maxStock = 1,
+            npcID = 15471,
+            priceCopper = 71111,
+          },
         },
       },
       [22307] = {
@@ -37224,22 +40664,50 @@ ns.Data._loaders["sources"] = function()
       },
       [22310] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 21176 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 21176,
+          },
         },
       },
       [22312] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 56250 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 56250,
+          },
         },
       },
       [22392] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 23684 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 23684,
+          },
         },
       },
       [22683] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 95294 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 95294,
+          },
         },
       },
       [22729] = {
@@ -37256,17 +40724,38 @@ ns.Data._loaders["sources"] = function()
       },
       [22772] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 52941,
+          },
         },
       },
       [22773] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 52941,
+          },
         },
       },
       [22774] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 52941 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 52941,
+          },
         },
       },
       [221336] = {
@@ -37309,12 +40798,26 @@ ns.Data._loaders["sources"] = function()
       },
       [229008] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 112500 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 112500,
+          },
         },
       },
       [229009] = {
         offers = {
-          { maxStock = -1, npcID = 12944, priceCopper = 112500 },
+          {
+            conditions = {
+              { factionID = 59, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 12944,
+            priceCopper = 112500,
+          },
         },
       },
       [247786] = {
@@ -40092,12 +43595,26 @@ ns.Data._loaders["sources"] = function()
       },
       [251469] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 94736,
+          },
         },
       },
       [251470] = {
         offers = {
-          { maxStock = -1, npcID = 11557, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 576, kind = "reputation", minStanding = 7 },
+            },
+            maxStock = -1,
+            npcID = 11557,
+            priceCopper = 94736,
+          },
         },
       },
       [251471] = {
@@ -43276,6 +46793,9 @@ ns.Data._loaders["sources"] = function()
       [262764] = {
         offers = {
           {
+            conditions = {
+              { factionID = 2587, kind = "reputation", minStanding = 8 },
+            },
             currencies = {
               { amount = 200, currencyID = 3402 },
             },
@@ -43288,6 +46808,9 @@ ns.Data._loaders["sources"] = function()
       [262765] = {
         offers = {
           {
+            conditions = {
+              { factionID = 2586, kind = "reputation", minStanding = 8 },
+            },
             currencies = {
               { amount = 200, currencyID = 3402 },
             },
@@ -43819,6 +47342,9 @@ ns.Data._loaders["sources"] = function()
       [270887] = {
         offers = {
           {
+            conditions = {
+              { factionID = 2587, kind = "reputation", minStanding = 6 },
+            },
             currencies = {
               { amount = 1200, currencyID = 3402 },
             },
@@ -43831,6 +47357,9 @@ ns.Data._loaders["sources"] = function()
       [270888] = {
         offers = {
           {
+            conditions = {
+              { factionID = 2586, kind = "reputation", minStanding = 6 },
+            },
             currencies = {
               { amount = 1200, currencyID = 3402 },
             },
@@ -44924,122 +48453,290 @@ ns.Data._loaders["sources"] = function()
       },
       [275580] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 67500,
+          },
         },
       },
       [275581] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 67500,
+          },
         },
       },
       [275582] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 67500,
+          },
         },
       },
       [275583] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 67500,
+          },
         },
       },
       [275584] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 67500,
+          },
         },
       },
       [275585] = {
         offers = {
-          { maxStock = -1, npcID = 15179, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15179,
+            priceCopper = 67500,
+          },
         },
       },
       [275586] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275587] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275588] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275589] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275590] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275591] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275592] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275593] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275594] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275595] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275596] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275597] = {
         offers = {
-          { maxStock = -1, npcID = 15293, priceCopper = 75000 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15293,
+            priceCopper = 75000,
+          },
         },
       },
       [275598] = {
         offers = {
-          { maxStock = -1, npcID = 15176, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15176,
+            priceCopper = 67500,
+          },
         },
       },
       [275599] = {
         offers = {
-          { maxStock = -1, npcID = 15176, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15176,
+            priceCopper = 67500,
+          },
         },
       },
       [275600] = {
         offers = {
-          { maxStock = -1, npcID = 15176, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15176,
+            priceCopper = 67500,
+          },
         },
       },
       [275601] = {
         offers = {
-          { maxStock = -1, npcID = 15176, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 15176,
+            priceCopper = 67500,
+          },
         },
       },
       [275602] = {
         offers = {
-          { maxStock = -1, npcID = 15176, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15176,
+            priceCopper = 67500,
+          },
         },
       },
       [275603] = {
         offers = {
-          { maxStock = -1, npcID = 15176, priceCopper = 67500 },
+          {
+            conditions = {
+              { factionID = 609, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 15176,
+            priceCopper = 67500,
+          },
         },
       },
       [276542] = {
@@ -45092,322 +48789,770 @@ ns.Data._loaders["sources"] = function()
       },
       [276928] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276929] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276930] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276931] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276932] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276933] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276934] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276935] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276936] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276937] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276938] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276939] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276940] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276941] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276942] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276943] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276944] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276945] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276946] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276947] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276948] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276949] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276950] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276951] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276952] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276953] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276954] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276955] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276956] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276957] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276958] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276959] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276960] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276961] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276962] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276963] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276964] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276965] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276966] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276967] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276968] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276969] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276970] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276971] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276972] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276973] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 855 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 855,
+          },
         },
       },
       [276974] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 1125 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 6 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 1125,
+          },
         },
       },
       [276975] = {
         offers = {
-          { maxStock = -1, npcID = 254151, priceCopper = 990 },
+          {
+            conditions = {
+              { factionID = 2758, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 254151,
+            priceCopper = 990,
+          },
         },
       },
       [276976] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276977] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276978] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276979] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276980] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276981] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276982] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276983] = {
         offers = {
-          { maxStock = -1, npcID = 264078, priceCopper = 94736 },
+          {
+            conditions = {
+              { factionID = 2787, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 264078,
+            priceCopper = 94736,
+          },
         },
       },
       [276984] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276985] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276986] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276987] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276988] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276989] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276990] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [276991] = {
         offers = {
-          { maxStock = -1, npcID = 32287, priceCopper = 105263 },
+          {
+            conditions = {
+              { factionID = 2740, kind = "reputation", minStanding = 5 },
+            },
+            maxStock = -1,
+            npcID = 32287,
+            priceCopper = 105263,
+          },
         },
       },
       [277716] = {
