@@ -170,7 +170,9 @@ local function raMod()
   return getRA()
 end
 
-local PD = {}
+local PD = (type(ns.ProfModule) == "table" and ns.ProfModule)
+  or (type(gns) == "table" and type(gns.ProfModule) == "table" and gns.ProfModule)
+  or {}
 ns.ProfModule = PD
 if type(gns) == "table" and gns ~= ns then
   gns.ProfModule = PD
@@ -1351,30 +1353,33 @@ function PD.CurPriceText(curID, amount)
     curID, amount = tonumber(curID) or 0, tonumber(amount) or 0
     local name, icon
     local ds = getDS()
-    if ds and ds.Currency then
-        local curMeta = ds.Currency(curID)
-        if curMeta and curMeta.icon then icon = curMeta.icon end
-    end
     if ds and ds.RawText then
         name = ds.RawText("currency", curID)
     end
     if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
         local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, curID)
         if ok and type(info) == "table" then
-            name, icon = name or info.name, icon or info.iconFileID
+            name = name or info.name
+            if type(info.iconFileID) == "number" and info.iconFileID > 0 then
+                icon = info.iconFileID
+            end
         end
+    end
+    if not icon and ds and ds.Currency then
+        local curMeta = ds.Currency(curID)
+        if curMeta and curMeta.icon then icon = curMeta.icon end
     end
     if not name and curID ~= PD.FAVOR_CURID then
         local raw = ds and ds.RawText and ds.RawText("item", curID)
         local dg = getDG()
         if type(raw) == "string" and raw ~= "" then
             name = raw
-            if dg and dg.ItemIcon then icon = dg.ItemIcon(curID) end
+            icon = PD.ItemIcon(curID)
         elseif dg and dg.ItemName then
             local inm, got = dg.ItemName(curID)
             if got and inm then
                 name = inm
-                if dg.ItemIcon then icon = dg.ItemIcon(curID) end
+                icon = PD.ItemIcon(curID)
             end
         end
     end
@@ -1968,30 +1973,34 @@ function PD.ItemIcon(id)
     local hit = _icPos[id]
     if hit ~= nil then return hit end
     if _icNeg[id] then return FALLBACK_ICON end
+    local function isBlankIcon(t)
+        return not t or t == "" or t == 0 or t == 134400 or t == FALLBACK_ICON
+    end
     local tex
     local d = getDG()
     if type(d) == "table" and type(d.ItemIcon) == "function" then
         tex = d.ItemIcon(id)
     end
-    if (not tex or tex == FALLBACK_ICON) and type(_G.C_Item) == "table" and type(_G.C_Item.GetItemIconByID) == "function" then
+    if isBlankIcon(tex) and type(_G.C_Item) == "table" and type(_G.C_Item.GetItemIconByID) == "function" then
         local ok, t = pcall(_G.C_Item.GetItemIconByID, id)
-        if ok and t and t ~= "" then tex = t end
+        if ok and not isBlankIcon(t) then tex = t end
     end
-    if not tex or tex == FALLBACK_ICON then
+    if isBlankIcon(tex) then
         local DS = getDS()
         local item = DS and type(DS.Item) == "function" and DS.Item(id) or nil
         local ic = type(item) == "table" and item.icon or nil
-        if type(ic) == "number" and ic > 0 then
+        if type(ic) == "number" and ic > 0 and ic ~= 134400 then
             tex = ic
         elseif type(ic) == "string" and ic ~= "" then
             if ic:match("^%d+$") then
-                tex = tonumber(ic)
+                local n = tonumber(ic)
+                if n and n > 0 and n ~= 134400 then tex = n end
             else
                 tex = ic:find("[/\\]") and ic or ("Interface\\Icons\\" .. ic)
             end
         end
     end
-    tex = tex or FALLBACK_ICON
+    if isBlankIcon(tex) then tex = FALLBACK_ICON end
     if tex ~= FALLBACK_ICON then
         if _icPosN >= PD_MEMO_POS_CAP then _icPos, _icPosN = {}, 0 end
         _icPos[id], _icPosN = tex, _icPosN + 1
@@ -2152,18 +2161,26 @@ local function MarkSec(rows, a, b, n)
     end
 end
 
-PD.cur = nil
-PD.tab = "overview"
-PD.campView = "a"
-PD.autoPage = "route"
-PD.shopGroup = false
-PD.toolKey = nil
-PD.moneyKey = nil
-PD.perkOpen = {}
-PD.rows, PD.toolBtns = {}, {}
-PD.specs = nil
-PD.fold = {}
-PD.fishAreaOpen = {}
+if not PD.built then
+    PD.cur = nil
+    PD.tab = "overview"
+    PD.campView = "a"
+    PD.autoPage = "route"
+    PD.shopGroup = false
+    PD.toolKey = nil
+    PD.moneyKey = nil
+    PD.perkOpen = {}
+    PD.rows, PD.toolBtns = {}, {}
+    PD.specs = nil
+    PD.fold = {}
+    PD.fishAreaOpen = {}
+else
+    PD.perkOpen = PD.perkOpen or {}
+    PD.rows = PD.rows or {}
+    PD.toolBtns = PD.toolBtns or {}
+    PD.fold = PD.fold or {}
+    PD.fishAreaOpen = PD.fishAreaOpen or {}
+end
 
 function PD.FoldOn(key)
     return (key and PD.fold[key]) and true or false
@@ -4282,7 +4299,7 @@ function PD.BindRow(r, spec, h)
                 c.nm:SetWidth(math.max(1, cw - nx - 8))
                 if d.it then
                     c.ic:SetSize(22, 22)
-                    SetIcon(c.ic, DG.ItemIcon(d.it))
+                    SetIcon(c.ic, PD.ItemIcon(d.it))
                     if getHui() and getHui().SetIconRing then
                         local vq = PD.QualCached(d.it)
                         getHui().SetIconRing(c.ic, vq and getHui().QColor and { getHui().QColor(vq) } or nil)
@@ -4338,7 +4355,7 @@ function PD.BindRow(r, spec, h)
             if d.it then
                 c.ic:Show()
                 c.ic:SetSize(24, 24)
-                SetIcon(c.ic, DG.ItemIcon(d.it))
+                SetIcon(c.ic, PD.ItemIcon(d.it))
                 if getHui() and getHui().SetIconRing then
                     local vq2 = PD.QualCached(d.it)
                     getHui().SetIconRing(c.ic, vq2 and getHui().QColor and { getHui().QColor(vq2) } or nil)
@@ -4400,7 +4417,7 @@ function PD.BindRow(r, spec, h)
                     else
                         g:SetPoint("RIGHT", r.gic[k - 1], "LEFT", -4, 0)
                     end
-                    SetIcon(g, DG.ItemIcon(id))
+                    SetIcon(g, PD.ItemIcon(id))
                     if getHui() and getHui().SetIconRing then
                         local gq2 = PD.QualCached(id)
                         getHui().SetIconRing(g, gq2 and getHui().QColor and { getHui().QColor(gq2) } or nil)
@@ -9196,11 +9213,8 @@ end
 
 function PD.MatIconTex(id, px)
     px = px or 14
-    local ic = PD.ItemIcon(id)
-    if type(ic) == "number" then
-        return format("|T%d:%d:%d|t", ic, px, px)
-    end
-    return format("|TInterface\\Icons\\%s:%d:%d|t", tostring(ic or FALLBACK_ICON), px, px)
+    local ic = PD.NormTexIcon(PD.ItemIcon(id) or FALLBACK_ICON) or FALLBACK_ICON
+    return format("|T%s:%d:%d|t", ic, px, px)
 end
 
 function PD.MatCol(list, fs, budget)
@@ -11038,7 +11052,7 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     for k = n, 1, -1 do
         local blk = blocks[k]
         local b = PD.RowBlk(r, k)
-        SetIcon(b.ic, DG.ItemIcon(blk.id))
+        SetIcon(b.ic, PD.ItemIcon(blk.id))
         b.ic:SetDesaturated(grey and true or false)
         if getHui() and getHui().SetIconRing then
             local bq = PD.QualCached(blk.id)
@@ -11246,11 +11260,19 @@ function PD.FormulaCostText(offer)
     elseif curID > 0 then
         local ds = getDS()
         local name = ds and ds.RawText and ds.RawText("currency", curID)
-        local curMeta = ds and ds.Currency and ds.Currency(curID)
-        local icon = curMeta and curMeta.icon
+        local icon
         if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
             local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, curID)
-            if ok and type(info) == "table" then name, icon = name or info.name, icon or info.iconFileID end
+            if ok and type(info) == "table" then
+                name = name or info.name
+                if type(info.iconFileID) == "number" and info.iconFileID > 0 then
+                    icon = info.iconFileID
+                end
+            end
+        end
+        if not icon then
+            local curMeta = ds and ds.Currency and ds.Currency(curID)
+            icon = curMeta and curMeta.icon
         end
         if not name then name = format(L["通货 #%d"], curID) end
         local amt = tonumber(offer.currencyAmount) or 0
@@ -12111,12 +12133,29 @@ function PD.EnchantSpec(en)
     if hasVendor then
         dpre, dval, dname, dcost = PD.VendorSrcLine(src, learningItem)
         dact = PD.VendorAct(src)
-        vlines = PD.VendorLines(src, learningItem)
+        vlines = (learningCard and learningCard.lines) or PD.VendorLines(src, learningItem, learningCard and learningCard.routeConds)
+    elseif learningCard and learningCard.kind == "drop" then
+        dpre, dval, dname = PD.DropSrcLine(src)
+        dact = PD.DropAct(src)
+        vlines = learningCard.lines or PD.DropLines(src)
     elseif #drEn > 0 then
-        dpre = base
-        dval = format(L["掉落 %d 处"], #drEn)
+        dpre, dval, dname = PD.DropSrcLine(src)
         dact = PD.DropAct(src)
         vlines = PD.DropLines(src)
+    elseif learningCard and learningCard.kind == "quest" then
+        local qtxt = PD.QuestShortText(learningCard.quests)
+        if qtxt then
+            dpre, dval, dname = (learningItem and (L["图纸·任务"] .. ":") or (L["任务"] .. ":")), qtxt, qtxt
+        end
+        vlines = learningCard.lines
+    elseif learningCard and learningCard.kind == "extra" then
+        local epre, eval = PD.ExtraSrcShortText(learningCard.extraSources)
+        if epre and eval then
+            dpre, dval, dname = epre, eval, eval
+        end
+        vlines = learningCard.lines
+    elseif learningCard and (learningCard.kind == "crafted" or learningCard.kind == "auto") then
+        vlines = learningCard.lines
     end
     local enchStation = isV2 and PD.StationLabel(en.stationKey, en.profession or PD.cur, true) or nil
     local titleName = (isV2 and (SpellName(spell) or ("#" .. tostring(spell)))) or en[2] or en[1] or "?"
@@ -12133,8 +12172,9 @@ function PD.EnchantSpec(en)
     end
     return {
         kind = "row", is_new = isV2 and en.isNew or en[11], _mats = mats, spell = tonumber(spell),
+        it = outItem and { outItem } or nil,
         disp = PD.SpellTitle(spell),
-        icon = SpellIcon(spell),
+        icon = (not outItem) and SpellIcon(spell) or nil,
         qItem = learningItem or outItem,
         text = titleName,
         sub = table.concat(PD.UniqList({ slotLabel, effectShort, enchStation }), " · "),
@@ -12323,11 +12363,6 @@ end
 
 function PD.CurrencyOf(curID)
     if type(curID) ~= "number" or curID <= 0 then return nil end
-    local ds = getDS()
-    local dnm = ds and ds.RawText and ds.RawText("currency", curID)
-    local dcur = ds and ds.Currency and ds.Currency(curID)
-    local dic = dcur and dcur.icon
-    if dnm and dnm ~= "" then return dnm, dic end
     local cache = PD.__curCache
     if not cache then cache = {} PD.__curCache = cache end
     local hit = cache[curID]
@@ -12335,13 +12370,18 @@ function PD.CurrencyOf(curID)
         if hit == false then return nil end
         return hit[1], hit[2]
     end
+    local ds = getDS()
+    local dnm = ds and ds.RawText and ds.RawText("currency", curID)
+    local dcur = ds and ds.Currency and ds.Currency(curID)
+    local dic = dcur and dcur.icon
     local r = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(curID)
-    local nm = type(r) == "table" and r.name or nil
+    local nm = (type(dnm) == "string" and dnm ~= "" and dnm) or (type(r) == "table" and r.name) or nil
     if type(nm) ~= "string" or nm == "" then
         cache[curID] = false
         return nil
     end
-    local icon = (type(r.iconFileID) == "number" and r.iconFileID > 0 and r.iconFileID) or dic
+    local icon = (type(r) == "table" and type(r.iconFileID) == "number" and r.iconFileID > 0 and r.iconFileID)
+        or PD.NormTexIcon(dic)
     cache[curID] = { nm, icon }
     return nm, icon
 end
@@ -12565,8 +12605,9 @@ function PD.VendorBlockLines(lines, itemID)
             if cnm then
                 isCur = true
                 ptxt = tostring(o.amt)
-                if cicon then
-                    ptxt = ptxt .. " |T" .. cicon .. ":12:12:0:0:64:64:4:60:4:60|t"
+                local texCurIcon = PD.NormTexIcon(cicon)
+                if texCurIcon then
+                    ptxt = ptxt .. " |T" .. texCurIcon .. ":12:12:0:0:64:64:4:60:4:60|t"
                 end
                 ptxt = ptxt .. " " .. cnm
             else
@@ -13492,6 +13533,7 @@ function PD.CurCounts(d)
 end
 
 PD.__curName = {}
+PD.__curCache = nil
 
 function PD.CurName(id)
     local m = PD.__curName
@@ -13989,6 +14031,17 @@ function PD.RecipeList(limit, q)
             coroutine.yield()
         end
     end
+    if #enchants > 0 and (not fk) and #out < cap then
+        for _, e in ipairs(enchants) do
+            if PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                local sp = PD.EnchantSpec(e)
+                if (not q) or PD.SearchHit(sp, q) then
+                    out[#out + 1] = sp
+                    if #out >= cap then break end
+                end
+            end
+        end
+    end
     if #scrolls > 0 and #out < cap then
         local want = (fk and fk ~= "all" and fk ~= "__rest") and tostring(fk) or nil
         for _, sc in ipairs(scrolls) do
@@ -14156,6 +14209,9 @@ function PD.ScanRecipe()
         return nil
     end
     local fk = PD.EffKeyFilter(d, rows, scrolls)
+    if #enchants > 0 and not fk then
+        return nil
+    end
     local n, maxW = 0, 0
     local cap = PD.capNow or PD.ROW_CAP
     for _, r in ipairs(rows) do

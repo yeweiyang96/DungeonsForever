@@ -2612,7 +2612,8 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
             line:SetWidth(math.max(60, w - 28 - (resR or 0)))
             line:Show()
             local ic = rowsMatIcon[i]
-            ic:SetTexture(DG.ItemIcon(m[1]) or Host.FALLBACK_ICON)
+            local pdm = ns.ProfModule
+            ic:SetTexture((pdm and pdm.ItemIcon and pdm.ItemIcon(m[1])) or DG.ItemIcon(m[1]) or Host.FALLBACK_ICON)
             if ns.hui and ns.hui.SetIconRing then
                 local mq = DG.QualOf and DG.QualOf(m[1]) or nil
                 ns.hui.SetIconRing(ic, mq and { ns.hui.QColor(mq) } or nil)
@@ -2826,7 +2827,8 @@ function PF.Paint()
 
         local prodItem = recItem(rec)
         if prodItem then
-            card.icon:SetTexture(DG.ItemIcon(prodItem))
+            local pdm = ns.ProfModule
+            card.icon:SetTexture((pdm and pdm.ItemIcon and pdm.ItemIcon(prodItem)) or DG.ItemIcon(prodItem))
         else
             card.icon:SetTexture(Host.FALLBACK_ICON)
         end
