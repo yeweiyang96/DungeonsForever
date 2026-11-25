@@ -27,7 +27,7 @@ local function _freeze(tbl, seen)
 end
 Data._freeze = _freeze
 
-Data.meta = _freeze({ branch = "forever", contractVersion = 1, fingerprint = "sha256:0793ba6dbae5c34cec6f5560cc0d88249728bc879f0bbcc4200ae2f01d40dfdb", foreverBuild = "1.60.1.71091" })
+Data.meta = _freeze({ branch = "forever", contractVersion = 1, fingerprint = "sha256:fcda6bafa32658f120d6113a57c3e0b681929bb703e7cfecbc92bc87f9dd02fc", foreverBuild = "1.60.1.71091" })
 
 Data.professions = _freeze({
   alchemy = {

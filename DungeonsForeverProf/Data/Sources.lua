@@ -4516,6 +4516,9 @@ ns.Data._loaders["sources"] = function()
       [273097] = {
         { areaID = 16732, dropRatePct = 6.569, itemID = 273097, npcID = 260326, sampleCount = 5587 },
       },
+      [273098] = {
+        { areaID = 718, dropRatePct = 5.818, itemID = 273098, maxLevel = 20, minLevel = 20, npcID = 3671, sampleCount = 5981 },
+      },
       [273099] = {
         { areaID = 36, dropRatePct = 6.745, itemID = 273099, npcID = 246017, sampleCount = 5189 },
       },
@@ -4531,6 +4534,13 @@ ns.Data._loaders["sources"] = function()
       },
       [273105] = {
         { areaID = 209, dropRatePct = 7.418, itemID = 273105, maxLevel = 24, minLevel = 24, npcID = 4278, sampleCount = 5352 },
+      },
+      [273106] = {
+        { areaID = 16732, dropRatePct = 7.022, itemID = 273106, npcID = 260325, sampleCount = 4087 },
+      },
+      [273109] = {
+        { areaID = 1583, dropRatePct = 5.839, itemID = 273109, maxLevel = 9999, minLevel = 9999, npcID = 10430, sampleCount = 685 },
+        { areaID = 796, dropRatePct = 4.023, itemID = 273109, maxLevel = 34, minLevel = 34, npcID = 3974, sampleCount = 3853 },
       },
       [273112] = {
         { areaID = 2057, dropRatePct = 3.608, itemID = 273112, maxLevel = 62, minLevel = 62, npcID = 10508, sampleCount = 970 },
@@ -4552,6 +4562,9 @@ ns.Data._loaders["sources"] = function()
       },
       [273119] = {
         { areaID = 1477, dropRatePct = 3.131, itemID = 273119, maxLevel = 54, minLevel = 54, npcID = 5710, sampleCount = 1022 },
+      },
+      [273120] = {
+        { areaID = 2557, dropRatePct = 8.649, itemID = 273120, maxLevel = 60, minLevel = 60, npcID = 11489, sampleCount = 370 },
       },
       [273121] = {
         { areaID = 2057, dropRatePct = 4.386, itemID = 273121, maxLevel = 60, minLevel = 60, npcID = 10432, sampleCount = 342 },

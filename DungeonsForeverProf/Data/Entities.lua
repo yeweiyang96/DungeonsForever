@@ -3986,11 +3986,14 @@ ns.Data._loaders["entities"] = function()
       [273092] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
       [273096] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
       [273097] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
+      [273098] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
       [273099] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
       [273101] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 30000 },
       [273102] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
       [273103] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
       [273105] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
+      [273106] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 375 },
+      [273109] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 12000 },
       [273112] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273113] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273115] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
@@ -3998,6 +4001,7 @@ ns.Data._loaders["entities"] = function()
       [273117] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273118] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273119] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
+      [273120] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273121] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273122] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
       [273124] = { bindType = 0, icon = 1001491, quality = 2, sellPriceCopper = 120000 },
@@ -9813,6 +9817,11 @@ ns.Data._loaders["entities"] = function()
         spawns = {
           { areaID = 331, uiMapID = 1440, x = 36.4, y = 49.4 },
         },
+      },
+      [3974] = {
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
       },
       [3975] = {
         classification = 1,
@@ -15852,6 +15861,11 @@ ns.Data._loaders["entities"] = function()
         faction = "N",
         roles = { drop = true },
       },
+      [11489] = {
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+      },
       [11497] = {
         classification = 2,
         faction = "N",
@@ -19243,6 +19257,10 @@ ns.Data._loaders["entities"] = function()
         spawns = {
           { areaID = 16591, uiMapID = 2548, x = 70.3, y = 38.3 },
         },
+      },
+      [260325] = {
+        classification = 1,
+        roles = { drop = true },
       },
       [260326] = {
         classification = 1,

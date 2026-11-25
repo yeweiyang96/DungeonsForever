@@ -5017,6 +5017,17 @@ local function campNameOf(c)
     return c.campKey or "?"
 end
 
+local function campNameByKey(campKey)
+    if type(campKey) ~= "string" or campKey == "" then return nil end
+    local ds = getDS()
+    local raw = ds and ds.RawText and ds.RawText("camp", campKey, "name")
+    if type(raw) == "string" and raw ~= "" then return raw end
+    local camps = ds and ds.CampObjects and ds.CampObjects()
+    local target = camps and camps[campKey]
+    if target then return campNameOf(target) end
+    return campKey
+end
+
 local function campReagentText(reagents)
     if type(reagents) ~= "table" or #reagents == 0 then return "" end
     local out = {}
@@ -8528,7 +8539,7 @@ function PD.CampTipLines(c)
     end
     local desc = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))
     local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
-    local repName = c.replacesCampKey and ((ds and ds.RawText and ds.RawText("camp", c.replacesCampKey, "name")) or c.replacesCampKey)
+    local repName = c.replacesCampKey and campNameByKey(c.replacesCampKey)
     local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
     add(L["描述"], desc)
     add(L["增益"], buff)
@@ -8568,7 +8579,7 @@ function PD.CampTagText(c)
         end
     end
     local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
-    local repName = c.replacesCampKey and ((ds and ds.RawText and ds.RawText("camp", c.replacesCampKey, "name")) or c.replacesCampKey)
+    local repName = c.replacesCampKey and campNameByKey(c.replacesCampKey)
     local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
     if type(buff) == "string" and buff ~= "" then t[#t + 1] = buff end
     if type(repName) == "string" and repName ~= "" then t[#t + 1] = L["取代"] .. " " .. repName end
