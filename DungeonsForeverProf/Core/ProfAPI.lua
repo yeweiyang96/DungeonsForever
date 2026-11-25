@@ -101,7 +101,7 @@ function API.ProfessionInfo(slug)
   local name = DS and DS.RawText("profession", slug) or nil
   if not name and slug == "crates" then
     local L = ns.L or (type(gns) == "table" and gns.L)
-    name = (type(L) == "table" and L["补给箱"]) or "Crates"
+    name = (type(L) == "table" and L["板条箱/工匠文书"]) or "Crates & Writs"
   end
   name = name or slug
 

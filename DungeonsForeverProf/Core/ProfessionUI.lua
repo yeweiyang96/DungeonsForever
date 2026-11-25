@@ -1340,17 +1340,31 @@ function PD.CoinSeg(copper)
     return table.concat(out)
 end
 
+function PD.NormTexIcon(icon)
+    if type(icon) == "number" then return icon > 0 and tostring(icon) or nil end
+    if type(icon) ~= "string" or icon == "" then return nil end
+    if icon:match("^%d+$") or icon:find("[/\\]") then return icon end
+    return "Interface\\Icons\\" .. icon
+end
+
 function PD.CurPriceText(curID, amount)
     curID, amount = tonumber(curID) or 0, tonumber(amount) or 0
     local name, icon
+    local ds = getDS()
+    if ds and ds.Currency then
+        local curMeta = ds.Currency(curID)
+        if curMeta and curMeta.icon then icon = curMeta.icon end
+    end
+    if ds and ds.RawText then
+        name = ds.RawText("currency", curID)
+    end
     if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
         local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, curID)
         if ok and type(info) == "table" then
-            name, icon = info.name, info.iconFileID
+            name, icon = name or info.name, icon or info.iconFileID
         end
     end
     if not name and curID ~= PD.FAVOR_CURID then
-        local ds = getDS()
         local raw = ds and ds.RawText and ds.RawText("item", curID)
         local dg = getDG()
         if type(raw) == "string" and raw ~= "" then
@@ -1365,7 +1379,8 @@ function PD.CurPriceText(curID, amount)
         end
     end
     local ico = ""
-    if icon then ico = format("|T%s:0|t", icon) end
+    local texIcon = PD.NormTexIcon(icon)
+    if texIcon then ico = format("|T%s:0|t", texIcon) end
     if ico ~= "" then
         return format("%d%s", amount, ico)
     end
@@ -1398,8 +1413,12 @@ function PD.VendorBestOffer(vs, offers)
     for i = 1, #vs do
         local v = vs[i]
         local o = offers and offers[v.id or v.npcID]
-        if not o and ((tonumber(v.price) or 0) > 0 or (tonumber(v.cur) or 0) > 0) then
-            o = { price = v.price or 0, currencyID = v.cur or 0, currencyAmount = v.amt or 0 }
+        if not o and ((tonumber(v.price) or 0) > 0 or (tonumber(v.cur) or 0) > 0
+            or v.hasExtendedCost == true
+            or (type(v.currencies) == "table" and #v.currencies > 0)
+            or (type(v.costItems) == "table" and #v.costItems > 0)) then
+            o = { price = v.price or 0, currencyID = v.cur or 0, currencyAmount = v.amt or 0,
+                  hasExtendedCost = v.hasExtendedCost, currencies = v.currencies, costItems = v.costItems }
         end
         local cid = 0
         local pr = 0
@@ -1537,10 +1556,24 @@ function PD.VendorSrcLine(src, fid)
     local offers = PD.FormulaOffersByNpc(fid)
     local v, o = PD.VendorBestOffer(vs, offers)
     if not v then return nil end
-    local pre = L["图纸"] .. "·" .. L["商人"]
+    local isExchange = o and (
+        (tonumber(o.currencyID) or 0) > 0
+        or o.hasExtendedCost == true
+        or (type(o.currencies) == "table" and #o.currencies > 0)
+        or (type(o.costItems) == "table" and #o.costItems > 0)
+    ) or (
+        (tonumber(v.cur or v.currencyID) or 0) > 0
+        or v.hasExtendedCost == true
+        or (type(v.currencies) == "table" and #v.currencies > 0)
+        or (type(v.costItems) == "table" and #v.costItems > 0)
+    )
+    local pre = L["图纸"] .. "·" .. (isExchange and L["兑换"] or L["商人"])
     if #vs > 1 then pre = pre .. format(L["(%d人)"], #vs) end
     pre = pre .. ":"
     local nm = PD.VendorName(v)
+    if v.zone and v.zone ~= "" then
+        nm = nm .. "(" .. tostring(v.zone) .. ")"
+    end
     local cost = PD.VendorCostText(o)
     local val = nm
     if cost then val = nm .. "·" .. cost end
@@ -2576,9 +2609,11 @@ function PD.PCEnsure(r)
     r.__pcTx = MakeFS(r, PD.PC_FS_TX, C_TEXT, "LEFT")
     r.__pcTx:SetText("")
     r.__pcTx:SetWordWrap(true)
+    r.__pcTx:SetJustifyV("TOP")
     r.__pcTags = MakeFS(r, PD.PC_FS_SM, C_GREY, "LEFT")
     r.__pcTags:SetText("")
-    r.__pcTags:SetWordWrap(false)
+    r.__pcTags:SetWordWrap(true)
+    r.__pcTags:SetJustifyV("TOP")
     r.pcChips = {}
     for k = 1, PD.PC_MAXLV do
         local f
@@ -2669,15 +2704,21 @@ function PD.PCWipe(r)
     end
 end
 
-function PD.PCLines(tx, w)
+function PD.PCLines(tx, w, fs)
     if type(tx) ~= "string" or tx == "" then return 0 end
-    local avail = (w or 364) - 2 * PD.PC_PAD
-    if avail < 40 then avail = 40 end
+    local pad = PD.PC_INSET + PD.PC_PAD
+    local avail = math.max((w or 364) - 2 * pad, 80)
+    local effAvail = avail * 0.90
+    local fontSz = fs or PD.PC_FS_TX
     local n = 0
     for seg in (tx .. "\n"):gmatch("([^\n]*)\n") do
-        local k = math.ceil(PD.TextW(seg, PD.PC_FS_TX) / avail)
-        if k < 1 then k = 1 end
-        n = n + k
+        if seg == "" then
+            n = n + 1
+        else
+            local k = math.ceil(PD.TextW(seg, fontSz) / effAvail)
+            if k < 1 then k = 1 end
+            n = n + k
+        end
     end
     if n < 1 then n = 1 end
     return n
@@ -2700,6 +2741,35 @@ function PD.PC_TxDy(d)
     return PD.PC_TX_DY_NOLV
 end
 
+function PD.PCTextHeight(text, w, fs)
+    if type(text) ~= "string" or text == "" then return 0 end
+    local fontSz = fs or PD.PC_FS_TX
+    local pad = PD.PC_INSET + PD.PC_PAD
+    local innerW = math.max((w or 364) - 2 * pad, 80)
+    if type(CreateFrame) == "function" and type(MakeFS) == "function" and UIParent then
+        if not PD.__pcMeasureHost then
+            PD.__pcMeasureHost = CreateFrame("Frame", nil, UIParent)
+            PD.__pcMeasureHost:Hide()
+            PD.__pcMeasureFS = {}
+        end
+        local mfs = PD.__pcMeasureFS[fontSz]
+        if not mfs then
+            mfs = MakeFS(PD.__pcMeasureHost, fontSz, C_TEXT, "LEFT")
+            mfs:SetWordWrap(true)
+            mfs:SetJustifyV("TOP")
+            PD.__pcMeasureFS[fontSz] = mfs
+        end
+        mfs:SetWidth(innerW)
+        mfs:SetText(text)
+        local ok, sh = pcall(mfs.GetStringHeight, mfs)
+        if ok and type(sh) == "number" and sh > 0 then
+            return math.ceil(sh) + 2
+        end
+    end
+    local lines = PD.PCLines(text, w, fontSz)
+    return lines * ((fontSz == PD.PC_FS_SM and lines == 1) and PD.PC_TAG_H or PD.PC_LH)
+end
+
 function PD.PCHeight(d, w)
     if d.compact then return 68 end
     if type(d.rows) == "table" and #d.rows > 0 then
@@ -2707,9 +2777,12 @@ function PD.PCHeight(d, w)
         if h < 96 then h = 96 end
         return h
     end
-    local lines = PD.PCLines(d.tx, w)
-    local h = PD.PC_TxDy(d) + lines * PD.PC_LH
-    if d.tags and d.tags ~= "" then h = h + PD.PC_TAG_GAP + PD.PC_TAG_H end
+    local txH = PD.PCTextHeight(d.tx, w, PD.PC_FS_TX)
+    local tagH = PD.PCTextHeight(d.tags, w, PD.PC_FS_SM)
+    local h = PD.PC_TxDy(d) + txH
+    if tagH > 0 then
+        h = h + (txH > 0 and PD.PC_TAG_GAP or 0) + tagH
+    end
     h = h + PD.PC_PAD + 2 * PD.PC_INSET
     if h < 60 then h = 60 end
     return h
@@ -2820,7 +2893,7 @@ function PD.FitName(str, maxw, fs)
     if type(str) ~= "string" or str == "" then return "" end
     local cjk = fs * 1.06
     local lat = fs * 0.56
-    local sum, i = 0, 1
+    local sum, i, lastEnd = 0, 1, 0
     local n = #str
     while i <= n do
         local b = str:byte(i)
@@ -2830,15 +2903,11 @@ function PD.FitName(str, maxw, fs)
         elseif b and b >= 192 then step = 2 end
         local adv = (step > 1) and cjk or lat
         if sum + adv > maxw then
-            local cut = i - 1
-            while cut > 0 do
-                local cb = str:byte(cut)
-                if cb and cb >= 128 and cb < 192 then cut = cut - 1 else break end
-            end
-            if cut <= 0 then return "" end
-            return str:sub(1, cut) .. "\226\128\166"
+            if lastEnd <= 0 then return "" end
+            return str:sub(1, lastEnd) .. "\226\128\166"
         end
         sum = sum + adv
+        lastEnd = math.min(n, i + step - 1)
         i = i + step
     end
     return str
@@ -3025,14 +3094,20 @@ function PD.PCApply(r, spec, w, h)
         if k > n then r.pcChips[k]:Hide() end
     end
     local txDy = PD.PC_TxDy(d)
+    local innerW = math.max(w - 2 * pad, 80)
+    local hasTx = (d.tx or "") ~= ""
     r.__pcTx:ClearAllPoints()
     r.__pcTx:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -txDy)
-    r.__pcTx:SetWidth(math.max(w - 2 * pad, 80))
+    r.__pcTx:SetWidth(innerW)
     r.__pcTx:SetText(d.tx or "")
-    r.__pcTx:Show()
-    local lines = PD.PCLines(d.tx, w)
+    if hasTx then r.__pcTx:Show() else r.__pcTx:Hide() end
     r.__pcTags:ClearAllPoints()
-    r.__pcTags:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -(txDy + lines * PD.PC_LH + PD.PC_TAG_GAP))
+    if hasTx then
+        r.__pcTags:SetPoint("TOPLEFT", r.__pcTx, "BOTTOMLEFT", 0, -PD.PC_TAG_GAP)
+    else
+        r.__pcTags:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -txDy)
+    end
+    r.__pcTags:SetWidth(innerW)
     r.__pcTags:SetText(d.tags or "")
     if (d.tags or "") ~= "" then r.__pcTags:Show() else r.__pcTags:Hide() end
     if type(d.rows) == "table" and #d.rows > 0 then
@@ -3822,7 +3897,7 @@ function PD.BindRow(r, spec, h)
         else
             r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
         end
-        SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+        SetIcon(r.icon, iconName or PD.ItemIcon(itemID))
         if r.icon.SetDesaturated then r.icon:SetDesaturated(false) end
         if getHui() and getHui().SetIconRing then
             local qq = nil
@@ -3848,7 +3923,7 @@ function PD.BindRow(r, spec, h)
             r.icon:SetSize(20, 20)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
-            SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+            SetIcon(r.icon, iconName or PD.ItemIcon(itemID))
             if getHui() and getHui().SetIconRing then
                 local qq2 = nil
                 if itemID and not iconName then qq2 = PD.QualCached(itemID) end
@@ -4343,7 +4418,7 @@ function PD.BindRow(r, spec, h)
             r.icon:SetSize(PD.GR_ICON_W, PD.GR_ICON_W)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("RIGHT", r.e, "LEFT", -6, 0)
-            SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+            SetIcon(r.icon, iconName or PD.ItemIcon(itemID))
             if getHui() and getHui().SetIconRing then
                 local rq = nil
                 if itemID and not iconName then rq = PD.QualCached(itemID) end
@@ -5402,17 +5477,22 @@ end
 
 local function profEntryOf(slug)
     local ds = getDS()
-    local cfg = getProfCfg().BY_SLUG and getProfCfg().BY_SLUG[slug]
+    local pcfg = getProfCfg()
+    local cfg = (pcfg.BY_SLUG and pcfg.BY_SLUG[slug]) or (pcfg.VIRTUAL_ENTRIES and pcfg.VIRTUAL_ENTRIES[slug])
     local meta = ds and ds.Profession and ds.Profession(slug)
     if not (cfg or meta) then return nil end
-    local name = (ds and ds.ProfessionName and ds.ProfessionName(slug)) or (cfg and cfg.name) or slug
+    local name = (ds and ds.RawText and ds.RawText("profession", slug))
+        or (slug == "crates" and L["板条箱/工匠文书"])
+        or (cfg and cfg.name)
+        or (ds and ds.ProfessionName and ds.ProfessionName(slug))
+        or slug
     local icon = (meta and meta.icon and meta.icon ~= "" and meta.icon) or (cfg and cfg.icon) or ""
     return {
         slug = slug,
         name = name,
         icon = icon,
         section = (cfg and cfg.section) or (meta and meta.section),
-        kind = (meta and meta.kind) or (cfg and cfg.kind),
+        kind = (meta and meta.kind) or (cfg and cfg.kind) or (cfg and cfg.navGroup),
         navFs = cfg and cfg.navFs,
         recipeCount = meta and meta.recipeCount,
         campObjectKeys = meta and meta.campObjectKeys,
@@ -6094,7 +6174,19 @@ function PD.Build(page)
     end
 
     PD.navOrder = {}
-    local profOrder = getProfCfg().ORDER or {}
+    local pcfg = getProfCfg()
+    local profOrder = {}
+    local seenNav = {}
+    for _, slug in ipairs(pcfg.ORDER or {}) do
+        if not seenNav[slug] then
+            seenNav[slug] = true
+            profOrder[#profOrder + 1] = slug
+        end
+    end
+    if type(pcfg.VIRTUAL_ENTRIES) == "table" and pcfg.VIRTUAL_ENTRIES.crates and not seenNav.crates then
+        seenNav.crates = true
+        profOrder[#profOrder + 1] = "crates"
+    end
     for _, g in ipairs({ { kind = "primary", label = L["主专业"] },
                          { kind = "secondary", label = L["次专业"] },
                          { kind = "system", label = L["营地系统"] },
@@ -8569,26 +8661,28 @@ function PD.CampTipLines(c)
 end
 
 function PD.CampTagText(c)
-    local ds = getDS()
-    local t = {}
+    local meta = {}
+    local repName = c.replacesCampKey and campNameByKey(c.replacesCampKey)
+    local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
+    if type(repName) == "string" and repName ~= "" then meta[#meta + 1] = L["取代"] .. " " .. repName end
+    if type(exName) == "string" and exName ~= "" then meta[#meta + 1] = L["互斥"] .. " " .. exName end
+    if c.campfireCapacity and tostring(c.campfireCapacity) ~= "" then
+        meta[#meta + 1] = L["容量"] .. " " .. tostring(c.campfireCapacity)
+    end
+    if c.formulaItemIDs and c.formulaItemIDs[1] then
+        meta[#meta + 1] = format(L["图纸：%s"], PD.ItemName(c.formulaItemIDs[1]))
+    end
+    local lines = {}
+    if #meta > 0 then lines[#lines + 1] = table.concat(meta, " · ") end
     local stKey = c.stationKey
     if type(stKey) == "string" and stKey ~= "" and not CAMP_STATION_EXCLUDED[stKey] then
         local stCnt = PD.CountRecipesByStation(c.profession, stKey)
         if stCnt > 0 then
-            t[#t + 1] = format(L["需要此设施：%d 配方（点击筛选）"], stCnt)
+            lines[#lines + 1] = "|cff73d9ff" .. format(L["需要此设施：%d 配方（点击筛选）"], stCnt) .. "|r"
         end
     end
-    local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
-    local repName = c.replacesCampKey and campNameByKey(c.replacesCampKey)
-    local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
-    if type(buff) == "string" and buff ~= "" then t[#t + 1] = buff end
-    if type(repName) == "string" and repName ~= "" then t[#t + 1] = L["取代"] .. " " .. repName end
-    if type(exName) == "string" and exName ~= "" then t[#t + 1] = L["互斥"] .. " " .. exName end
-    if c.campfireCapacity and tostring(c.campfireCapacity) ~= "" then
-        t[#t + 1] = L["容量"] .. " " .. tostring(c.campfireCapacity)
-    end
-    if #t == 0 then return nil end
-    return table.concat(t, " · ")
+    if #lines == 0 then return nil end
+    return table.concat(lines, "\n")
 end
 
 function PD.PushCampCards(rows, slug)
@@ -8607,8 +8701,10 @@ function PD.PushCampCards(rows, slug)
         local hasCampIcon = c.icon ~= nil and c.icon ~= ""
         card.icon = (hasCampIcon and c.icon) or c.itemID or card.icon
         card.iconIsFileID = hasCampIcon and (type(c.icon) == "number" or (type(c.icon) == "string" and c.icon:match("^%d+$") ~= nil))
-        card.right = (c.tier and format(L["档位 %d"], c.tier) .. " · " or "") .. format(L["技能 %d"], c.reqSkill or 0)
-        card.tx = (ds and c.campKey and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))) or ""
+        card.right = ((type(c.tier) == "number" and c.tier > 0) and (format(L["档位 %d"], c.tier) .. " · ") or "") .. format(L["技能 %d"], c.reqSkill or 0)
+        local campBuff = ds and c.campKey and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
+        local campDesc = ds and c.campKey and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))
+        card.tx = (type(campBuff) == "string" and campBuff ~= "" and campBuff) or campDesc or ""
         card.tags = PD.CampTagText(c)
         card.tipLines = PD.CampTipLines(c)
         local stKey = c.stationKey
@@ -9032,17 +9128,17 @@ function PD.VendorListOf(src)
         end
     end
     if not f then return all end
-    local out, known = {}, false
+    local out = {}
     for i = 1, #all do
         local v = all[i]
-        if v.side then
-            known = true
-            if v.side == f then out[#out + 1] = v end
+        local side = PD.VendorSideOf and PD.VendorSideOf(v) or (type(v.side) == "string" and string.lower(v.side) or "n")
+        if side == "a" or side == "h" then
+            if side == f then out[#out + 1] = v end
         else
             out[#out + 1] = v
         end
     end
-    if not known then return all end
+    if #out == 0 then return all end
     return out
 end
 
@@ -10313,26 +10409,241 @@ function PD.RecipeLearningView(recipe, frozen)
     return view
 end
 
+function PD.FactionTag(fac)
+    local f = normalizeFaction(fac)
+    if f == "A" then return "[" .. L["联盟"] .. "]" end
+    if f == "H" then return "[" .. L["部落"] .. "]" end
+    if f == "N" then return "[" .. L["中立"] .. "]" end
+    return nil
+end
+
+PD._STANDING_LABELS = {
+    [1] = "仇恨",
+    [2] = "敌对",
+    [3] = "冷淡",
+    [4] = "中立",
+    [5] = "友善",
+    [6] = "尊敬",
+    [7] = "崇敬",
+    [8] = "崇拜",
+}
+
+function PD.StandingName(standing)
+    local n = tonumber(standing)
+    local key = n and PD._STANDING_LABELS[n]
+    return key and L[key] or tostring(standing or "")
+end
+
+function PD.ZoneTypeTag(areaID)
+    if type(areaID) ~= "number" or areaID <= 0 then return nil end
+    local ds = getDS()
+    local z = ds and ds.Zone and ds.Zone(areaID)
+    local zt = z and z.zoneType
+    if zt == "raid" then return L["团本"] end
+    if zt == "dungeon" then return L["地下城"] end
+    if zt == "pvp" or zt == "arena" then return L["战场"] end
+    if zt == "world" then return L["大世界"] end
+    return nil
+end
+
+function PD.NpcClassTag(cls)
+    local c = tonumber(cls)
+    if c == 3 then return L["首领"] end
+    if c == 2 then return L["稀有精英"] end
+    if c == 1 then return L["精英"] end
+    if c == 4 then return L["稀有"] end
+    return L["小怪"]
+end
+
+function PD.QuestLines(questIDs)
+    local out = {}
+    if type(questIDs) ~= "table" or #questIDs == 0 then return out end
+    local ds = getDS()
+    local seen = {}
+    for _, qid in ipairs(questIDs) do
+        local id = type(qid) == "table" and (qid.questID or qid.id) or tonumber(qid)
+        if id and id > 0 and not seen[id] then
+            seen[id] = true
+            local q = ds and ds.Quest and ds.Quest(id)
+            local qName = (ds and ds.RawText and ds.RawText("quest", id)) or ("#" .. tostring(id))
+            local parts = { format(L["任务：%s"], qName) }
+            local ftag = q and PD.FactionTag(q.faction)
+            if ftag then parts[#parts + 1] = ftag end
+            local zn = q and q.areaID and ds and ds.RawText and ds.RawText("zone", q.areaID)
+            if type(zn) == "string" and zn ~= "" then
+                local zt = PD.ZoneTypeTag(q.areaID)
+                parts[#parts + 1] = zt and ("[" .. zt .. "·" .. zn .. "]") or zn
+            end
+            if q and type(q.minLevel) == "number" and q.minLevel > 0 then
+                parts[#parts + 1] = format(L["需 %d 级"], q.minLevel)
+            end
+            out[#out + 1] = { table.concat(parts, " · "), 0.78, 0.88, 0.98 }
+            if q and type(q.startNpcIDs) == "table" and #q.startNpcIDs > 0 then
+                local nms = {}
+                for _, nid in ipairs(q.startNpcIDs) do
+                    local nn = ds and ds.RawText and ds.RawText("npc", nid)
+                    if type(nn) == "string" and nn ~= "" then nms[#nms + 1] = nn end
+                end
+                if #nms > 0 then
+                    out[#out + 1] = { "  " .. format(L["接取 NPC：%s"], table.concat(nms, " / ")), 0.72, 0.76, 0.82 }
+                end
+            end
+            if q and type(q.endNpcIDs) == "table" and #q.endNpcIDs > 0 then
+                local nms = {}
+                for _, nid in ipairs(q.endNpcIDs) do
+                    local nn = ds and ds.RawText and ds.RawText("npc", nid)
+                    if type(nn) == "string" and nn ~= "" then nms[#nms + 1] = nn end
+                end
+                if #nms > 0 then
+                    out[#out + 1] = { "  " .. format(L["交付 NPC：%s"], table.concat(nms, " / ")), 0.72, 0.76, 0.82 }
+                end
+            end
+        end
+    end
+    return out
+end
+
+function PD.QuestShortText(questIDs)
+    if type(questIDs) ~= "table" or #questIDs == 0 then return nil end
+    local ds = getDS()
+    local first = questIDs[1]
+    local id = type(first) == "table" and (first.questID or first.id) or tonumber(first)
+    if not (id and id > 0) then return nil end
+    local q = ds and ds.Quest and ds.Quest(id)
+    local qName = (ds and ds.RawText and ds.RawText("quest", id)) or ("#" .. tostring(id))
+    local zn = q and q.areaID and ds and ds.RawText and ds.RawText("zone", q.areaID)
+    local res = qName
+    if type(zn) == "string" and zn ~= "" then res = res .. "(" .. zn .. ")" end
+    if #questIDs > 1 then res = res .. format(L[" 等 %d 个"], #questIDs) end
+    return res
+end
+
+PD._EXTRA_SOURCE_LABELS = {
+    contained_in_object = "宝箱/容器",
+    contained_in_item = "开自物品",
+    fished = "钓鱼",
+    mined = "采矿",
+    gathered = "采药",
+    skinned = "剥皮",
+    pickpocketed = "偷窃",
+    disenchant = "分解",
+}
+
+function PD.ExtraSourceLines(extras)
+    local out = {}
+    if type(extras) ~= "table" or #extras == 0 then return out end
+    local seen = {}
+    for i = 1, math.min(#extras, 6) do
+        local e = extras[i]
+        if type(e) == "table" then
+            local kindLab = L[PD._EXTRA_SOURCE_LABELS[e.sourceKind] or "特殊来源"]
+            local target = e.targetName or (e.targetID and ("#" .. tostring(e.targetID))) or ""
+            local zn = e.zone or ""
+            local zt = e.areaID and PD.ZoneTypeTag(e.areaID)
+            local locPart = ""
+            if zt and zn ~= "" then locPart = "[" .. zt .. "·" .. zn .. "]"
+            elseif zn ~= "" then locPart = zn end
+            local parts = { kindLab .. "：" .. target }
+            if locPart ~= "" then parts[#parts + 1] = locPart end
+            if type(e.dropRatePct) == "number" and e.dropRatePct > 0 then
+                parts[#parts + 1] = format("%.1f%%", e.dropRatePct)
+            end
+            local line = table.concat(parts, " · ")
+            if not seen[line] then
+                seen[line] = true
+                out[#out + 1] = { line, 0.78, 0.84, 0.90 }
+            end
+        end
+    end
+    return out
+end
+
+function PD.ExtraSrcShortText(extras)
+    if type(extras) ~= "table" or #extras == 0 then return nil, nil end
+    local e = extras[1]
+    if type(e) ~= "table" then return nil, nil end
+    local kindLab = L[PD._EXTRA_SOURCE_LABELS[e.sourceKind] or "特殊来源"]
+    local target = e.targetName or (e.targetID and ("#" .. tostring(e.targetID))) or ""
+    local zn = e.zone or ""
+    local val = target
+    if zn ~= "" then val = val .. "(" .. zn .. ")" end
+    return L["图纸"] .. "·" .. kindLab .. ":", val
+end
+
+function PD.ConditionSummaryLines(conditions)
+    local out, seen = {}, {}
+    if type(conditions) ~= "table" or #conditions == 0 then return out end
+    local ds = getDS()
+    local function add(text, r, g, b)
+        if type(text) == "string" and text ~= "" and not seen[text] then
+            seen[text] = true
+            out[#out + 1] = { text, r or 0.95, g or 0.80, b or 0.45 }
+        end
+    end
+    for _, c in ipairs(conditions) do
+        if type(c) == "table" then
+            if c.kind == "reputation" and c.factionID then
+                local fname = (ds and ds.RawText and ds.RawText("faction", c.factionID))
+                    or (ds and ds.FactionName and ds.FactionName(c.factionID))
+                    or ("#" .. tostring(c.factionID))
+                local stName = PD.StandingName(c.minStanding or 5)
+                add(format(L["声望要求：%s · %s"], fname, stName), 0.55, 0.88, 0.62)
+            elseif c.kind == "faction" and c.side then
+                local ft = PD.FactionTag(c.side)
+                if ft then add(format(L["阵营要求：%s"], ft), 0.75, 0.82, 0.95) end
+            elseif c.kind == "ability" and c.spellID then
+                local sname = SpellName(c.spellID) or ("#" .. tostring(c.spellID))
+                add(format(L["需要专精/技能：%s"], sname), 0.88, 0.78, 0.50)
+            elseif c.kind == "hasItem" and c.itemID then
+                local iname = PD.ItemName(c.itemID) or ("#" .. tostring(c.itemID))
+                local cnt = tonumber(c.count) or 1
+                add(cnt > 1 and format(L["需要物品：%s ×%d"], iname, cnt) or format(L["需要物品：%s"], iname), 0.82, 0.82, 0.86)
+            elseif c.kind == "level" and c.min then
+                add(format(L["需要等级：%d"], c.min), 0.75, 0.75, 0.78)
+            end
+        end
+    end
+    return out
+end
+
 function PD.LearningOriginCard(recipe,view)
     local E=getEco()
+    local ds = getDS()
     local info=recipe.learningInfo or (E and E.GetLearningInfo and E.GetLearningInfo(recipe.profession,recipe.spell))
-    local route,item
+    local autoRoute,trainerRoute,itemRoute,questRoute
     for _,candidate in ipairs(info and info.routes or {})do
-        if candidate.kind=="trainer" and candidate.status=="confirmed"then route=candidate;break end
-        if candidate.kind=="item" and (not item or candidate.teachingItemID==recipe.formula)then item=candidate end
+        if candidate.kind=="autoGrant" and candidate.status=="confirmed" and not autoRoute then
+            autoRoute=candidate
+        elseif candidate.kind=="trainer" and candidate.status=="confirmed" and not trainerRoute then
+            trainerRoute=candidate
+        elseif candidate.kind=="item" and (not itemRoute or candidate.teachingItemID==recipe.formula) then
+            itemRoute=candidate
+        elseif candidate.kind=="quest" and not questRoute then
+            questRoute=candidate
+        end
     end
-    route=route or item or view.route
-    if route and route.kind=="trainer" or recipe.trainerObserved then
-        if not recipe.trainerObserved and route and route.acquisition and route.acquisition.kind=="skillGrant"then
-            return {kind=AUTO_SKILL_CARD.kind,text=AUTO_SKILL_CARD.text,lines={AUTO_SKILL_CARD.lines[1]}}
+    local route=autoRoute or trainerRoute or itemRoute or questRoute or (view and view.route)
+    if route and route.kind=="autoGrant" then
+        return {kind=AUTO_SKILL_CARD.kind,text=AUTO_SKILL_CARD.text,lines={{AUTO_SKILL_CARD.lines[1][1],0.7,0.7,0.7}}}
+    end
+    if (route and route.kind=="trainer") or recipe.trainerObserved then
+        if not recipe.trainerObserved and route and route.acquisition and route.acquisition.kind=="skillGrant" then
+            return {kind=AUTO_SKILL_CARD.kind,text=AUTO_SKILL_CARD.text,lines={{AUTO_SKILL_CARD.lines[1][1],0.7,0.7,0.7}}}
         end
         return PD.TrainerCard(recipe.spell)
+    end
+    if route and route.kind=="quest" then
+        local qids = route.questIDs or (route.acquisition and route.acquisition.quests) or {}
+        local qlines = PD.QuestLines(qids)
+        for _, cl in ipairs(PD.ConditionSummaryLines(route.conditions)) do qlines[#qlines + 1] = cl end
+        if #qlines == 0 then qlines[1] = { L["完成对应任务习得"], 0.78, 0.88, 0.98 } end
+        return { kind = "quest", text = L["任务习得"], quests = qids, lines = qlines }
     end
     local fid=route and route.teachingItemID or recipe.formula or recipe.formulaID
     if not fid then return end
     local acquisition=route and route.acquisition or {}
-    local src={vendors={},drops={}};local byID={}
-    local ds = getDS()
+    local routeConds = route and route.conditions
+    local src={vendors={},drops={},quests={},extraSources={}};local byID={}
     local function vendors(list)
         for _,value in ipairs(list or {})do
             local id=value.id or value.npcID
@@ -10354,10 +10665,17 @@ function PD.LearningOriginCard(recipe,view)
     vendors(acquisition.vendors)
     src.drops=native and native.drops or {}
     if #src.drops==0 and reference then src.drops=reference.drops or reference.d or {} end
-    src.quests=acquisition.quests or native and native.quests
+    src.extraSources = (reference and reference.extraSources) or (native and native.extraSources) or {}
+    local rawQuests = (route and route.questIDs) or acquisition.quests or (native and native.quests) or {}
+    if type(rawQuests) == "table" and #rawQuests > 0 then src.quests = rawQuests end
+    local craftSpells = ds and ds.CraftIndex and ds.CraftIndex(fid)
+    local hasCraft = type(craftSpells) == "table" and #craftSpells > 0
     local count=acquisition.dropSourceCount or #src.drops
     src.worldDrop=native and native.worldDrop or reference and reference.worldDrop or acquisition.worldDrop
-    local hasDrop=count>0 or src.worldDrop==true;local hasVendor=#src.vendors>0
+    local hasDrop=count>0 or src.worldDrop==true
+    local hasVendor=#src.vendors>0
+    local hasQuest=#src.quests>0
+    local hasExtra=#src.extraSources>0
     local currency,gold=false,false
     for _,vendor in ipairs(src.vendors)do
         local exchange=(vendor.cur or 0)>0 or vendor.hasExtendedCost==true
@@ -10366,19 +10684,53 @@ function PD.LearningOriginCard(recipe,view)
         gold=gold or not exchange and (vendor.price or 0)>0
     end
     local kind=hasVendor and (currency and not gold and "currency" or hasDrop and "both" or "vendor")
-        or hasDrop and "drop" or src.quests and #src.quests>0 and "quest" or "unknown"
+        or hasDrop and "drop"
+        or hasQuest and "quest"
+        or hasExtra and "extra"
+        or hasCraft and "crafted"
+        or "unknown"
     local text=kind=="currency" and L["图纸|兑换"] or kind=="both" and L["图纸|商人掉落"]
         or kind=="vendor" and L["图纸|商人"] or kind=="drop" and L["图纸|掉落"]
-        or kind=="quest" and L["图纸|任务"] or L["图纸|未知"]
-    if kind=="unknown" and view.quote and view.quote.usable then
+        or kind=="quest" and L["图纸|任务"]
+        or kind=="extra" and L["图纸|容器"]
+        or kind=="crafted" and L["图纸|制造"]
+        or L["图纸|未知"]
+    if kind=="unknown" and view and view.quote and view.quote.usable then
         if view.quote.source=="ah"then kind,text="ah",L["图纸|拍卖行"]
         elseif view.quote.source=="owned"then kind,text="owned",L["已拥有图纸"]end
     end
     local lines={{format(L["图纸：%s"],tostring(PD.ItemName(fid) or "")),1,0.82,0.35}}
-    if hasVendor then for _,line in ipairs(PD.VendorLines(src,fid))do lines[#lines+1]=line end end
-    if count>0 then lines[#lines+1]={format(L["掉落 %d 处"],count),0.75,0.75,0.75}end
+    if hasVendor then
+        for _,line in ipairs(PD.VendorLines(src,fid,routeConds))do lines[#lines+1]=line end
+    end
+    if hasDrop then
+        local dlines = PD.DropLines(src)
+        if #dlines > 0 then
+            for _, line in ipairs(dlines) do lines[#lines + 1] = line end
+        elseif count > 0 then
+            lines[#lines + 1] = { format(L["掉落 %d 处"], count), 0.75, 0.75, 0.75 }
+        end
+    end
+    if hasQuest then
+        for _, line in ipairs(PD.QuestLines(src.quests)) do lines[#lines + 1] = line end
+    end
+    if hasExtra then
+        for _, line in ipairs(PD.ExtraSourceLines(src.extraSources)) do lines[#lines + 1] = line end
+    end
+    if hasCraft then
+        local csid = craftSpells[1]
+        local cprof = ds and ds.RecipeProfession and ds.RecipeProfession(csid)
+        local cpName = cprof and ds.ProfessionName and ds.ProfessionName(cprof) or ""
+        local csName = SpellName(csid) or ("#" .. tostring(csid))
+        lines[#lines + 1] = { format(L["专业制造：%s（%s）"], csName, cpName), 0.78, 0.88, 0.78 }
+    end
+    if not hasVendor and routeConds then
+        for _, cl in ipairs(PD.ConditionSummaryLines(routeConds)) do lines[#lines + 1] = cl end
+    end
     local ah=PD.FormulaAuctionLine(fid);if ah then lines[#lines+1]=ah end
-    return {kind=kind,text=text,fid=fid,source=src,lines=lines,act=hasVendor and PD.VendorAct(src) or nil}
+    local act = (hasVendor and PD.VendorAct(src)) or (hasDrop and PD.DropAct(src)) or nil
+    return {kind=kind,text=text,fid=fid,source=src,quests=src.quests,extraSources=src.extraSources,
+        craftSpells=craftSpells,routeConds=routeConds,lines=lines,act=act}
 end
 
 function PD.RecipeLearningCard(recipe, frozen)
@@ -10423,45 +10775,71 @@ function PD.RecipeLearningCard(recipe, frozen)
         return {kind="auto",text=L["已学会"],lines={{L["已学会，无需再次购买图纸或支付学习费用。"],0.7,0.7,0.7}}}
     end
     local route,quote=view.route,view.quote
+    if route and route.kind=="autoGrant" then
+        return AUTO_SKILL_CARD
+    end
     if route and route.kind=="trainer" then
         return (quote and quote.automatic or route.acquisition and route.acquisition.kind=="skillGrant")
             and AUTO_SKILL_CARD or PD.TrainerCard(recipe.spell)
+    end
+    if route and route.kind=="quest" then
+        local qids = route.questIDs or (route.acquisition and route.acquisition.quests) or {}
+        local qlines = PD.QuestLines(qids)
+        for _, cl in ipairs(PD.ConditionSummaryLines(route.conditions)) do qlines[#qlines + 1] = cl end
+        if #qlines == 0 then qlines[1] = { L["完成对应任务习得"], 0.78, 0.88, 0.98 } end
+        return { kind = "quest", text = L["任务习得"], quests = qids, lines = qlines }
     end
     local fid=route and (route.teachingItemID or route.itemID)
     if not fid then
         return {kind="unknown",text=L["资料待补"],lines={{L["学习来源尚未确认"],0.95,0.75,0.4}}}
     end
     local source=quote and quote.source
+    local merge=getMerge()
+    local refSrc = merge and merge.SourceOf and merge.SourceOf(fid)
     local src={}
-    if source=="vendor" then
+    if source=="vendor" or source=="acquire" then
         src.vendors={}
-        local offers=quote.vendorOffers or (quote.offer and {quote.offer}) or {}
+        local offers = (source=="vendor" and (quote.vendorOffers or (quote.offer and {quote.offer})))
+            or (source=="acquire" and quote.acquisitionOffers)
+            or {}
+        local seenNpc = {}
         for _,offer in ipairs(offers) do
             local npc=offer.npcID or offer.id
-            local original
-            for _,v in ipairs(recipe.source and recipe.source.vendors or {}) do
-                if (v.id or v.npcID)==npc then original=v;break end
+            if type(npc)=="number" and npc>0 and not seenNpc[npc] then
+                seenNpc[npc] = true
+                local original
+                for _,v in ipairs((refSrc and refSrc.vendors) or (recipe.source and recipe.source.vendors) or {}) do
+                    if (v.id or v.npcID)==npc then original=v;break end
+                end
+                src.vendors[#src.vendors+1]=original or offer
             end
-            src.vendors[#src.vendors+1]=original or offer
         end
+        if #src.vendors == 0 and refSrc and refSrc.vendors and #refSrc.vendors > 0 then
+            src.vendors = refSrc.vendors
+        end
+        if refSrc and refSrc.drops and #refSrc.drops > 0 then src.drops = refSrc.drops end
     end
     local lines={{format(L["图纸：%s"],tostring(PD.ItemName(fid) or "")),1,0.82,0.35}}
     if source=="vendor" then
-        for _,line in ipairs(PD.VendorLines(src,fid)) do lines[#lines+1]=line end
+        for _,line in ipairs(PD.VendorLines(src,fid,route and route.conditions)) do lines[#lines+1]=line end
     elseif source=="ah" then
         local line=PD.FormulaAuctionLine(fid);if line then lines[#lines+1]=line end
     elseif source=="acquire" then
-        lines[#lines+1]={L["需要先取得并学习图纸；已知金币计入预算，其他获取或兑换成本尚未折算。"],0.95,0.75,0.4}
-        for _,offer in ipairs(quote.acquisitionOffers or {}) do
-            lines[#lines+1]={PD.FormulaCostText(offer),0.95,0.75,0.4}
+        if src.vendors and #src.vendors > 0 then
+            for _,line in ipairs(PD.VendorLines(src,fid,route and route.conditions)) do lines[#lines+1]=line end
         end
+        if src.drops and #src.drops > 0 then
+            for _,line in ipairs(PD.DropLines(src)) do lines[#lines+1]=line end
+        end
+        lines[#lines+1]={L["需要先取得并学习图纸；已知金币计入预算，其他获取或兑换成本尚未折算。"],0.95,0.75,0.4}
     end
     local kind=source=="vendor" and "vendor" or source=="owned" and "owned" or source=="ah" and "ah"
         or source=="acquire" and "acquire" or "unknown"
     local text=kind=="vendor" and L["图纸|商人"] or kind=="owned" and L["已拥有图纸"]
         or kind=="ah" and L["图纸|拍卖行"] or kind=="acquire" and PD.PurchaseSource(quote) or L["图纸|未知"]
-    return {kind=kind,text=text,fid=fid,source=src,lines=lines,
-        act=kind=="vendor" and PD.VendorAct(src) or nil}
+    local act = (src.vendors and #src.vendors > 0 and PD.VendorAct(src))
+        or (src.drops and #src.drops > 0 and PD.DropAct(src)) or nil
+    return {kind=kind,text=text,fid=fid,source=src,routeConds=route and route.conditions,lines=lines,act=act}
 end
 
 function PD.CardOf(rec, ri, resolved, profession, frozen)
@@ -10797,11 +11175,12 @@ function PD.FormulaOffersByNpc(fid)
     return map
 end
 
-function PD.VendorLines(s, fid)
+function PD.VendorLines(s, fid, routeConds)
     local out = {}
     if not (s and s.vendors and #s.vendors > 0) then return out end
     local vs = PD.VendorListOf(s)
     if #vs == 0 then return out end
+    local ds = getDS()
     local offers = PD.FormulaOffersByNpc(fid)
     local seen = {}
     for i = 1, #vs do
@@ -10809,18 +11188,37 @@ function PD.VendorLines(s, fid)
         local id = v and (v.id or v.npcID)
         if v and (v.name or v.zone) and not (id and seen[id]) then
             if id then seen[id] = true end
+            local npc = id and ds and ds.Npc and ds.Npc(id)
+            local ftag = PD.FactionTag(v.faction or (npc and npc.faction))
             local nm = format(L["商人：%s"], PD.VendorName(v))
-            if v.zone and v.zone ~= "" then nm = nm .. " · " .. tostring(v.zone) end
-            local o = offers and offers[v.id or v.npcID]
+            if ftag then nm = nm .. " " .. ftag end
+            local zn = v.zone
+            local areaID = v.areaID or v.area
+            if (not zn or zn == "") and npc and npc.spawns and npc.spawns[1] then
+                areaID = npc.spawns[1].areaID or areaID
+                zn = areaID and ds and ds.RawText and ds.RawText("zone", areaID)
+            end
+            if zn and zn ~= "" then
+                local zt = areaID and PD.ZoneTypeTag(areaID)
+                nm = nm .. " · " .. (zt and zt ~= L["大世界"] and ("[" .. zt .. "·" .. tostring(zn) .. "]") or tostring(zn))
+            end
+            local o = offers and offers[id]
             if not o and ((v.price or 0) > 0 or (v.cur or v.currencyID or 0) > 0 or v.hasExtendedCost
                 or #(v.currencies or {})>0 or #(v.costItems or {})>0) then
                 o = { price = v.price or 0, currencyID = v.cur or v.currencyID or 0,
                       currencyAmount = v.amt or v.currencyAmount or 0, quantity = v.quantity or 1,
-                      currencies=v.currencies,costItems=v.costItems }
+                      maxStock = v.maxStock or v.stock,
+                      currencies=v.currencies,costItems=v.costItems,conditions=v.conditions }
             end
-            if o then nm = nm .. " · " .. PD.FormulaCostText(o) end
-            out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
-            PD.PurchaseConditionLines(out,id,fid,o or v)
+            if o then
+                nm = nm .. " · " .. PD.FormulaCostText(o)
+                local ms = o.maxStock ~= nil and o.maxStock or o.stock
+                if type(ms) == "number" and ms >= 0 then
+                    nm = nm .. " · " .. format(L["限量 ×%d"], ms)
+                end
+            end
+            out[#out + 1] = { nm, 0.78, 0.78, 0.78 }
+            PD.PurchaseConditionLines(out, id, fid, o or v, routeConds)
         end
     end
     local ents = PD.VendorEntries(s)
@@ -10856,7 +11254,8 @@ function PD.FormulaCostText(offer)
         end
         if not name then name = format(L["通货 #%d"], curID) end
         local amt = tonumber(offer.currencyAmount) or 0
-        parts[#parts + 1] = (icon and format("|T%s:14:14|t", icon) or "") .. name .. " ×" .. tostring(amt)
+        local texIcon = PD.NormTexIcon(icon)
+        parts[#parts + 1] = (texIcon and format("|T%s:14:14|t", texIcon) or "") .. name .. " ×" .. tostring(amt)
     end
     for _,cost in ipairs(offer.costItems or {})do
         parts[#parts+1]=(PD.ItemName(cost.id) or ("item #"..tostring(cost.id))).." ×"..tostring(cost.count)
@@ -11104,31 +11503,91 @@ function PD.DropAct(s)
     end
 end
 
+function PD.DropSrcLine(s)
+    if not (s and type(s.drops) == "table") then return nil end
+    if #s.drops == 0 then
+        if s.worldDrop then
+            return L["图纸·掉落:"], L["[大世界] 世界掉落"], L["[大世界] 世界掉落"]
+        end
+        return nil
+    end
+    local dd = s.drops[1]
+    local ds = getDS()
+    local nid = dd.npcID or dd.id
+    local npc = nid and ds and ds.Npc and ds.Npc(nid)
+    local cls = dd.classification ~= nil and dd.classification or (npc and npc.classification)
+    local clsTag = PD.NpcClassTag(cls)
+    local aid = dd.areaID or dd.area
+    if not aid and npc and npc.spawns and npc.spawns[1] then aid = npc.spawns[1].areaID end
+    local zt = aid and PD.ZoneTypeTag(aid)
+    local zn = PD.DropZone(dd, nil)
+    local loc = ""
+    if zt and zn ~= "" then loc = "[" .. zt .. "·" .. zn .. "] "
+    elseif zn ~= "" then loc = "[" .. zn .. "] "
+    elseif zt then loc = "[" .. zt .. "] " end
+    local nm = PD.DropName(dd)
+    local summary = loc .. clsTag .. "·" .. nm
+    if dd.chance then
+        local pct = dd.chance
+        if pct > 0 and pct <= 1 then pct = pct * 100 end
+        if pct >= 1 then
+            summary = summary .. format(" %.0f%%", pct)
+        elseif pct > 0 then
+            summary = summary .. format(" %.1f%%", pct)
+        end
+    end
+    local pre = L["图纸·掉落"]
+    if #s.drops > 1 then pre = pre .. format(L["(%d处)"], #s.drops) end
+    pre = pre .. ":"
+    return pre, summary, summary
+end
+
 function PD.DropLines(s)
     local out, seen = {}, {}
-    if not (s and s.drops and #s.drops > 0) then return out end
+    if not s then return out end
+    if not (s.drops and #s.drops > 0) then
+        if s.worldDrop then
+            out[#out + 1] = { L["掉落：[大世界] 世界随机掉落"], 0.75, 0.75, 0.75 }
+        end
+        return out
+    end
+    local ds = getDS()
     local ents = PD.DropEntries(s)
     local located = {}
     for i = 1, #ents do located[ents[i].name] = true end
     for i = 1, math.min(#s.drops, 8) do
         local dd = s.drops[i]
-        if dd and (dd.npc or dd.zone) then
+        if dd and (dd.npc or dd.npcID or dd.id or dd.zone) then
             local nm = PD.DropName(dd)
-            local key = nm .. "|" .. tostring(dd.zone or "")
+            local nid = dd.npcID or dd.id
+            local npc = nid and ds and ds.Npc and ds.Npc(nid)
+            local cls = dd.classification ~= nil and dd.classification or (npc and npc.classification)
+            local clsTag = PD.NpcClassTag(cls)
+            local aid = dd.areaID or dd.area
+            if not aid and npc and npc.spawns and npc.spawns[1] then aid = npc.spawns[1].areaID end
+            local zn = PD.DropZone(dd, nil)
+            local zt = aid and PD.ZoneTypeTag(aid)
+            local key = nm .. "|" .. tostring(zn or "")
             if not seen[key] then
                 seen[key] = true
-                local line = format(L["掉落：%s"], nm)
-                local zn = PD.DropZone(dd, nil)
-                if zn ~= "" then line = line .. " · " .. zn end
+                local loc = ""
+                if zt and zn ~= "" then loc = "[" .. zt .. "·" .. zn .. "] "
+                elseif zn ~= "" then loc = "[" .. zn .. "] "
+                elseif zt then loc = "[" .. zt .. "] " end
+                local line = L["掉落："] .. loc .. clsTag .. "·" .. nm
                 if dd.chance then
                     local pct = dd.chance
                     if pct > 0 and pct <= 1 then pct = pct * 100 end
-                    pct = math.floor(pct + 0.5)
-                    if pct > 100 then pct = 100 end
-                    line = line .. format(L[" · %d%%"], pct)
+                    if pct >= 1 then
+                        line = line .. format(L[" · %d%%"], math.min(100, math.floor(pct + 0.5)))
+                    elseif pct > 0 then
+                        line = line .. format(" · %.2f%%", pct)
+                    end
                 end
-                if not located[nm] then line = line .. " · " .. L["暂无坐标"] end
-                out[#out + 1] = { line, 0.75, 0.75, 0.75 }
+                if not located[nm] and zt ~= L["团本"] and zt ~= L["地下城"] then
+                    line = line .. " · " .. L["暂无坐标"]
+                end
+                out[#out + 1] = { line, 0.78, 0.78, 0.78 }
             end
         end
     end
@@ -11978,17 +12437,32 @@ if type(gns) == "table" and gns ~= ns then
     gns.ProfSourceAccessUIDataSchema = 1
     gns.ProfSourcePurchaseUIDataSchema = 1
 end
-function PD.PurchaseConditionLines(lines,npc,itemID,offer)
-    local variants=offer.options or {offer}
-    local seen={}
-    for _,variant in ipairs(variants) do
-        local prefix=#variants>1 and (PD.FormulaCostText(variant).." · ") or ""
-        local function add(text)
-            if text and not seen[prefix..text] then lines[#lines+1]={prefix..text,0.75,0.75,0.75};seen[prefix..text]=true end
+function PD.PurchaseConditionLines(lines, npc, itemID, offer, extraConds)
+    local variants = (type(offer) == "table" and offer.options) or { offer or {} }
+    local ds = getDS()
+    local npcObj = npc and ds and ds.Npc and ds.Npc(npc)
+    local accessConds = npcObj and npcObj.accessConditions
+    local seen = {}
+    for _, variant in ipairs(variants) do
+        local prefix = #variants > 1 and (PD.FormulaCostText(variant) .. " · ") or ""
+        local function add(text, r, g, b)
+            if type(text) == "string" and text ~= "" and not seen[prefix .. text] then
+                lines[#lines + 1] = { "  " .. prefix .. text, r or 0.78, g or 0.82, b or 0.88 }
+                seen[prefix .. text] = true
+            end
         end
-        add(PD.SourceQuestText("vendor",npc,itemID,variant.conditions))
-        add(PD.SourceAccessText("vendor",npc,itemID,variant.conditions))
-        for _,text in ipairs(variant.purchaseRequirementTexts or {}) do add(text) end
+        local merged = {}
+        for _, srcList in ipairs({ variant.conditions, accessConds, extraConds }) do
+            if type(srcList) == "table" then
+                for _, c in ipairs(srcList) do merged[#merged + 1] = c end
+            end
+        end
+        for _, cl in ipairs(PD.ConditionSummaryLines(merged)) do
+            add(cl[1], cl[2], cl[3], cl[4])
+        end
+        add(PD.SourceQuestText("vendor", npc, itemID, merged))
+        add(PD.SourceAccessText("vendor", npc, itemID, merged))
+        for _, text in ipairs(variant.purchaseRequirementTexts or {}) do add(text) end
     end
 end
 
@@ -12010,17 +12484,38 @@ end
 
 function PD.SourceQuestText(kind, npc, itemID, conditions)
     local cond = getCond()
+    local ds = getDS()
     local hasQuest = false
+    local qNames, qSeen = {}, {}
     for _, c in ipairs(conditions or {}) do
-        if c.kind == "questGroup" or c.kind == "quest" then hasQuest = true; break end
+        if c.kind == "questGroup" or c.kind == "quest" then
+            hasQuest = true
+            for _, grp in ipairs(c.groups or {}) do
+                if type(grp) == "table" then
+                    for _, qid in ipairs(grp) do
+                        if type(qid) == "number" and qid > 0 and not qSeen[qid] then
+                            qSeen[qid] = true
+                            local qn = ds and ds.RawText and ds.RawText("quest", qid)
+                            if type(qn) == "string" and qn ~= "" then qNames[#qNames + 1] = qn end
+                        end
+                    end
+                end
+            end
+            if type(c.questID) == "number" and c.questID > 0 and not qSeen[c.questID] then
+                qSeen[c.questID] = true
+                local qn = ds and ds.RawText and ds.RawText("quest", c.questID)
+                if type(qn) == "string" and qn ~= "" then qNames[#qNames + 1] = qn end
+            end
+        end
     end
     if not hasQuest then return end
+    local suffix = #qNames > 0 and ("（" .. table.concat(qNames, " / ") .. "）") or ""
     if cond and cond.Evaluate then
         local ok = cond.Evaluate(conditions)
-        if ok == true then return L["任务解锁：已完成"] end
-        if ok == false then return L["任务解锁：未完成"] end
+        if ok == true then return L["任务解锁：已完成"] .. suffix end
+        if ok == false then return L["任务解锁：未完成"] .. suffix end
     end
-    return L["任务解锁：状态未知"]
+    return L["任务解锁：状态未知"] .. suffix
 end
 
 function PD.VendorBlockLines(lines, itemID)
@@ -12660,7 +13155,30 @@ function PD.RecipeSpec(r)
     if hasVendor then
         dpre, dval, dname, dcost = PD.VendorSrcLine(src, fid)
         dact = PD.VendorAct(src)
-        dlines = PD.VendorLines(src, fid)
+        dlines = (learningCard and learningCard.lines) or PD.VendorLines(src, fid, learningCard and learningCard.routeConds)
+        dtip = dlines
+    elseif learningCard and learningCard.kind == "drop" then
+        dpre, dval, dname = PD.DropSrcLine(src)
+        dact = PD.DropAct(src)
+        dlines = learningCard.lines or PD.DropLines(src)
+        dtip = dlines
+    elseif learningCard and learningCard.kind == "quest" then
+        local qtxt = PD.QuestShortText(learningCard.quests)
+        if qtxt then
+            dpre, dval, dname = (fid and (L["图纸·任务"] .. ":") or (L["任务"] .. ":")), qtxt, qtxt
+        end
+        dlines = learningCard.lines
+        dtip = dlines
+    elseif learningCard and learningCard.kind == "extra" then
+        local epre, eval = PD.ExtraSrcShortText(learningCard.extraSources)
+        if epre and eval then
+            dpre, dval, dname = epre, eval, eval
+        end
+        dlines = learningCard.lines
+        dtip = dlines
+    elseif learningCard and (learningCard.kind == "crafted" or learningCard.kind == "auto") then
+        dlines = learningCard.lines
+        dtip = dlines
     elseif (not fid) and base == L["训练师"] then
         local tval = PD.TeachVal(spell)
         if tval then
@@ -12694,7 +13212,7 @@ function PD.RecipeSpec(r)
         kind = "row", is_new = isV2 and r.isNew or r[11], it = outItem and { outItem } or nil,
         qItem = outItem, row = r, _mats = mats,
         spell = tonumber(spell),
-        icon = outItem and nil or SpellIcon(spell),
+        icon = (not outItem) and SpellIcon(spell) or nil,
         text = rowName,
         tipExtra = function()
             local lines = outItem and PD.PriceTipLines(outItem, mats,
@@ -20558,7 +21076,7 @@ function PD.AuditRows(all)
                 local stxt = ""
                 if sp then
                     stxt = tostring(sp.text or sp.sub or "")
-                    if #stxt > 26 then stxt = stxt:sub(1, 26) .. "…" end
+                    if PD.GlyphLen(stxt) > 18 then stxt = PD.GlyphPrefix(stxt, 18) .. "…" end
                 end
                 local l = geom(r)
                 sink(string.format("  行 idx=%d kind=%s spec[%s] x=%d %s || %s", i,

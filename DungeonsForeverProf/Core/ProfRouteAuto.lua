@@ -828,7 +828,7 @@ function RA.MaterialPurchases(id, need, opts)
     elseif auction then
         local dCost = (book and used <= book.total and depth and type(depth.Cost) == "function") and depth.Cost(book, used, need) or nil
         local unpriced = (book ~= nil and used <= book.total and dCost == nil) and true or nil
-        local cost = unpriced and nil or (dCost or (auction * need))
+        local cost = (not unpriced) and (dCost or (auction * need)) or nil
         local unit = (cost and need > 0) and (cost / need) or nil
         return { {
             id, need,
