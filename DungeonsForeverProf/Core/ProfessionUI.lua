@@ -10842,7 +10842,7 @@ function PD.LearningOriginCard(recipe,view)
     src.drops=native and native.drops or {}
     if #src.drops==0 and reference then src.drops=reference.drops or reference.d or {} end
     src.extraSources = (reference and reference.extraSources) or (native and native.extraSources) or {}
-    local rawQuests = (route and route.questIDs) or acquisition.quests or (native and native.quests) or {}
+    local rawQuests = (route and route.questIDs) or acquisition.quests or (native and native.quests) or (questRoute and questRoute.questIDs) or {}
     if type(rawQuests) == "table" and #rawQuests > 0 then src.quests = rawQuests end
     local craftSpells = ds and ds.CraftIndex and ds.CraftIndex(fid)
     local hasCraft = type(craftSpells) == "table" and #craftSpells > 0
@@ -13561,6 +13561,7 @@ function PD.ScrollSpec(ce)
 end
 
 PD.FAVOR_CURID = 3402
+PD.COST_ITEM_PREFIX = "__item:"
 PD.NO_SELL_KEY = "__none"
 PD.DD_TYPE = "__ddtype"
 PD.DD_MONEY = "__ddmoney"
@@ -13580,7 +13581,14 @@ function PD.CurKeysOfFid(fid)
     local ks = {}
     if supply and supply.DisplayList then
         for _, offer in ipairs(supply.DisplayList(fid) or {}) do
-            for _, cost in ipairs(offer.currencies or {}) do ks[cost.id] = true end
+            for _, cost in ipairs(offer.currencies or {}) do
+                local cid = type(cost) == "table" and (cost.currencyID or cost.id) or nil
+                if type(cid) == "number" and cid > 0 then ks[cid] = true end
+            end
+            for _, ci in ipairs(offer.costItems or {}) do
+                local ciid = type(ci) == "table" and (ci.itemID or ci.id) or nil
+                if type(ciid) == "number" and ciid > 0 then ks[PD.COST_ITEM_PREFIX .. ciid] = true end
+            end
             if not offer.hasExtendedCost and offer.priceVerified then ks[0] = true end
         end
     else
@@ -13595,7 +13603,12 @@ function PD.CurKeysOfFid(fid)
                     if type(cid) == "number" and cid > 0 then ks[cid] = true end
                 end
                 if type(offer.currencyID) == "number" and offer.currencyID > 0 then ks[offer.currencyID] = true end
-                local hasExt = #curList > 0 or (type(offer.costItems) == "table" and #offer.costItems > 0)
+                local ciList = type(offer.costItems) == "table" and offer.costItems or {}
+                for _, ci in ipairs(ciList) do
+                    local ciid = type(ci) == "table" and (ci.itemID or ci.id) or nil
+                    if type(ciid) == "number" and ciid > 0 then ks[PD.COST_ITEM_PREFIX .. ciid] = true end
+                end
+                local hasExt = #curList > 0 or #ciList > 0
                 local priceVal = offer.priceCopper or offer.price
                 if not hasExt and (offer.priceVerified == true or (offer.priceVerified == nil and type(priceVal) == "number" and priceVal > 0)) then
                     ks[0] = true
@@ -13621,29 +13634,42 @@ local function v2SrcInfo(rec)
     local spell = rec.spellID
     local lr = spell and ds and ds.LearningRoutes and ds.LearningRoutes(spell)
     local routes = (type(lr) == "table" and lr.routes) or lr
-    local fid, hasTrainer = nil, false
+    local fids, hasTrainer, hasAuto, hasQuest = {}, false, false, false
     for _, rt in ipairs(routes or {}) do
         if type(rt) == "table" then
-            if rt.kind == "item" and type(rt.teachingItemID) == "number" and not fid then
-                fid = rt.teachingItemID
+            if rt.kind == "item" and type(rt.teachingItemID) == "number" then
+                fids[#fids + 1] = rt.teachingItemID
+                if type(rt.questIDs) == "table" and #rt.questIDs > 0 then hasQuest = true end
             elseif rt.kind == "trainer" then
                 hasTrainer = true
+            elseif rt.kind == "autoGrant" then
+                hasAuto = true
+            elseif rt.kind == "quest" then
+                hasQuest = true
             end
         end
     end
-    if type(fid) ~= "number" then
-        return (hasTrainer or not routes) and "trainer" or nil, nil
+    if #fids == 0 then
+        if hasAuto or hasTrainer or not routes then return "trainer", nil end
+        if hasQuest then return "quest", nil end
+        return nil, nil
     end
     local SM = getMerge()
-    local view = SM and SM.SourceOf and SM.SourceOf(fid)
-    local kind = SM and SM.Primary and SM.Primary(view)
-    if not kind then
-        local vo = ds.VendorOffers and ds.VendorOffers(fid)
-        local offers = (type(vo) == "table" and vo.offers) or vo
-        if type(offers) == "table" and #offers > 0 then kind = "vendor"
-        elseif ds.Drops and #(ds.Drops(fid) or {}) > 0 then kind = "drop" end
+    for _, candFid in ipairs(fids) do
+        local view = SM and SM.SourceOf and SM.SourceOf(candFid)
+        local kind = SM and SM.Primary and SM.Primary(view)
+        if not kind then
+            local vo = ds.VendorOffers and ds.VendorOffers(candFid)
+            local offers = (type(vo) == "table" and vo.offers) or vo
+            if type(offers) == "table" and #offers > 0 then kind = "vendor"
+            elseif ds.Drops and #(ds.Drops(candFid) or {}) > 0 then kind = "drop"
+            elseif ds.CraftIndex and #(ds.CraftIndex(candFid) or {}) > 0 then kind = "crafted" end
+        end
+        if kind then return kind, candFid end
     end
-    return kind, fid
+    if hasAuto or hasTrainer then return "trainer", fids[1] end
+    if hasQuest then return "quest", fids[1] end
+    return nil, fids[1]
 end
 
 function PD.SrcKindOf(r)
@@ -13735,6 +13761,19 @@ function PD.CurName(id)
     local m = PD.__curName
     local hit = m[id]
     if hit and hit[3] then return hit[1], hit[2] end
+    if type(id) == "string" and id:sub(1, #PD.COST_ITEM_PREFIX) == PD.COST_ITEM_PREFIX then
+        local itemID = tonumber(id:sub(#PD.COST_ITEM_PREFIX + 1))
+        if itemID then
+            local nm = PD.VendorItemName(itemID)
+            if nm and nm ~= "" then
+                m[id] = { nm, nil, true }
+                return nm, nil
+            end
+            local fb = (hit and hit[1]) or format("#%d", itemID)
+            m[id] = { fb, nil }
+            return fb, nil
+        end
+    end
     local nm, ic = PD.CurrencyOf(id)
     if not nm and id ~= PD.FAVOR_CURID then nm = PD.VendorItemName(id) end
     if nm and nm ~= "" then
@@ -14565,6 +14604,15 @@ DG.FISH_GROUPS = {
     { key = "titles", text = L["钓鱼称号"] },
 }
 
+local function areaMapIDOf(area)
+    if not area then return nil end
+    if area.uiMapID or area.mapID then return area.uiMapID or area.mapID end
+    local zid = area.areaID or area.zoneID
+    local ds = getDS()
+    local z = zid and ds and ds.Zone and ds.Zone(zid)
+    return z and z.uiMapID or nil
+end
+
 function PD.RowsFishing(rows)
     local ds = getDS()
     local fg = ds and ds.FishingGuide and ds.FishingGuide()
@@ -14603,25 +14651,160 @@ function PD.RowsFishing(rows)
     end
     local fishMap = fg and fg.fish
     if type(fishMap) == "table" and next(fishMap) ~= nil then
-        local fids = {}
-        for fid in pairs(fishMap) do
-            if type(fid) == "number" then fids[#fids + 1] = fid end
+        PD.fishDetailOpen = PD.fishDetailOpen or {}
+        local fishItems = {}
+        for fid, info in pairs(fishMap) do
+            if type(fid) == "number" and type(info) == "table" then
+                local rawAreas = info.areas or {}
+                local cleanAreas = {}
+                for _, ar in ipairs(rawAreas) do
+                    if type(ar) == "table" and ar.areaID then
+                        if ar.minSkill ~= nil or ar.dropRatePct == nil or ar.dropRatePct >= 0.5 then
+                            cleanAreas[#cleanAreas + 1] = ar
+                        end
+                    end
+                end
+                if #cleanAreas == 0 then
+                    for _, ar in ipairs(rawAreas) do
+                        if type(ar) == "table" and ar.areaID then
+                            cleanAreas[#cleanAreas + 1] = ar
+                        end
+                    end
+                end
+                table.sort(cleanAreas, function(a, b)
+                    local sa, sb = a.minSkill or 999, b.minSkill or 999
+                    if sa ~= sb then return sa < sb end
+                    local da, db = a.dropRatePct or 0, b.dropRatePct or 0
+                    if da ~= db then return da > db end
+                    return (a.areaID or 0) < (b.areaID or 0)
+                end)
+                local minSk, noGet
+                for _, ar in ipairs(cleanAreas) do
+                    if type(ar.minSkill) == "number" and (not minSk or ar.minSkill < minSk) then
+                        minSk = ar.minSkill
+                        noGet = ar.noGetaway or ar.avoidGetaway
+                    elseif type(ar.minSkill) == "number" and ar.minSkill == minSk and not noGet then
+                        noGet = ar.noGetaway or ar.avoidGetaway
+                    end
+                end
+                fishItems[#fishItems + 1] = {
+                    fid = fid,
+                    info = info,
+                    areas = cleanAreas,
+                    minSk = minSk,
+                    noGet = noGet,
+                }
+            end
         end
-        table.sort(fids)
-        if #fids > 0 then
-            PushHead(rows, format(L["可钓鱼类（%d 种）"], #fids))
-            for _, fid in ipairs(fids) do
-                local info = fishMap[fid]
+        table.sort(fishItems, function(a, b)
+            local sa, sb = a.minSk or 999, b.minSk or 999
+            if sa ~= sb then return sa < sb end
+            return a.fid < b.fid
+        end)
+        if #fishItems > 0 then
+            PushHead(rows, format(L["可钓鱼类（%d 种）"], #fishItems))
+            for _, item in ipairs(fishItems) do
+                local fid = item.fid
+                local info = item.info
+                local areas = item.areas
                 local notes = {}
                 if info.pool then notes[#notes + 1] = L["鱼点"] end
                 if info.season then notes[#notes + 1] = L["季节限定"] end
                 if info.night then notes[#notes + 1] = L["夜间"] end
                 if type(info.note) == "string" and info.note ~= "" then notes[#notes + 1] = L[info.note] or info.note end
+                local nm = PD.ItemName(fid)
+                local titleText = #notes > 0 and (nm .. " · " .. table.concat(notes, " · ")) or nm
+                local skillText
+                if item.minSk and item.noGet then
+                    skillText = format(L["钓鱼 %d（不脱钩 %d）"], item.minSk, item.noGet)
+                elseif item.minSk then
+                    skillText = format(L["钓鱼 %d"], item.minSk)
+                else
+                    skillText = L["钓鱼等级未知"]
+                end
+                local isOpen = (#areas > 1) and (PD.fishDetailOpen[fid] == true) or false
+                local preview = {}
+                for i = 1, math.min(#areas, 4) do
+                    local ar = areas[i]
+                    local zn = PD.FishingAreaName(ar)
+                    preview[#preview + 1] = ar.minSkill and format("%s(%d)", zn, ar.minSkill) or zn
+                end
+                local subText
+                if #areas == 0 then
+                    subText = L["暂无可钓地点"]
+                else
+                    subText = table.concat(preview, "、")
+                    if isOpen then
+                        subText = subText .. " · " .. L["收起地点"]
+                    elseif #areas > 4 then
+                        subText = subText .. format(L[" 等 %d 处（点击展开）"], #areas)
+                    elseif #areas > 1 then
+                        subText = subText .. " · " .. L["点击展开地点"]
+                    end
+                end
+                local tipLines = { { nm, 1, 0.82, 0 } }
+                if #notes > 0 then tipLines[#tipLines + 1] = { table.concat(notes, " · "), 0.75, 0.85, 1 } end
+                tipLines[#tipLines + 1] = { skillText, 0.95, 0.85, 0.45 }
+                for _, ar in ipairs(areas) do
+                    local det = PD.FishingAreaDetail(ar)
+                    if type(ar.dropRatePct) == "number" then
+                        local pct = format(L["钓率 %.1f%%"], ar.dropRatePct)
+                        det = det ~= "" and (det .. " · " .. pct) or pct
+                    end
+                    local line = det ~= "" and (PD.FishingAreaName(ar) .. " — " .. det) or PD.FishingAreaName(ar)
+                    tipLines[#tipLines + 1] = { line, 0.8, 0.9, 0.95 }
+                end
+                local actFn
+                if #areas == 1 then
+                    local soleArea = areas[1]
+                    if areaMapIDOf(soleArea) then
+                        actFn = function() PD.ShowFishingArea(soleArea) end
+                    end
+                elseif #areas > 1 then
+                    local toggleFid = fid
+                    actFn = function()
+                        if PD.fishDetailOpen[toggleFid] then
+                            PD.fishDetailOpen[toggleFid] = nil
+                        else
+                            PD.fishDetailOpen[toggleFid] = true
+                        end
+                        PD.RequestRender()
+                    end
+                end
                 rows[#rows + 1] = {
-                    kind = "row", h = PD.ROW_H1, it = { fid },
-                    text = PD.ItemName(fid),
-                    sub = table.concat(notes, " · "),
+                    kind = "row", h = PD.ROW_H, it = { fid },
+                    text = titleText,
+                    sub = subText,
+                    right = skillText,
+                    lines = tipLines,
+                    linesFirst = true,
+                    act = actFn,
                 }
+                if isOpen then
+                    for _, ar in ipairs(areas) do
+                        local selected = ar
+                        local mapID = areaMapIDOf(selected)
+                        local det = PD.FishingAreaDetail(selected)
+                        if type(selected.dropRatePct) == "number" then
+                            local pct = format(L["钓率 %.1f%%"], selected.dropRatePct)
+                            det = det ~= "" and (det .. " · " .. pct) or pct
+                        end
+                        rows[#rows + 1] = {
+                            kind = "row",
+                            h = det ~= "" and PD.ROW_H or PD.ROW_H1,
+                            text = "    " .. PD.FishingAreaName(selected),
+                            nameColor = { 0.42, 0.84, 0.95 },
+                            sub = det,
+                            right = mapID and L["点击地图"] or nil,
+                            lines = {
+                                { PD.FishingAreaName(selected) },
+                                { det ~= "" and det or L["钓鱼等级未知"], 0.7, 0.7, 0.7 },
+                                { L["钓鱼加成包含鱼竿、鱼饵和装备；达到不脱钩技能更稳定。"], 0.7, 0.7, 0.7 },
+                            },
+                            act = mapID and function() PD.ShowFishingArea(selected) end or nil,
+                        }
+                    end
+                end
             end
             PushGap(rows)
         end
@@ -14654,15 +14837,6 @@ function PD.FishingAreaDetail(area, extra)
     if area.note then parts[#parts + 1] = L[area.note] or area.note end
     if extra and extra ~= "" then parts[#parts + 1] = L[extra] or extra end
     return table.concat(parts, " · ")
-end
-
-local function areaMapIDOf(area)
-    if not area then return nil end
-    if area.uiMapID or area.mapID then return area.uiMapID or area.mapID end
-    local zid = area.areaID or area.zoneID
-    local ds = getDS()
-    local z = zid and ds and ds.Zone and ds.Zone(zid)
-    return z and z.uiMapID or nil
 end
 
 function PD.ShowFishingArea(area)
@@ -14871,8 +15045,66 @@ function PD.GatherRouteCards(rows)
             end
         end
     end
+    local routeBands = bands
+    if slug == "herbalism" or slug == "mining" then
+        local GC_HERB_GRP = { { 1, 50 }, { 50, 100 }, { 100, 150 }, { 150, 205 }, { 205, 230 }, { 230, 270 }, { 270, 300 } }
+        local GC_MINE_GRP = { { 1, 65 }, { 65, 125 }, { 125, 175 }, { 175, 245 }, { 245, 300 } }
+        local grp = (slug == "herbalism") and GC_HERB_GRP or GC_MINE_GRP
+        local function grpOf(s)
+            local cur = grp[1]
+            for _, rg in ipairs(grp) do
+                if rg[1] <= s then cur = rg else break end
+            end
+            return cur
+        end
+        local merged = {}
+        for _, b in ipairs(bands) do
+            local rg = grpOf(b.minSkill or 1)
+            local last = merged[#merged]
+            if last and last._grp == rg then
+                local seenId = {}
+                for _, id in ipairs(last.itemIDs) do seenId[id] = true end
+                for _, id in ipairs(b.itemIDs or {}) do
+                    if not seenId[id] then
+                        seenId[id] = true
+                        last.itemIDs[#last.itemIDs + 1] = id
+                    end
+                end
+                local zcnt = {}
+                for _, z in ipairs(last.zones) do
+                    local aid = z.areaID or z[1]
+                    if aid then zcnt[aid] = math.max(zcnt[aid] or 0, z.count or z[2] or 0) end
+                end
+                for _, z in ipairs(b.zones or {}) do
+                    local aid = z.areaID or z[1]
+                    if aid then zcnt[aid] = math.max(zcnt[aid] or 0, z.count or z[2] or 0) end
+                end
+                local zl = {}
+                for aid, cnt in pairs(zcnt) do zl[#zl + 1] = { areaID = aid, count = cnt } end
+                table.sort(zl, function(a, b2)
+                    if a.count ~= b2.count then return a.count > b2.count end
+                    return a.areaID < b2.areaID
+                end)
+                for k = #zl, 7, -1 do zl[k] = nil end
+                last.zones = zl
+            else
+                local ids = {}
+                for k, id in ipairs(b.itemIDs or {}) do ids[k] = id end
+                local zs = {}
+                for k, z in ipairs(b.zones or {}) do zs[k] = z end
+                merged[#merged + 1] = {
+                    minSkill = rg[1],
+                    maxSkill = rg[2],
+                    itemIDs = ids,
+                    zones = zs,
+                    _grp = rg,
+                }
+            end
+        end
+        routeBands = merged
+    end
     local out = {}
-    for bi, b in ipairs(bands) do
+    for bi, b in ipairs(routeBands) do
         local lo, hi
         if slug == "skinning" then
             local rng = GC_SKIN_SKILL[b.mobLevelMin or 1]
@@ -14882,7 +15114,7 @@ function PD.GatherRouteCards(rows)
             lo = b.minSkill or 1
             hi = b.maxSkill
             if not hi then
-                local nxt = bands[bi + 1] and bands[bi + 1].minSkill
+                local nxt = routeBands[bi + 1] and routeBands[bi + 1].minSkill
                 hi = nxt and (nxt - 1) or 300
                 if hi < lo then hi = lo end
             end
@@ -20368,7 +20600,7 @@ function PD.Render()
         PD.sideFixed = (PD.tab == "crate" or PD.tab == "writ")
         PD.RowsCrates(rows)
     elseif PD.tab == "gather" then
-        PD.gridSplit = (PD.cur == "fishing")
+        PD.gridSplit = false
         if PD.cur == "fishing" then
             PD.RowsGather(rows)
         else
