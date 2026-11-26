@@ -34084,15 +34084,6 @@ ns.Data._loaders["sources"] = function()
         },
         spellID = 1266938,
       },
-      [1266939] = {
-        coverage = "complete",
-        missingReasons = _E,
-        profession = "engineering",
-        routes = {
-          { conditionsKnown = true, kind = "item", routeKey = "item:264236", status = "confirmed", teachingItemID = 264236 },
-        },
-        spellID = 1266939,
-      },
       [1266940] = {
         coverage = "complete",
         missingReasons = _E,
