@@ -5031,41 +5031,55 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [636] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [639] = {
+        areaIDs = { 1581 },
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+      },
+      [641] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [642] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [643] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [644] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [645] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [646] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [657] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -5141,13 +5155,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 8, uiMapID = 1435, x = 11.4, y = 62 },
         },
       },
-      [746] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 8, uiMapID = 1435, x = 76, y = 45.6 },
-        },
-      },
       [752] = {
         faction = "N",
         roles = { drop = true },
@@ -5205,13 +5212,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 8, uiMapID = 1435, x = 65.4, y = 67.4 },
         },
       },
-      [775] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 33, uiMapID = 1434, x = 40.2, y = 8.4 },
-        },
-      },
       [777] = {
         faction = "A",
         roles = { vendor = true },
@@ -5231,14 +5231,6 @@ ns.Data._loaders["entities"] = function()
         roles = { trainer = true },
         spawns = {
           { areaID = 44, uiMapID = 1433, x = 16.6, y = 45.77 },
-        },
-      },
-      [813] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 33, uiMapID = 1434, x = 49.4, y = 4 },
         },
       },
       [829] = {
@@ -5590,14 +5582,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 11, uiMapID = 1437, x = 47.3, y = 16.3 },
         },
       },
-      [1053] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 11, uiMapID = 1437, x = 46.4, y = 16.4 },
-        },
-      },
       [1054] = {
         classification = 1,
         faction = "N",
@@ -5751,13 +5735,6 @@ ns.Data._loaders["entities"] = function()
         roles = { vendor = true },
         spawns = {
           { areaID = 33, uiMapID = 1434, x = 31.4, y = 28 },
-        },
-      },
-      [1150] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 33, uiMapID = 1434, x = 32.4, y = 8.8 },
         },
       },
       [1154] = {
@@ -6477,6 +6454,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1696] = {
+        areaIDs = { 717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -6531,16 +6509,19 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1717] = {
+        areaIDs = { 717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [1720] = {
+        areaIDs = { 717 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [1725] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -6549,6 +6530,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1732] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -6570,6 +6552,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1763] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -6655,6 +6638,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1813] = {
+        areaIDs = { 139 },
         faction = "N",
         roles = { drop = true },
         spawns = {
@@ -6738,6 +6722,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1853] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -7061,13 +7046,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 85, uiMapID = 1420, x = 61, y = 52.4 },
         },
       },
-      [2120] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 130, uiMapID = 1421, x = 63.2, y = 63.4 },
-        },
-      },
       [2130] = {
         faction = "H",
         roles = { quest_giver = true, trainer = true },
@@ -7101,13 +7079,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 148, uiMapID = 1439, x = 35.2, y = 84.6 },
-        },
-      },
-      [2159] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 148, uiMapID = 1439, x = 36.2, y = 86.4 },
         },
       },
       [2160] = {
@@ -7295,14 +7266,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 1657, uiMapID = 1457, x = 58.2, y = 36.6 },
-        },
-      },
-      [2304] = {
-        classification = 1,
-        faction = "A",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 267, uiMapID = 1424, x = 69.9, y = 77.6 },
         },
       },
       [2318] = {
@@ -7513,12 +7476,11 @@ ns.Data._loaders["entities"] = function()
           { areaID = 267, uiMapID = 1424, x = 38.1, y = 22 },
         },
       },
-      [2422] = {
-        classification = 1,
+      [2423] = {
         faction = "N",
         roles = { drop = true },
         spawns = {
-          { areaID = 36, uiMapID = 1416, x = 39.3, y = 39.4 },
+          { areaID = 36, uiMapID = 1416, x = 36.3, y = 25.5 },
         },
       },
       [2425] = {
@@ -7650,13 +7612,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 33, uiMapID = 1434, x = 27.8, y = 77 },
         },
       },
-      [2521] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 33, uiMapID = 1434, x = 38.4, y = 80.6 },
-        },
-      },
       [2534] = {
         faction = "N",
         roles = { drop = true },
@@ -7676,13 +7631,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true, quest_giver = true },
         spawns = {
           { areaID = 33, uiMapID = 1434, x = 30.4, y = 90 },
-        },
-      },
-      [2547] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 33, uiMapID = 1434, x = 30.4, y = 89.4 },
         },
       },
       [2551] = {
@@ -7714,6 +7662,13 @@ ns.Data._loaders["entities"] = function()
           { areaID = 45, uiMapID = 1417, x = 17.5, y = 67.6 },
         },
       },
+      [2562] = {
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 45, uiMapID = 1417, x = 30.2, y = 43.8 },
+        },
+      },
       [2565] = {
         faction = "N",
         roles = { drop = true },
@@ -7736,12 +7691,11 @@ ns.Data._loaders["entities"] = function()
           { areaID = 45, uiMapID = 1417, x = 17.8, y = 69 },
         },
       },
-      [2585] = {
-        classification = 1,
-        faction = "A",
+      [2577] = {
+        faction = "N",
         roles = { drop = true },
         spawns = {
-          { areaID = 45, uiMapID = 1417, x = 21.2, y = 60.8 },
+          { areaID = 45, uiMapID = 1417, x = 46.1, y = 88 },
         },
       },
       [2586] = {
@@ -7968,6 +7922,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [2674] = {
+        areaIDs = { 1337 },
         roles = { drop = true },
         spawns = {
           { areaID = 1637, uiMapID = 1454, x = 53.2, y = 61.9 },
@@ -8103,6 +8058,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [2748] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -8175,14 +8131,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 45, uiMapID = 1417, x = 29.2, y = 59.4 },
-        },
-      },
-      [2783] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 45, uiMapID = 1417, x = 26, y = 57.9 },
         },
       },
       [2784] = {
@@ -8389,14 +8337,6 @@ ns.Data._loaders["entities"] = function()
         roles = { quest_giver = true },
         spawns = {
           { areaID = 3, uiMapID = 1418, x = 61.8, y = 54.2 },
-        },
-      },
-      [2892] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 3, uiMapID = 1418, x = 63.1, y = 35.1 },
         },
       },
       [2893] = {
@@ -8755,6 +8695,13 @@ ns.Data._loaders["entities"] = function()
           { areaID = 10, uiMapID = 1431, x = 81.4, y = 19.8 },
         },
       },
+      [3135] = {
+        faction = "A",
+        roles = { vendor = true },
+        spawns = {
+          { areaID = 10, uiMapID = 1431, x = 79.4, y = 44.4 },
+        },
+      },
       [3136] = {
         faction = "A",
         roles = { trainer = true },
@@ -8945,6 +8892,14 @@ ns.Data._loaders["entities"] = function()
         roles = { trainer = true },
         spawns = {
           { areaID = 38, uiMapID = 1432, x = 45.8, y = 13.4 },
+        },
+      },
+      [3295] = {
+        classification = 4,
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 17, uiMapID = 1413, x = 56.4, y = 7.4 },
         },
       },
       [3310] = {
@@ -9425,7 +9380,15 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1657, uiMapID = 1457, x = 29.4, y = 70 },
         },
       },
+      [3577] = {
+        faction = "N",
+        roles = { drop = true, vendor = true },
+        spawns = {
+          { areaID = 130, uiMapID = 1421, x = 61.4, y = 64.2 },
+        },
+      },
       [3586] = {
+        areaIDs = { 1581 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
@@ -9530,6 +9493,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3640] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -9552,11 +9516,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3653] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3654] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -9583,11 +9549,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3670] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3671] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -9601,14 +9569,23 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3673] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3674] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
+      },
+      [3683] = {
+        faction = "H",
+        roles = { vendor = true },
+        spawns = {
+          { areaID = 17, uiMapID = 1413, x = 41.8, y = 38.6 },
+        },
       },
       [3696] = {
         faction = "N",
@@ -9692,13 +9669,6 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3732] = {
-        faction = "H",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 331, uiMapID = 1440, x = 30.4, y = 24 },
-        },
-      },
-      [3733] = {
         faction = "H",
         roles = { drop = true },
         spawns = {
@@ -9831,36 +9801,43 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3849] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "H",
         roles = { drop = true },
       },
       [3850] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
       },
       [3861] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3862] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3864] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3865] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3872] = {
+        areaIDs = { 209 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
@@ -9873,11 +9850,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3886] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3887] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -9899,6 +9878,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3914] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -9911,6 +9891,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3927] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -9922,14 +9903,8 @@ ns.Data._loaders["entities"] = function()
           { areaID = 331, uiMapID = 1440, x = 66.4, y = 82 },
         },
       },
-      [3940] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 331, uiMapID = 1440, x = 77, y = 74 },
-        },
-      },
       [3943] = {
+        areaIDs = { 148 },
         faction = "N",
         roles = { drop = true },
         spawns = {
@@ -9944,6 +9919,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3947] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -10019,26 +9995,31 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [3974] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3975] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3976] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3977] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [3983] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -10468,21 +10449,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [4274] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4275] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4278] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4279] = {
+        areaIDs = { 209 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -10504,17 +10489,35 @@ ns.Data._loaders["entities"] = function()
           { uiMapID = 1415, x = 47.6, y = 19.5 },
         },
       },
+      [4285] = {
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 85, uiMapID = 1420, x = 83.6, y = 31.9 },
+          { uiMapID = 1415, x = 47.6, y = 19.5 },
+        },
+      },
+      [4286] = {
+        areaIDs = { 796 },
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+      },
       [4297] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4300] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4304] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -10716,22 +10719,32 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [4418] = {
+        areaIDs = { 1581 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4421] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4422] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4425] = {
+        areaIDs = { 491 },
         classification = 2,
+        faction = "N",
+        roles = { drop = true },
+      },
+      [4427] = {
+        areaIDs = { 491 },
+        classification = 1,
         faction = "N",
         roles = { drop = true },
       },
@@ -10800,22 +10813,26 @@ ns.Data._loaders["entities"] = function()
           { areaID = 33, uiMapID = 1434, x = 29.2, y = 88.4 },
         },
       },
-      [4520] = {
+      [4519] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4531] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4535] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4542] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11031,6 +11048,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [4627] = {
+        areaIDs = { 209 },
         faction = "N",
         roles = { drop = true },
       },
@@ -11163,42 +11181,56 @@ ns.Data._loaders["entities"] = function()
           { areaID = 47, uiMapID = 1425, x = 14.4, y = 42.4 },
         },
       },
+      [4813] = {
+        areaIDs = { 719 },
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+      },
       [4818] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4819] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4821] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4822] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4824] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4827] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4830] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4831] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11210,14 +11242,8 @@ ns.Data._loaders["entities"] = function()
           { areaID = 15, uiMapID = 1445, x = 36.4, y = 35.6 },
         },
       },
-      [4841] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 15, uiMapID = 1445, x = 45.6, y = 61.2 },
-        },
-      },
       [4842] = {
+        areaIDs = { 491 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
@@ -11241,28 +11267,17 @@ ns.Data._loaders["entities"] = function()
           { areaID = 38, uiMapID = 1432, x = 44.2, y = 83.9 },
         },
       },
-      [4847] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-      },
       [4849] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [4854] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
-      },
-      [4872] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 3, uiMapID = 1418, x = 38.3, y = 14.9 },
-        },
       },
       [4877] = {
         faction = "H",
@@ -11328,27 +11343,24 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [4978] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
-      [5045] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 15, uiMapID = 1445, x = 41.4, y = 38.2 },
-        },
-      },
       [5048] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5053] = {
+        areaIDs = { 718 },
         faction = "N",
         roles = { drop = true },
       },
       [5055] = {
+        areaIDs = { 718 },
         faction = "N",
         roles = { drop = true },
       },
@@ -11360,6 +11372,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5058] = {
+        areaIDs = { 209 },
         faction = "N",
         roles = { drop = true },
       },
@@ -11510,6 +11523,13 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1537, uiMapID = 1455, x = 66.4, y = 54.4 },
         },
       },
+      [5184] = {
+        faction = "A",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 15, uiMapID = 1445, x = 42.4, y = 30.2 },
+        },
+      },
       [5224] = {
         classification = 1,
         faction = "N",
@@ -11527,6 +11547,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5226] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11536,14 +11557,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 357, uiMapID = 1444, x = 59.2, y = 57.6 },
-        },
-      },
-      [5235] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 8, uiMapID = 1435, x = 72.2, y = 42 },
         },
       },
       [5236] = {
@@ -11568,6 +11581,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5259] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11580,11 +11594,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5280] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5291] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11604,6 +11620,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5312] = {
+        areaIDs = { 16018 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11677,6 +11694,13 @@ ns.Data._loaders["entities"] = function()
           { areaID = 440, uiMapID = 1446, x = 51.4, y = 28.8 },
         },
       },
+      [5422] = {
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 440, uiMapID = 1446, x = 47.2, y = 31.2 },
+        },
+      },
       [5423] = {
         faction = "N",
         roles = { drop = true },
@@ -11727,6 +11751,13 @@ ns.Data._loaders["entities"] = function()
         spawns = {
           { areaID = 14, uiMapID = 1411, x = 45.1, y = 83.2 },
           { areaID = 17, uiMapID = 1413, x = 67.2, y = 39.6 },
+        },
+      },
+      [5451] = {
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 440, uiMapID = 1446, x = 50.9, y = 66.3 },
         },
       },
       [5467] = {
@@ -11965,21 +11996,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5709] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5710] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5715] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5718] = {
+        areaIDs = { 16029 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -11988,21 +12023,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5719] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5720] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5721] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [5722] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -12043,6 +12082,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5775] = {
+        areaIDs = { 718 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -12232,6 +12272,14 @@ ns.Data._loaders["entities"] = function()
           { areaID = 17, uiMapID = 1413, x = 49, y = 84.5 },
         },
       },
+      [5849] = {
+        classification = 4,
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 17, uiMapID = 1413, x = 47.4, y = 85.4 },
+        },
+      },
       [5850] = {
         faction = "N",
         roles = { drop = true },
@@ -12285,6 +12333,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [5912] = {
+        areaIDs = { 718 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
@@ -12449,13 +12498,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 4, uiMapID = 1419, x = 61.8, y = 42.4 },
         },
       },
-      [6008] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 4, uiMapID = 1419, x = 38.4, y = 30.8 },
-        },
-      },
       [6030] = {
         faction = "A",
         roles = { quest_giver = true },
@@ -12486,16 +12528,10 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6035] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
-      },
-      [6068] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 405, uiMapID = 1443, x = 74.2, y = 67.2 },
-        },
       },
       [6070] = {
         faction = "N",
@@ -12526,6 +12562,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6109] = {
+        areaIDs = { 15532 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -12603,6 +12640,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6146] = {
+        areaIDs = { 15532 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -12619,6 +12657,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6168] = {
+        areaIDs = { 491 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -12681,41 +12720,49 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6215] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6220] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6228] = {
+        areaIDs = { 721 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [6229] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6230] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6232] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6233] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6243] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -12819,6 +12866,13 @@ ns.Data._loaders["entities"] = function()
           { areaID = 16, uiMapID = 1447, x = 53.4, y = 39 },
         },
       },
+      [6372] = {
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 16, uiMapID = 1447, x = 40.4, y = 15.4 },
+        },
+      },
       [6375] = {
         faction = "N",
         roles = { drop = true },
@@ -12827,6 +12881,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6379] = {
+        areaIDs = { 15532 },
         faction = "N",
         roles = { drop = true },
         spawns = {
@@ -12841,36 +12896,43 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6391] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
       },
       [6392] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
       },
       [6407] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
       },
       [6427] = {
+        areaIDs = { 796 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [6488] = {
+        areaIDs = { 796 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [6489] = {
+        areaIDs = { 796 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [6490] = {
+        areaIDs = { 796 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
@@ -12920,14 +12982,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 490, uiMapID = 1449, x = 45, y = 48.4 },
         },
       },
-      [6523] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 11, uiMapID = 1437, x = 48, y = 16.2 },
-        },
-      },
       [6527] = {
         faction = "N",
         roles = { drop = true },
@@ -12943,6 +12997,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6547] = {
+        areaIDs = { 796 },
         faction = "H",
         roles = { drop = true },
       },
@@ -12997,6 +13052,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6575] = {
+        areaIDs = { 796 },
         faction = "N",
         roles = { drop = true },
       },
@@ -13110,21 +13166,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [6906] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "A",
         roles = { drop = true, quest_giver = true },
       },
       [6907] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
       },
       [6908] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
       },
       [6910] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -13161,6 +13221,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7023] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -13201,6 +13262,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7030] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -13458,11 +13520,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7206] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7228] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -13504,72 +13568,83 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7267] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7268] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7275] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7291] = {
+        areaIDs = { 1337 },
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+      },
+      [7321] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7328] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7334] = {
+        areaIDs = { 722 },
         faction = "N",
         roles = { drop = true },
-      },
-      [7335] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { uiMapID = 1414, x = 53, y = 71 },
-        },
       },
       [7345] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7349] = {
+        areaIDs = { 722 },
         faction = "N",
         roles = { drop = true },
       },
       [7354] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7355] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7356] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7357] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7358] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -13606,6 +13681,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7405] = {
+        areaIDs = { 1337 },
         faction = "N",
         roles = { drop = true },
       },
@@ -13760,26 +13836,22 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7604] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7605] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [7608] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
-      },
-      [7669] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 4, uiMapID = 1419, x = 41.2, y = 14 },
-        },
       },
       [7728] = {
         classification = 1,
@@ -13825,6 +13897,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7800] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14060,6 +14133,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [7998] = {
+        areaIDs = { 721 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14095,6 +14169,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [8127] = {
+        areaIDs = { 1176 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14367,6 +14442,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [8317] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14409,6 +14485,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [8437] = {
+        areaIDs = { 1477 },
         faction = "N",
         roles = { drop = true },
       },
@@ -14436,6 +14513,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [8497] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14475,13 +14553,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 139, uiMapID = 1423, x = 56.3, y = 31.1 },
-        },
-      },
-      [8530] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 139, uiMapID = 1423, x = 11.7, y = 26.2 },
         },
       },
       [8534] = {
@@ -14589,6 +14660,12 @@ ns.Data._loaders["entities"] = function()
           { areaID = 51, uiMapID = 1427, x = 31.9, y = 56.8 },
         },
       },
+      [8567] = {
+        areaIDs = { 722 },
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+      },
       [8579] = {
         faction = "H",
         roles = { quest_giver = true },
@@ -14597,6 +14674,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [8580] = {
+        areaIDs = { 1477 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14655,14 +14733,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 139, uiMapID = 1423, x = 17.2, y = 28.8 },
-        },
-      },
-      [8636] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 47, uiMapID = 1425, x = 47.2, y = 65.3 },
         },
       },
       [8637] = {
@@ -14736,56 +14806,68 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [8886] = {
+        areaIDs = { 718 },
         faction = "N",
         roles = { drop = true },
       },
       [8893] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [8897] = {
+        areaIDs = { 1584 },
         faction = "N",
         roles = { drop = true },
       },
       [8898] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [8900] = {
+        areaIDs = { 1584 },
         faction = "N",
         roles = { drop = true },
       },
       [8903] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [8905] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [8907] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [8908] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [8916] = {
+        areaIDs = { 1584 },
         faction = "N",
         roles = { drop = true },
       },
       [8920] = {
+        areaIDs = { 1584 },
         faction = "N",
         roles = { drop = true },
       },
       [8926] = {
+        areaIDs = { 1584 },
         faction = "N",
         roles = { drop = true },
       },
@@ -14796,29 +14878,26 @@ ns.Data._loaders["entities"] = function()
           { areaID = 40, uiMapID = 1436, x = 52.8, y = 53.4 },
         },
       },
-      [8977] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 46, uiMapID = 1428, x = 77.4, y = 42.4 },
-        },
-      },
       [8983] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9018] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9024] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9025] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14833,6 +14912,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9028] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14846,6 +14926,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9056] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14858,6 +14939,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9156] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
@@ -14870,31 +14952,37 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9198] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9216] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9259] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9260] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9262] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9264] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14921,6 +15009,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9319] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14948,15 +15037,18 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9416] = {
+        areaIDs = { 1583 },
         faction = "N",
         roles = { drop = true },
       },
       [9437] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9438] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -14967,14 +15059,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 139, uiMapID = 1423, x = 59.8, y = 70.3 },
-        },
-      },
-      [9449] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 139, uiMapID = 1423, x = 67.2, y = 81.4 },
         },
       },
       [9450] = {
@@ -15001,6 +15085,14 @@ ns.Data._loaders["entities"] = function()
           { areaID = 139, uiMapID = 1423, x = 67.8, y = 82.8 },
         },
       },
+      [9456] = {
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 17, uiMapID = 1413, x = 44.2, y = 28.1 },
+        },
+      },
       [9477] = {
         faction = "N",
         roles = { drop = true },
@@ -15015,11 +15107,13 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true, vendor = true },
       },
       [9500] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true, quest_giver = true },
       },
       [9502] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15039,12 +15133,8 @@ ns.Data._loaders["entities"] = function()
           { areaID = 17, uiMapID = 1413, x = 44.1, y = 27.9 },
         },
       },
-      [9537] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-      },
       [9543] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15057,11 +15147,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9554] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [9583] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15074,6 +15166,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9596] = {
+        areaIDs = { 1583 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
@@ -15100,11 +15193,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9680] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-      },
-      [9681] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15117,6 +15206,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9696] = {
+        areaIDs = { 1583 },
         faction = "N",
         roles = { drop = true },
       },
@@ -15135,10 +15225,12 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9701] = {
+        areaIDs = { 1583 },
         faction = "N",
         roles = { drop = true },
       },
       [9736] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15158,6 +15250,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9816] = {
+        areaIDs = { 1583 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -15184,6 +15277,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10043] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15197,21 +15291,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10080] = {
+        areaIDs = { 1176 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [10081] = {
+        areaIDs = { 1176 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [10082] = {
+        areaIDs = { 1176 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [10083] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15233,6 +15331,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10120] = {
+        areaIDs = { 1337 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15243,6 +15342,7 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
       },
       [10264] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15283,11 +15383,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10317] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10318] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15308,6 +15410,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10339] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15321,12 +15424,8 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10363] = {
+        areaIDs = { 1583 },
         classification = 3,
-        faction = "N",
-        roles = { drop = true },
-      },
-      [10371] = {
-        classification = 1,
         faction = "N",
         roles = { drop = true },
       },
@@ -15338,129 +15437,155 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10384] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10394] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10398] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10399] = {
+        areaIDs = { 2017 },
         faction = "N",
         roles = { drop = true },
       },
       [10406] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10417] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10422] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10425] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10426] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10430] = {
+        areaIDs = { 1583 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [10432] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10436] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10438] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10442] = {
+        areaIDs = { 1583 },
         faction = "N",
         roles = { drop = true },
       },
       [10447] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10469] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10472] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10486] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10488] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10491] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10498] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10499] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10502] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10505] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10507] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10508] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15481,6 +15606,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10596] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15555,6 +15681,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10762] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15584,20 +15711,24 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10811] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10812] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [10813] = {
+        areaIDs = { 2017 },
         classification = 1,
         roles = { drop = true },
       },
       [10814] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15625,6 +15756,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10899] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15682,6 +15814,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [10997] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -15828,6 +15961,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11058] = {
+        areaIDs = { 2017 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16020,6 +16154,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11261] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16055,44 +16190,53 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11320] = {
+        areaIDs = { 2437 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11321] = {
+        areaIDs = { 2437 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11340] = {
+        areaIDs = { 1977 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11352] = {
+        areaIDs = { 1977 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11360] = {
+        areaIDs = { 1977 },
         faction = "N",
         roles = { drop = true },
       },
       [11361] = {
+        areaIDs = { 1977 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11368] = {
+        areaIDs = { 1977 },
         faction = "N",
         roles = { drop = true },
       },
       [11373] = {
+        areaIDs = { 1977 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11382] = {
+        areaIDs = { 1977 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -16113,6 +16257,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11441] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16126,6 +16271,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11444] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16139,46 +16285,55 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11453] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11457] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11458] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11462] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11465] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11469] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11484] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11487] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11489] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16192,21 +16347,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11517] = {
+        areaIDs = { 2437 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11518] = {
+        areaIDs = { 2437 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11519] = {
+        areaIDs = { 2437 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11520] = {
+        areaIDs = { 2437 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16229,7 +16388,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11557] = {
-        faction = "N",
+        faction = "H",
         roles = { quest_giver = true, trainer = true, vendor = true },
         spawns = {
           { areaID = 361, uiMapID = 1448, x = 65.2, y = 1.5 },
@@ -16241,13 +16400,6 @@ ns.Data._loaders["entities"] = function()
         spawns = {
           { areaID = 405, uiMapID = 1443, x = 59.2, y = 89.4 },
           { areaID = 16651, uiMapID = 2652, x = 22.6, y = 27.2 },
-        },
-      },
-      [11563] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 405, uiMapID = 1443, x = 17.6, y = 71 },
         },
       },
       [11576] = {
@@ -16272,35 +16424,42 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11582] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11583] = {
+        areaIDs = { 2677 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [11657] = {
+        areaIDs = { 2597 },
         faction = "N",
         roles = { drop = true },
       },
       [11659] = {
+        areaIDs = { 2717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11666] = {
+        areaIDs = { 2717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11667] = {
+        areaIDs = { 2717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [11673] = {
+        areaIDs = { 2717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16449,6 +16608,15 @@ ns.Data._loaders["entities"] = function()
           { uiMapID = 1414, x = 38.4, y = 58.2 },
         },
       },
+      [11782] = {
+        classification = 1,
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 405, uiMapID = 1443, x = 29.2, y = 63.9 },
+          { uiMapID = 1414, x = 38.4, y = 58.1 },
+        },
+      },
       [11786] = {
         classification = 1,
         faction = "N",
@@ -16509,6 +16677,13 @@ ns.Data._loaders["entities"] = function()
           { areaID = 139, uiMapID = 1423, x = 22.2, y = 63.4 },
         },
       },
+      [11913] = {
+        faction = "N",
+        roles = { drop = true },
+        spawns = {
+          { areaID = 406, uiMapID = 1442, x = 71.4, y = 86.6 },
+        },
+      },
       [11914] = {
         faction = "N",
         roles = { drop = true },
@@ -16525,16 +16700,19 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11982] = {
+        areaIDs = { 2717 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [11983] = {
+        areaIDs = { 2677 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [11988] = {
+        areaIDs = { 2717 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -16617,21 +16795,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12056] = {
+        areaIDs = { 2717 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [12057] = {
+        areaIDs = { 2717 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [12076] = {
+        areaIDs = { 2717 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [12098] = {
+        areaIDs = { 2717 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -16675,6 +16857,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12127] = {
+        areaIDs = { 2597 },
         faction = "A",
         roles = { drop = true },
       },
@@ -16693,31 +16876,37 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12201] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [12203] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [12225] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [12236] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [12237] = {
+        areaIDs = { 2100 },
         classification = 2,
         faction = "N",
         roles = { drop = true },
       },
       [12242] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16735,11 +16924,6 @@ ns.Data._loaders["entities"] = function()
         spawns = {
           { areaID = 405, uiMapID = 1443, x = 40.4, y = 79.2 },
         },
-      },
-      [12258] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
       },
       [12262] = {
         classification = 1,
@@ -16849,11 +17033,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12435] = {
+        areaIDs = { 2677 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [12497] = {
+        areaIDs = { 16018 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16862,6 +17048,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12784] = {
+        areaIDs = { 2597, 3358 },
         faction = "A",
         roles = { vendor = true },
         spawns = {
@@ -16869,6 +17056,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12794] = {
+        areaIDs = { 2597, 3277, 3358 },
         faction = "H",
         roles = { vendor = true },
       },
@@ -16913,6 +17101,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12876] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -16925,6 +17114,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12902] = {
+        areaIDs = { 719 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17026,6 +17216,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13036] = {
+        areaIDs = { 2557 },
         faction = "N",
         roles = { drop = true },
       },
@@ -17037,11 +17228,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13141] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-      },
-      [13142] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17054,6 +17241,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13216] = {
+        areaIDs = { 2597 },
         classification = 1,
         faction = "A",
         roles = { drop = true, vendor = true },
@@ -17075,6 +17263,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13282] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17087,11 +17276,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13285] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [13298] = {
+        areaIDs = { 2597 },
         classification = 1,
         faction = "A",
         roles = { drop = true },
@@ -17139,15 +17330,18 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13596] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [13599] = {
+        areaIDs = { 2100 },
         faction = "N",
         roles = { drop = true },
       },
       [13601] = {
+        areaIDs = { 2100 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17175,11 +17369,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13996] = {
+        areaIDs = { 2677 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [14020] = {
+        areaIDs = { 2677 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -17304,11 +17500,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14303] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [14308] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17320,11 +17518,13 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true, quest_giver = true, vendor = true },
       },
       [14324] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [14338] = {
+        areaIDs = { 2557 },
         faction = "N",
         roles = { quest_giver = true },
       },
@@ -17345,11 +17545,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14351] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [14354] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17363,6 +17565,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14368] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true, quest_giver = true },
@@ -17374,6 +17577,7 @@ ns.Data._loaders["entities"] = function()
         roles = { vendor = true },
       },
       [14400] = {
+        areaIDs = { 2557 },
         faction = "N",
         roles = { drop = true },
       },
@@ -17555,6 +17759,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14502] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17567,22 +17772,20 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14509] = {
+        areaIDs = { 1977 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [14515] = {
+        areaIDs = { 1977 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [14517] = {
+        areaIDs = { 1977 },
         classification = 3,
-        faction = "N",
-        roles = { drop = true },
-      },
-      [14518] = {
-        classification = 1,
         faction = "N",
         roles = { drop = true },
       },
@@ -17625,6 +17828,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14601] = {
+        areaIDs = { 2677 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -17693,6 +17897,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14750] = {
+        areaIDs = { 1977 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17714,6 +17919,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14834] = {
+        areaIDs = { 1977 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -17743,6 +17949,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [14861] = {
+        areaIDs = { 2057 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -17823,6 +18030,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15082] = {
+        areaIDs = { 1977 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -17903,21 +18111,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15240] = {
+        areaIDs = { 3428 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [15263] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15275] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15276] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -17938,6 +18150,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15299] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -17951,36 +18164,42 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15323] = {
+        areaIDs = { 3429 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [15333] = {
+        areaIDs = { 3429 },
         faction = "N",
         roles = { drop = true },
       },
       [15336] = {
+        areaIDs = { 3429 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [15339] = {
+        areaIDs = { 3429 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15340] = {
+        areaIDs = { 3429 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15355] = {
+        areaIDs = { 3429 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [15419] = {
-        faction = "N",
+        faction = "A",
         roles = { vendor = true },
         spawns = {
           { areaID = 1377, uiMapID = 1451, x = 52, y = 39.4 },
@@ -17995,6 +18214,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15461] = {
+        areaIDs = { 3429 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18014,36 +18234,43 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15509] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15510] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15511] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15516] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15517] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15543] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15544] = {
+        areaIDs = { 3428 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -18189,21 +18416,25 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [15936] = {
+        areaIDs = { 3456 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15952] = {
+        areaIDs = { 3456 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
       },
       [15978] = {
+        areaIDs = { 3456 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
       },
       [15979] = {
+        areaIDs = { 3456 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18216,6 +18447,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [16060] = {
+        areaIDs = { 3456 },
         classification = 3,
         faction = "N",
         roles = { drop = true },
@@ -18229,6 +18461,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [16080] = {
+        areaIDs = { 1583 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18282,6 +18515,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [16165] = {
+        areaIDs = { 3456 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18310,6 +18544,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [16453] = {
+        areaIDs = { 3456 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18336,6 +18571,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [166359] = {
+        areaIDs = { 1977 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18517,12 +18753,14 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [246602] = {
+        areaIDs = { 16544 },
         roles = { drop = true },
         spawns = {
           { areaID = 36, uiMapID = 1416, x = 14.2, y = 67.6 },
         },
       },
       [246683] = {
+        areaIDs = { 16544 },
         roles = { drop = true },
         spawns = {
           { areaID = 36, uiMapID = 1416, x = 11.6, y = 54.4 },
@@ -18536,12 +18774,14 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [246890] = {
+        areaIDs = { 16544 },
         roles = { drop = true },
         spawns = {
           { areaID = 36, uiMapID = 1416, x = 11.3, y = 63.6 },
         },
       },
       [246990] = {
+        areaIDs = { 16544 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -18549,6 +18789,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [246993] = {
+        areaIDs = { 16544 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -18577,6 +18818,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [247248] = {
+        areaIDs = { 16554 },
         classification = 1,
         roles = { drop = true },
       },
@@ -18752,6 +18994,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [250027] = {
+        areaIDs = { 16554 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -18760,6 +19003,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [250187] = {
+        areaIDs = { 16550 },
         classification = 1,
         roles = { drop = true },
       },
@@ -18777,25 +19021,26 @@ ns.Data._loaders["entities"] = function()
           { areaID = 85, uiMapID = 1420, x = 13.1, y = 55.3 },
         },
       },
-      [250619] = {
-        classification = 1,
-        roles = { drop = true },
-      },
       [250629] = {
+        areaIDs = { 16611 },
         classification = 1,
         roles = { drop = true },
       },
       [250650] = {
+        areaIDs = { 16611 },
         classification = 1,
         roles = { drop = true },
       },
       [250651] = {
+        areaIDs = { 16611 },
         roles = { drop = true },
       },
       [250652] = {
+        areaIDs = { 16611 },
         roles = { drop = true },
       },
       [250657] = {
+        areaIDs = { 16611 },
         classification = 1,
         roles = { drop = true },
       },
@@ -19005,6 +19250,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [253214] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19071,6 +19317,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [255065] = {
+        areaIDs = { 16544 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19078,6 +19325,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [255068] = {
+        areaIDs = { 16544 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19085,6 +19333,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [255070] = {
+        areaIDs = { 16544 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19092,6 +19341,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [255071] = {
+        areaIDs = { 16544 },
         roles = { drop = true },
         spawns = {
           { areaID = 36, uiMapID = 1416, x = 16.3, y = 70.1 },
@@ -19105,17 +19355,12 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [255267] = {
+        areaIDs = { 16620 },
         classification = 1,
         roles = { drop = true },
       },
-      [255534] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 16593, uiMapID = 2521, x = 50.4, y = 33.4 },
-        },
-      },
       [255669] = {
+        areaIDs = { 722 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -19124,6 +19369,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [255699] = {
+        areaIDs = { 16611 },
         classification = 2,
         roles = { drop = true },
       },
@@ -19574,6 +19820,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [258516] = {
+        areaIDs = { 16554 },
         classification = 1,
         roles = { drop = true },
       },
@@ -19584,9 +19831,12 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1537, uiMapID = 1455, x = 43.4, y = 27.4 },
         },
       },
-      [258897] = {
-        classification = 1,
-        roles = { drop = true },
+      [258963] = {
+        faction = "N",
+        roles = { drop = true, quest_giver = true },
+        spawns = {
+          { areaID = 16591, uiMapID = 2548, x = 40.7, y = 63.1 },
+        },
       },
       [258966] = {
         classification = 1,
@@ -19661,10 +19911,12 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [260325] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
       [260326] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
@@ -19711,6 +19963,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [260803] = {
+        areaIDs = { 16732 },
         faction = "N",
         roles = { drop = true },
         spawns = {
@@ -19718,6 +19971,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [260804] = {
+        areaIDs = { 16732 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -19726,6 +19980,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [260808] = {
+        areaIDs = { 16732 },
         classification = 1,
         faction = "N",
         roles = { drop = true },
@@ -19734,6 +19989,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [260809] = {
+        areaIDs = { 16732 },
         faction = "N",
         roles = { drop = true },
         spawns = {
@@ -19742,6 +19998,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [260810] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
@@ -19767,13 +20024,23 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [261749] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
           { uiMapID = 1414, x = 48.4, y = 74.7 },
         },
       },
+      [261750] = {
+        areaIDs = { 16667 },
+        classification = 1,
+        roles = { drop = true },
+        spawns = {
+          { uiMapID = 1414, x = 48.4, y = 75 },
+        },
+      },
       [261752] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19788,6 +20055,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [261773] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19802,6 +20070,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [261781] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19815,7 +20084,16 @@ ns.Data._loaders["entities"] = function()
           { uiMapID = 1414, x = 49.7, y = 75.8 },
         },
       },
+      [261784] = {
+        areaIDs = { 16667 },
+        classification = 1,
+        roles = { drop = true },
+        spawns = {
+          { uiMapID = 1414, x = 50.2, y = 76.1 },
+        },
+      },
       [261809] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19823,6 +20101,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [261898] = {
+        areaIDs = { 16667 },
         roles = { drop = true },
         spawns = {
           { uiMapID = 1414, x = 48.4, y = 75 },
@@ -19850,6 +20129,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [261934] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19948,6 +20228,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [262188] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -19969,6 +20250,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [262197] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -20012,6 +20294,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [262682] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -20026,6 +20309,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [262689] = {
+        areaIDs = { 16667 },
         roles = { drop = true },
         spawns = {
           { uiMapID = 1414, x = 49.4, y = 75.3 },
@@ -20075,6 +20359,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [263742] = {
+        areaIDs = { 16550 },
         classification = 1,
         roles = { drop = true },
       },
@@ -20194,14 +20479,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 45, uiMapID = 1417, x = 15.4, y = 42.4 },
         },
       },
-      [267182] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 616, uiMapID = 2482, x = 75.9, y = 34.1 },
-        },
-      },
       [267324] = {
         faction = "H",
         roles = { trainer = true, vendor = true },
@@ -20307,11 +20584,8 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1, uiMapID = 1426, x = 28.8, y = 66.6 },
         },
       },
-      [268321] = {
-        classification = 1,
-        roles = { drop = true },
-      },
       [268423] = {
+        areaIDs = { 16842 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -20319,33 +20593,13 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [268462] = {
+        areaIDs = { 16550 },
         classification = 1,
         roles = { drop = true },
-      },
-      [268624] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 17, uiMapID = 1413, x = 47.6, y = 53 },
-        },
       },
       [268865] = {
+        areaIDs = { 16554 },
         roles = { drop = true },
-      },
-      [269276] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 618, uiMapID = 1452, x = 58.9, y = 10.2 },
-        },
-      },
-      [270589] = {
-        classification = 1,
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 11, uiMapID = 1437, x = 21.6, y = 43.4 },
-        },
       },
       [270664] = {
         faction = "N",
@@ -20399,14 +20653,17 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [271732] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
       [271749] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
       [271750] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
@@ -20439,6 +20696,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [272317] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -20446,6 +20704,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [272319] = {
+        areaIDs = { 16667 },
         classification = 1,
         roles = { drop = true },
         spawns = {
@@ -20474,10 +20733,12 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [275045] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
       [275046] = {
+        areaIDs = { 16732 },
         classification = 1,
         roles = { drop = true },
       },
@@ -24455,10 +24716,15 @@ ns.Data._loaders["entities"] = function()
       [2597] = { areaID = 2597, faction = "N", isCapital = false, uiMapID = 1459, zoneType = "pvp" },
       [2677] = { areaID = 2677, faction = "N", isCapital = false, zoneType = "raid" },
       [2717] = { areaID = 2717, faction = "N", isCapital = false, zoneType = "raid" },
+      [3277] = { areaID = 3277, faction = "N", isCapital = false, uiMapID = 1460, zoneType = "pvp" },
       [3358] = { areaID = 3358, faction = "N", isCapital = false, uiMapID = 1461, zoneType = "pvp" },
       [3428] = { areaID = 3428, faction = "N", isCapital = false, zoneType = "raid" },
       [3429] = { areaID = 3429, faction = "N", isCapital = false, zoneType = "raid" },
       [3456] = { areaID = 3456, faction = "N", isCapital = false, zoneType = "raid" },
+      [15532] = { areaID = 15532, faction = "N", isCapital = false, zoneType = "raid" },
+      [16018] = { areaID = 16018, faction = "N", isCapital = false, uiMapID = 1444, zoneType = "raid" },
+      [16029] = { areaID = 16029, faction = "N", isCapital = false, uiMapID = 1425, zoneType = "raid" },
+      [16544] = { areaID = 16544, faction = "N", isCapital = false, zoneType = "dungeon" },
       [16550] = { areaID = 16550, faction = "N", isCapital = false, zoneType = "dungeon" },
       [16554] = { areaID = 16554, faction = "N", isCapital = false, zoneType = "dungeon" },
       [16591] = { areaID = 16591, faction = "N", isCapital = false, uiMapID = 2548, zoneType = "world" },
@@ -24466,7 +24732,9 @@ ns.Data._loaders["entities"] = function()
       [16611] = { areaID = 16611, faction = "N", isCapital = false, zoneType = "dungeon" },
       [16620] = { areaID = 16620, faction = "N", isCapital = false, zoneType = "dungeon" },
       [16651] = { areaID = 16651, faction = "N", isCapital = false, uiMapID = 2652, zoneType = "world" },
+      [16667] = { areaID = 16667, faction = "N", isCapital = false, zoneType = "dungeon" },
       [16732] = { areaID = 16732, faction = "N", isCapital = false, zoneType = "dungeon" },
+      [16842] = { areaID = 16842, faction = "N", isCapital = false, zoneType = "dungeon" },
     },
   }
 end
