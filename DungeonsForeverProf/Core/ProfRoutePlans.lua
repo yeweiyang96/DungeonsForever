@@ -383,8 +383,13 @@ function RA.OptionsFor(slug, current)
     opts.recoveryEnabled = setting("recoveryEnabled", false, slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", cfgDefaultFee(), slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false, slug)
-    opts.allowBindOnPickupFormulas = setting("autoAllowBindOnPickupFormulas", false, slug)
+    opts.allowDropFormulas = setting("autoAllowDropFormulas", false, slug)
     opts.allowCurrencyFormulas = setting("autoAllowCurrencyFormulas", false, slug)
+    opts.excludeQuestRecipes = setting("autoExcludeQuestRecipes", true, slug)
+    opts.excludeQuestTrainers = setting("autoExcludeQuestTrainers", true, slug)
+    opts.excludeQuestVendors = setting("autoExcludeQuestVendors", true, slug)
+    opts.excludeInstanceVendors = setting("autoExcludeInstanceVendors", true, slug)
+    opts.excludeInstanceTrainers = setting("autoExcludeInstanceTrainers", slug ~= "enchanting", slug)
     opts.considerAuctionSupply = setting("autoConsiderAuctionSupply", false, slug)
     opts.useBagMaterials = setting("autoUseBagMaterials", false, slug)
     if isFixedOnly(slug) then
@@ -442,8 +447,13 @@ local function options(slug, supplied)
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", cfgDefaultFee(), slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true, slug) end
     if opts.allowLimitedFormulas == nil then opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false, slug) end
-    if opts.allowBindOnPickupFormulas == nil then opts.allowBindOnPickupFormulas = setting("autoAllowBindOnPickupFormulas", false, slug) end
+    if opts.allowDropFormulas == nil then opts.allowDropFormulas = setting("autoAllowDropFormulas", false, slug) end
     if opts.allowCurrencyFormulas == nil then opts.allowCurrencyFormulas = setting("autoAllowCurrencyFormulas", false, slug) end
+    if opts.excludeQuestRecipes == nil then opts.excludeQuestRecipes = setting("autoExcludeQuestRecipes", true, slug) end
+    if opts.excludeQuestTrainers == nil then opts.excludeQuestTrainers = setting("autoExcludeQuestTrainers", true, slug) end
+    if opts.excludeQuestVendors == nil then opts.excludeQuestVendors = setting("autoExcludeQuestVendors", true, slug) end
+    if opts.excludeInstanceVendors == nil then opts.excludeInstanceVendors = setting("autoExcludeInstanceVendors", true, slug) end
+    if opts.excludeInstanceTrainers == nil then opts.excludeInstanceTrainers = setting("autoExcludeInstanceTrainers", slug ~= "enchanting", slug) end
     if not opts.exclusions then
         local pol
         if E and type(E.GetPolicies) == "function" then

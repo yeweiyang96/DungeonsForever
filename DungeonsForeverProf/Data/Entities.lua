@@ -6,7 +6,7 @@ ns.Data._loaders["entities"] = function()
   return {
     currencies = {
       [515] = { currencyID = 515, icon = "inv_misc_ticket_darkmoon_01", isMerchantFavor = false },
-      [1792] = { currencyID = 1792, icon = "inv_misc_ticket_darkmoon_01", isMerchantFavor = false },
+      [1792] = { currencyID = 1792, icon = "achievement_legionpvptier4", isMerchantFavor = false },
       [3402] = { currencyID = 3402, icon = "racial_dwarf_findtreasure", isMerchantFavor = true },
       [3468] = { currencyID = 3468, icon = "achievement_rankedpvp_07", isMerchantFavor = false },
       [3469] = { currencyID = 3469, icon = "inv_misc_coin_16", isMerchantFavor = false },
@@ -1522,6 +1522,7 @@ ns.Data._loaders["entities"] = function()
       [13520] = { bindType = 0, buyPriceCopper = 40000, icon = 134942, quality = 2, sellPriceCopper = 10000 },
       [13521] = { bindType = 0, buyPriceCopper = 40000, icon = 134942, quality = 2, sellPriceCopper = 10000 },
       [13522] = { bindType = 0, buyPriceCopper = 40000, icon = 134942, quality = 2, sellPriceCopper = 10000 },
+      [13544] = { bindType = 1, icon = 134337, nonAuctionable = true, quality = 2, sellPriceCopper = 0 },
       [13754] = { bindType = 0, icon = 134301, quality = 1, sellPriceCopper = 6 },
       [13755] = { bindType = 0, icon = 133899, quality = 1, sellPriceCopper = 7 },
       [13756] = { bindType = 0, icon = 133889, quality = 1, sellPriceCopper = 9 },
@@ -6818,6 +6819,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [1933] = {
+        areaIDs = { 44, 267 },
         faction = "N",
         roles = { drop = true },
         spawns = {
@@ -7956,6 +7958,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [2673] = {
+        areaIDs = { 1537, 1637, 1638 },
         roles = { drop = true },
         spawns = {
           { areaID = 10, uiMapID = 1431, x = 17.2, y = 33.4 },
@@ -15006,6 +15009,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [9499] = {
+        areaIDs = { 1584 },
         classification = 1,
         faction = "N",
         roles = { drop = true, vendor = true },
@@ -15878,6 +15882,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [11073] = {
+        areaIDs = { 1337 },
         faction = "N",
         roles = { trainer = true },
       },
@@ -16020,6 +16025,15 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
       },
       [11278] = {
+        accessConditions = {
+          {
+            groups = {
+              { 5384 },
+            },
+            kind = "questGroup",
+          },
+          { count = 1, itemID = 13544, kind = "hasItem" },
+        },
         faction = "N",
         roles = { vendor = true },
         spawns = {
@@ -16958,6 +16972,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [12944] = {
+        areaIDs = { 1584 },
         faction = "N",
         roles = { quest_giver = true, vendor = true },
       },
@@ -17299,6 +17314,7 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
       },
       [14322] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { drop = true, quest_giver = true, vendor = true },
@@ -17352,6 +17368,7 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true, quest_giver = true },
       },
       [14371] = {
+        areaIDs = { 2557 },
         classification = 1,
         faction = "N",
         roles = { vendor = true },
@@ -17361,9 +17378,10 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
       },
       [14401] = {
+        areaIDs = { 2677 },
         classification = 1,
         faction = "N",
-        roles = { drop = true },
+        roles = { drop = true, trainer = true },
       },
       [14425] = {
         classification = 4,
@@ -17982,6 +18000,7 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
       },
       [15471] = {
+        areaIDs = { 3429 },
         classification = 1,
         faction = "N",
         roles = { vendor = true },
@@ -18352,6 +18371,7 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [216672] = {
+        areaIDs = { 721 },
         faction = "A",
         roles = { vendor = true },
       },
@@ -22186,6 +22206,7 @@ ns.Data._loaders["entities"] = function()
         questID = 5307,
         startNpcIDs = { 11193 },
       },
+      [5384] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 55, questID = 5384, startNpcIDs = _E },
       [5518] = {
         endNpcIDs = { 14338 },
         faction = "N",
@@ -22226,6 +22247,8 @@ ns.Data._loaders["entities"] = function()
         questID = 6610,
         startNpcIDs = { 8125 },
       },
+      [6622] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 35, questID = 6622, startNpcIDs = _E },
+      [6624] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 35, questID = 6624, startNpcIDs = _E },
       [6625] = {
         endNpcIDs = { 12939 },
         faction = "N",

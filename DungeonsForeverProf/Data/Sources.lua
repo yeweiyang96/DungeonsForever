@@ -13363,7 +13363,17 @@ ns.Data._loaders["sources"] = function()
             status = "confirmed",
             totalTrainerCount = 2,
             trainers = {
-              { npcID = 1937 },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 91920 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 1937,
+              },
               { npcID = 249713 },
             },
           },
@@ -27095,8 +27105,28 @@ ns.Data._loaders["sources"] = function()
             status = "confirmed",
             totalTrainerCount = 2,
             trainers = {
-              { npcID = 1937 },
-              { npcID = 249713 },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 91920 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 1937,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 92110 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 249713,
+              },
             },
           },
         },
@@ -27233,8 +27263,28 @@ ns.Data._loaders["sources"] = function()
             status = "confirmed",
             totalTrainerCount = 2,
             trainers = {
-              { npcID = 1937 },
-              { npcID = 249713 },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 91920 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 1937,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 92110 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 249713,
+              },
             },
           },
         },
@@ -27252,8 +27302,28 @@ ns.Data._loaders["sources"] = function()
             status = "confirmed",
             totalTrainerCount = 2,
             trainers = {
-              { npcID = 1937 },
-              { npcID = 249713 },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 91920 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 1937,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 92110 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 249713,
+              },
             },
           },
         },
@@ -27271,8 +27341,28 @@ ns.Data._loaders["sources"] = function()
             status = "confirmed",
             totalTrainerCount = 2,
             trainers = {
-              { npcID = 1937 },
-              { npcID = 249713 },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 91920 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 1937,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 92110 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 249713,
+              },
             },
           },
         },
@@ -27290,8 +27380,28 @@ ns.Data._loaders["sources"] = function()
             status = "confirmed",
             totalTrainerCount = 2,
             trainers = {
-              { npcID = 1937 },
-              { npcID = 249713 },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 91920 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 1937,
+              },
+              {
+                conditions = {
+                  {
+                    groups = {
+                      { 92110 },
+                    },
+                    kind = "questGroup",
+                  },
+                },
+                npcID = 249713,
+              },
             },
           },
         },

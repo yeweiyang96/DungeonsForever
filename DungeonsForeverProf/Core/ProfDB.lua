@@ -32,8 +32,13 @@ DB.SETTING_DEF = {
     autoUseBagMaterials = false,
     autoConsiderAuctionSupply = false,
     autoBuyLimitedFormulas = false,
-    autoAllowBindOnPickupFormulas = false,
+    autoAllowDropFormulas = false,
     autoAllowCurrencyFormulas = false,
+    autoExcludeQuestRecipes = true,
+    autoExcludeQuestTrainers = true,
+    autoExcludeQuestVendors = true,
+    autoExcludeInstanceVendors = true,
+    autoExcludeInstanceTrainers = true,
     autoScheme = "cheapest",
     autoSecondaryLeveling = false,
     autoResidualMass = false,
@@ -48,6 +53,12 @@ DB.SETTING_DEF = {
     autoSnapshot = false,
 }
 
+DB.PROF_SETTING_DEF = {
+    enchanting = {
+        autoExcludeInstanceTrainers = false,
+    },
+}
+
 DB.PROF_SETTING_KEYS = {
     autoRoute = true,
     autoScheme = true,
@@ -55,8 +66,13 @@ DB.PROF_SETTING_KEYS = {
     autoConsiderAuctionSupply = true,
     autoUseBagMaterials = true,
     autoBuyLimitedFormulas = true,
-    autoAllowBindOnPickupFormulas = true,
+    autoAllowDropFormulas = true,
     autoAllowCurrencyFormulas = true,
+    autoExcludeQuestRecipes = true,
+    autoExcludeQuestTrainers = true,
+    autoExcludeQuestVendors = true,
+    autoExcludeInstanceVendors = true,
+    autoExcludeInstanceTrainers = true,
     autoSecondaryLeveling = true,
     autoFromCurrent = true,
     autoStartSkill = true,
@@ -73,6 +89,7 @@ local RETIRED_SETTINGS = {
     autoSkipUnpricedFormulas = true,
     autoNoFormula = true,
     autoReserveMode = true,
+    autoAllowBindOnPickupFormulas = true,
 }
 
 local function ensureTable(parent, key)
@@ -80,6 +97,18 @@ local function ensureTable(parent, key)
         parent[key] = {}
     end
     return parent[key]
+end
+
+local function migrateLegacyFormulaBucket(bucket)
+    if type(bucket) ~= "table" then return end
+    if bucket.autoAllowBindOnPickupFormulas ~= nil then
+        if bucket.autoAllowBindOnPickupFormulas == true then
+            if bucket.autoAllowDropFormulas == nil then bucket.autoAllowDropFormulas = true end
+            if bucket.autoAllowCurrencyFormulas == nil then bucket.autoAllowCurrencyFormulas = true end
+            if bucket.autoExcludeQuestRecipes == nil then bucket.autoExcludeQuestRecipes = false end
+        end
+        bucket.autoAllowBindOnPickupFormulas = nil
+    end
 end
 
 local function seedProfDefaults(prof)
@@ -90,10 +119,14 @@ local function seedProfDefaults(prof)
     if prof.gatherMode == nil then prof.gatherMode = "gather" end
     ensureTable(prof, "policies")
     ensureTable(prof, "lvTarget")
-    ensureTable(prof, "professionSettings")
+    local ps = ensureTable(prof, "professionSettings")
     ensureTable(prof, "routePartners")
     ensureTable(prof, "specChoices")
     ensureTable(prof, "matBan")
+    migrateLegacyFormulaBucket(prof)
+    for _, bucket in pairs(ps) do
+        migrateLegacyFormulaBucket(bucket)
+    end
 end
 
 local function initFresh(tbl)
@@ -279,6 +312,12 @@ function DB.SettingRaw(k, slug)
     if type(values) == "table" then v = values[k] end
     if v == nil then v = prof[k] end
     if k == "autoScheme" and v == "stable" then return "cheapest" end
+    if v == nil and type(slug) == "string" and type(DB.PROF_SETTING_DEF) == "table" then
+        local pdef = DB.PROF_SETTING_DEF[slug]
+        if type(pdef) == "table" and pdef[k] ~= nil then
+            return pdef[k]
+        end
+    end
     if v == nil then return DB.SETTING_DEF[k] end
     return v
 end

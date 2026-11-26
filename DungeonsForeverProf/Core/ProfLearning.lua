@@ -172,46 +172,117 @@ if type(E.Known) ~= "function" then
     end
 end
 
-local function settingPermission(context, field, setting, profession)
+local function settingFlag(context, field, setting, profession, defaultVal)
     if type(context) == "table" and context[field] ~= nil then return context[field] == true end
     local snapshot = type(context) == "table" and context.snapshot or nil
     if type(snapshot) == "table" and snapshot[field] ~= nil then return snapshot[field] == true end
-    if snapshot or (type(context) == "table" and (context.prices ~= nil or context.known ~= nil or context.recipes ~= nil)) then
-        return false
-    end
     local slug = profession or (type(context) == "table" and (context.profession or context.targetProfession))
         or (type(snapshot) == "table" and snapshot.targetProfession)
-    local settings = ns.ProfSettings or (type(gns) == "table" and gns.ProfSettings) or getDB()
+    local dbMod = getDB()
+    local profDef
+    if type(dbMod) == "table" and type(dbMod.PROF_SETTING_DEF) == "table" and type(slug) == "string" then
+        local pd = dbMod.PROF_SETTING_DEF[slug]
+        if type(pd) == "table" and pd[setting] ~= nil then profDef = pd[setting] == true end
+    end
+    local fallback = profDef
+    if fallback == nil then fallback = defaultVal == true end
+    if snapshot or (type(context) == "table" and (context.prices ~= nil or context.known ~= nil or context.recipes ~= nil)) then
+        return fallback
+    end
+    local settings = ns.ProfSettings or (type(gns) == "table" and gns.ProfSettings) or dbMod
     if type(settings) == "table" and type(settings.SettingRaw) == "function" then
-        return settings.SettingRaw(setting, slug) == true
+        local v = settings.SettingRaw(setting, slug)
+        if v ~= nil then return v == true end
     end
     local view = getModule()
-    if view and type(view.SettingRaw) == "function" then return view.SettingRaw(setting, slug) == true end
-    local dbFn = getDB()
-    if dbFn then
-        local db = dbFn()
-        return type(db) == "table" and type(db.prof) == "table" and db.prof[setting] == true or false
+    if view and type(view.SettingRaw) == "function" then
+        local v = view.SettingRaw(setting, slug)
+        if v ~= nil then return v == true end
+    end
+    if dbMod then
+        local db = dbMod()
+        if type(db) == "table" and type(db.prof) == "table" then
+            local ps = type(slug) == "string" and type(db.prof.professionSettings) == "table" and db.prof.professionSettings[slug]
+            if type(ps) == "table" and ps[setting] ~= nil then return ps[setting] == true end
+            if db.prof[setting] ~= nil then return db.prof[setting] == true end
+        end
+    end
+    return fallback
+end
+
+function E.AllowLimitedFormulas(context, profession)
+    return settingFlag(context, "allowLimitedFormulas", "autoBuyLimitedFormulas", profession, false)
+end
+
+function E.AllowDropFormulas(context, profession)
+    return settingFlag(context, "allowDropFormulas", "autoAllowDropFormulas", profession, false)
+end
+
+function E.AllowCurrencyFormulas(context, profession)
+    return settingFlag(context, "allowCurrencyFormulas", "autoAllowCurrencyFormulas", profession, false)
+end
+
+function E.ExcludeQuestRecipes(context, profession)
+    return settingFlag(context, "excludeQuestRecipes", "autoExcludeQuestRecipes", profession, true)
+end
+
+function E.ExcludeQuestTrainers(context, profession)
+    return settingFlag(context, "excludeQuestTrainers", "autoExcludeQuestTrainers", profession, true)
+end
+
+function E.ExcludeQuestVendors(context, profession)
+    return settingFlag(context, "excludeQuestVendors", "autoExcludeQuestVendors", profession, true)
+end
+
+function E.ExcludeInstanceVendors(context, profession)
+    return settingFlag(context, "excludeInstanceVendors", "autoExcludeInstanceVendors", profession, true)
+end
+
+function E.ExcludeInstanceTrainers(context, profession)
+    local slug = profession or (type(context) == "table" and (context.profession or context.targetProfession))
+        or (type(context) == "table" and type(context.snapshot) == "table" and context.snapshot.targetProfession)
+    return settingFlag(context, "excludeInstanceTrainers", "autoExcludeInstanceTrainers", slug, slug ~= "enchanting")
+end
+
+local function isInstanceNpc(npcID)
+    if type(npcID) ~= "number" or npcID <= 0 then return false end
+    local DS = getDS()
+    if not (DS and type(DS.Npc) == "function" and type(DS.Zone) == "function") then return false end
+    local npc = DS.Npc(npcID)
+    if type(npc) ~= "table" then return false end
+    for _, aid in ipairs(npc.areaIDs or {}) do
+        local z = type(aid) == "number" and DS.Zone(aid) or nil
+        if type(z) == "table" and (z.zoneType == "dungeon" or z.zoneType == "raid") then
+            return true
+        end
+    end
+    for _, sp in ipairs(npc.spawns or {}) do
+        local aid = type(sp) == "table" and (sp.areaID or sp.zoneID) or nil
+        local z = type(aid) == "number" and DS.Zone(aid) or nil
+        if type(z) == "table" and (z.zoneType == "dungeon" or z.zoneType == "raid") then
+            return true
+        end
     end
     return false
 end
 
-if type(E.AllowLimitedFormulas) ~= "function" then
-    function E.AllowLimitedFormulas(context, profession)
-        return settingPermission(context, "allowLimitedFormulas", "autoBuyLimitedFormulas", profession)
+local function hasQuestGateCondition(conditions)
+    if type(conditions) ~= "table" then return false end
+    for _, c in ipairs(conditions) do
+        if type(c) == "table" then
+            local k = c.kind
+            if k == "questGroup" or k == "quest" then return true end
+            if type(c.textKey) == "string" and c.textKey:sub(1, 18) == "cond:quest_unlock:" then
+                return true
+            end
+            if (type(c.any) == "table" and hasQuestGateCondition(c.any))
+                or (type(c.all) == "table" and hasQuestGateCondition(c.all))
+                or (type(c.conditions) == "table" and hasQuestGateCondition(c.conditions)) then
+                return true
+            end
+        end
     end
-end
-
-if type(E.AllowBindOnPickupFormulas) ~= "function" then
-    function E.AllowBindOnPickupFormulas(context, profession)
-        return settingPermission(context, "allowBindOnPickupFormulas", "autoAllowBindOnPickupFormulas", profession)
-    end
-end
-
-if type(E.AllowCurrencyFormulas) ~= "function" then
-    function E.AllowCurrencyFormulas(context, profession)
-        return E.AllowBindOnPickupFormulas(context, profession)
-            or settingPermission(context, "allowCurrencyFormulas", "autoAllowCurrencyFormulas", profession)
-    end
+    return false
 end
 
 if type(E.LimitedFormulaOffer) ~= "function" then
@@ -594,7 +665,7 @@ local function ownedItem(snapshot, id)
     return 0
 end
 
-local function evaluateTrainers(route, condCtx, playerFaction)
+local function evaluateTrainers(route, condCtx, playerFaction, excludeQuestTrainers, excludeInstanceTrainers)
     local trainers = route.trainers
     if type(trainers) ~= "table" or #trainers == 0 then
         local ids = route.trainerIDs
@@ -608,6 +679,7 @@ local function evaluateTrainers(route, condCtx, playerFaction)
     local Cond = getCond()
     local accessible = {}
     local anyNil, firstFailReason, anySourceUnknown = false, nil, false
+    local excludedQuest, excludedInstance = false, false
     for _, t in ipairs(trainers) do
         local npcID = type(t) == "table" and t.npcID or t
         local npc = type(npcID) == "number" and DS and type(DS.Npc) == "function" and DS.Npc(npcID) or nil
@@ -615,6 +687,10 @@ local function evaluateTrainers(route, condCtx, playerFaction)
         local factionOK = not playerFaction or not side or side == "N" or side == playerFaction
         if not factionOK then
             firstFailReason = firstFailReason or "learningFactionRequired"
+        elseif excludeQuestTrainers and (hasQuestGateCondition(npc and npc.accessConditions) or hasQuestGateCondition(type(t) == "table" and t.conditions or nil)) then
+            excludedQuest = true
+        elseif excludeInstanceTrainers and isInstanceNpc(npcID) then
+            excludedInstance = true
         else
             local npcPass, npcPending, npcReason, _, npcUnknown = true, false, nil, nil, false
             if type(npc) == "table" and type(npc.accessConditions) == "table" and #npc.accessConditions > 0 then
@@ -638,6 +714,8 @@ local function evaluateTrainers(route, condCtx, playerFaction)
     end
     if #accessible > 0 then return true, accessible, nil end
     if anyNil then return nil, nil, anySourceUnknown and "learningDataMissing" or "clientDataPending" end
+    if excludedQuest then return false, nil, "questTrainerExcluded" end
+    if excludedInstance then return false, nil, "instanceTrainerExcluded" end
     return false, nil, firstFailReason or "learningConditionFailed"
 end
 
@@ -675,8 +753,12 @@ local function quoteTeachingItem(id, recipe, route, snapshot, remaining, purchas
 
     local pureGoldOffers, exchangeOffers = {}, {}
     local allowLimited = E.AllowLimitedFormulas(context, recipe.profession)
+    local exclQuestVendor = E.ExcludeQuestVendors(context, recipe.profession)
+    local exclInstVendor = E.ExcludeInstanceVendors(context, recipe.profession)
     local limitedDisabled = false
     local sawDisabledCurrencyOffer = false
+    local excludedQuestVendor = false
+    local excludedInstanceVendor = false
 
     for _, o in ipairs(rawOffers) do
         if type(o) == "table" and o.maxStock ~= 0 and o.available ~= false and o.purchasable ~= false and o.priceUsable ~= false then
@@ -684,39 +766,47 @@ local function quoteTeachingItem(id, recipe, route, snapshot, remaining, purchas
             local npc = npcID and DS and type(DS.Npc) == "function" and DS.Npc(npcID) or nil
             local side = normalizeFaction(o.faction or (npc and npc.faction))
             local factionOK = not playerFaction or not side or side == "N" or side == playerFaction
-            local npcPass, npcPending = true, false
-            if type(npc) == "table" and type(npc.accessConditions) == "table" and #npc.accessConditions > 0 then
-                npcPass, npcPending = checkConditions(npc.accessConditions, condCtx)
-            end
-            local offPass, offPending = checkConditions(o.conditions, condCtx)
-            local bundle = tonumber(o.bundleSize or o.quantity or 1)
-            local validBundle = bundle and bundle >= 1 and bundle == floor(bundle)
-            if factionOK and npcPass and not npcPending and offPass and not offPending and validBundle then
-                local hasCurrencies = type(o.currencies) == "table" and #o.currencies > 0
-                local hasCostItems = type(o.costItems) == "table" and #o.costItems > 0
-                local hasExt = o.hasExtendedCost == true or (tonumber(o.currencyID) or 0) > 0
-                local isExchange = hasCurrencies or hasCostItems or hasExt
-                local price = tonumber(o.priceCopper ~= nil and o.priceCopper or o.price)
-                local unlimited = o.unlimited == true or o.maxStock == -1 or o.stock == -1
-                if not unlimited and not allowLimited then
-                    limitedDisabled = true
+            local questBlocked = exclQuestVendor and (hasQuestGateCondition(npc and npc.accessConditions) or hasQuestGateCondition(o.conditions))
+            local instBlocked = exclInstVendor and isInstanceNpc(npcID)
+            if factionOK and questBlocked then
+                excludedQuestVendor = true
+            elseif factionOK and instBlocked then
+                excludedInstanceVendor = true
+            else
+                local npcPass, npcPending = true, false
+                if type(npc) == "table" and type(npc.accessConditions) == "table" and #npc.accessConditions > 0 then
+                    npcPass, npcPending = checkConditions(npc.accessConditions, condCtx)
                 end
-                local stockVal = type(o.maxStock) == "number" and o.maxStock or o.stock
-                local stockEnough = (type(stockVal) ~= "number" or stockVal < 0 or stockVal >= bundle)
-                local stockOK = (unlimited or allowLimited) and stockEnough
-                local cand = shallow(o)
-                cand.npcID = npcID
-                cand.price = price
-                cand.priceCopper = price
-                cand.bundleSize = bundle
-                cand.quantity = bundle
-                cand.unlimited = unlimited
-                cand.faction = side
-                if isExchange then
-                    if stockEnough then sawDisabledCurrencyOffer = true end
-                    if stockOK then exchangeOffers[#exchangeOffers + 1] = cand end
-                elseif type(price) == "number" and price >= 0 then
-                    pureGoldOffers[#pureGoldOffers + 1] = { offer = cand, stockOK = stockOK, price = price, unit = price / bundle }
+                local offPass, offPending = checkConditions(o.conditions, condCtx)
+                local bundle = tonumber(o.bundleSize or o.quantity or 1)
+                local validBundle = bundle and bundle >= 1 and bundle == floor(bundle)
+                if factionOK and npcPass and not npcPending and offPass and not offPending and validBundle then
+                    local hasCurrencies = type(o.currencies) == "table" and #o.currencies > 0
+                    local hasCostItems = type(o.costItems) == "table" and #o.costItems > 0
+                    local hasExt = o.hasExtendedCost == true or (tonumber(o.currencyID) or 0) > 0
+                    local isExchange = hasCurrencies or hasCostItems or hasExt
+                    local price = tonumber(o.priceCopper ~= nil and o.priceCopper or o.price)
+                    local unlimited = o.unlimited == true or o.maxStock == -1 or o.stock == -1
+                    if not unlimited and not allowLimited then
+                        limitedDisabled = true
+                    end
+                    local stockVal = type(o.maxStock) == "number" and o.maxStock or o.stock
+                    local stockEnough = (type(stockVal) ~= "number" or stockVal < 0 or stockVal >= bundle)
+                    local stockOK = (unlimited or allowLimited) and stockEnough
+                    local cand = shallow(o)
+                    cand.npcID = npcID
+                    cand.price = price
+                    cand.priceCopper = price
+                    cand.bundleSize = bundle
+                    cand.quantity = bundle
+                    cand.unlimited = unlimited
+                    cand.faction = side
+                    if isExchange then
+                        if stockEnough then sawDisabledCurrencyOffer = true end
+                        if stockOK then exchangeOffers[#exchangeOffers + 1] = cand end
+                    elseif type(price) == "number" and price >= 0 then
+                        pureGoldOffers[#pureGoldOffers + 1] = { offer = cand, stockOK = stockOK, price = price, unit = price / bundle }
+                    end
                 end
             end
         end
@@ -819,7 +909,8 @@ local function quoteTeachingItem(id, recipe, route, snapshot, remaining, purchas
         return quote
     end
 
-    local canBound = E.AllowBindOnPickupFormulas(context, recipe.profession)
+    local canDrop = E.AllowDropFormulas(context, recipe.profession)
+    local exclQuestRecipe = E.ExcludeQuestRecipes(context, recipe.profession)
     local hasQuest, hasDrop = false, false
     if type(route.questIDs) == "table" and #route.questIDs > 0 then
         for _, qid in ipairs(route.questIDs) do
@@ -835,7 +926,9 @@ local function quoteTeachingItem(id, recipe, route, snapshot, remaining, purchas
     local extras = DS and type(DS.ExtraSources) == "function" and DS.ExtraSources(id) or {}
     if #drops > 0 or #extras > 0 then hasDrop = true end
 
-    if bound and canBound and (hasQuest or hasDrop) then
+    local questAllowed = hasQuest and not exclQuestRecipe
+    local dropAllowed = hasDrop and canDrop
+    if bound and (questAllowed or dropAllowed) then
         quote.source = "acquire"
         quote.sourceType = "acquire"
         quote.vendor = false
@@ -844,7 +937,7 @@ local function quoteTeachingItem(id, recipe, route, snapshot, remaining, purchas
         quote.costComplete = false
         quote.unpriced = true
         quote.acquisitionPending = true
-        quote.acquisitionKind = hasQuest and "quest" or "drop"
+        quote.acquisitionKind = questAllowed and "quest" or "drop"
         return quote
     end
 
@@ -865,8 +958,14 @@ local function quoteTeachingItem(id, recipe, route, snapshot, remaining, purchas
     if not quote.reason and limitedDisabled then
         quote.reason = "limitedFormulaDisabled"
         quote.limitedVendorDisabled = true
-    elseif not quote.reason and bound and not canBound and (hasQuest or hasDrop) then
-        quote.reason = "bindOnPickupFormulaDisabled"
+    elseif not quote.reason and excludedQuestVendor then
+        quote.reason = "questVendorExcluded"
+    elseif not quote.reason and excludedInstanceVendor then
+        quote.reason = "instanceVendorExcluded"
+    elseif not quote.reason and bound and hasQuest and exclQuestRecipe then
+        quote.reason = "questRecipeExcluded"
+    elseif not quote.reason and bound and hasDrop and not canDrop then
+        quote.reason = "dropFormulaDisabled"
     end
     quote.reason = quote.reason or "formulaUnavailable"
     return quote
@@ -937,8 +1036,8 @@ local function routeQuote(recipe, route, snapshot, remaining, purchaseSource, st
             common.recipe = recipe
             return common
         end
-        local canBound = E.AllowBindOnPickupFormulas(snapshot or pricingContext, recipe.profession)
-        if canBound then
+        local exclQuestRecipe = E.ExcludeQuestRecipes(snapshot or pricingContext, recipe.profession)
+        if not exclQuestRecipe then
             common.source = "acquire"
             common.sourceType = "acquire"
             common.recipe = recipe
@@ -957,7 +1056,7 @@ local function routeQuote(recipe, route, snapshot, remaining, purchaseSource, st
         common.blocked = true
         common.costComplete = false
         common.unpriced = true
-        common.reason = "bindOnPickupFormulaDisabled"
+        common.reason = "questRecipeExcluded"
         return common
     elseif route.kind ~= "item" then
         common.source = route.kind or "unknown"
@@ -1158,43 +1257,51 @@ function E.SelectLearningRoute(recipe, snapshot, state, remaining, purchaseSourc
         elseif route.kind == "item" and route.status ~= "confirmed" then
             hasPending = true
         else
-            local conds = {}
-            for _, c in ipairs(route.conditions or {}) do conds[#conds + 1] = c end
-            if route.kind == "autoGrant" and positiveInteger(route.minSkillRank) then
-                conds[#conds + 1] = { kind = "skill", profession = recipe.profession, min = route.minSkillRank }
-            end
-            local pass, pending, why, reqAbilities, sourceUnknown = checkConditions(conds, condCtx)
-            local detail = decision(recipe, info, (pass and not pending) and "allowed" or (pending and "unknown" or "blocked"), route)
-            detail.requiredAbilities = reqAbilities
-            if not pass then
-                if not failure then failure, failureReason = detail, why end
-            elseif pending then
-                if not failure then failure, failureReason = detail, sourceUnknown and "learningDataMissing" or "clientDataPending" end
+            local exclQuestRecipes = E.ExcludeQuestRecipes(snapshot or pricingContext, recipe.profession)
+            local exclQuestTrainers = E.ExcludeQuestTrainers(snapshot or pricingContext, recipe.profession)
+            local exclInstTrainers = E.ExcludeInstanceTrainers(snapshot or pricingContext, recipe.profession)
+            if exclQuestRecipes and hasQuestGateCondition(route.conditions) then
+                local detail = decision(recipe, info, "blocked", route)
+                if not failure then failure, failureReason = detail, "questRecipeExcluded" end
             else
-                local trainersOK, accessibleTrainers, trainerWhy = true, nil, nil
-                if route.kind == "trainer" then
-                    trainersOK, accessibleTrainers, trainerWhy = evaluateTrainers(route, condCtx, playerFaction)
+                local conds = {}
+                for _, c in ipairs(route.conditions or {}) do conds[#conds + 1] = c end
+                if route.kind == "autoGrant" and positiveInteger(route.minSkillRank) then
+                    conds[#conds + 1] = { kind = "skill", profession = recipe.profession, min = route.minSkillRank }
                 end
-                if trainersOK == false then
-                    detail.status = "blocked"
-                    if not failure then failure, failureReason = detail, trainerWhy end
-                elseif trainersOK == nil then
-                    detail.status = "unknown"
-                    if not failure then failure, failureReason = detail, trainerWhy end
+                local pass, pending, why, reqAbilities, sourceUnknown = checkConditions(conds, condCtx)
+                local detail = decision(recipe, info, (pass and not pending) and "allowed" or (pending and "unknown" or "blocked"), route)
+                detail.requiredAbilities = reqAbilities
+                if not pass then
+                    if not failure then failure, failureReason = detail, why end
+                elseif pending then
+                    if not failure then failure, failureReason = detail, sourceUnknown and "learningDataMissing" or "clientDataPending" end
                 else
-                    local quote = routeQuote(recipe, route, snapshot, remaining, purchaseSource, state, pricingContext, condCtx, playerFaction, accessibleTrainers)
-                    detail.quote = quote
-                    if quote and quote.usable then
-                        detail.missingReasons = {}
-                        if type(quote.cost) == "number" and not quote.acquisitionPending then
-                            if not bestCost or quote.cost < bestCost then
-                                best, bestCost = detail, quote.cost
+                    local trainersOK, accessibleTrainers, trainerWhy = true, nil, nil
+                    if route.kind == "trainer" then
+                        trainersOK, accessibleTrainers, trainerWhy = evaluateTrainers(route, condCtx, playerFaction, exclQuestTrainers, exclInstTrainers)
+                    end
+                    if trainersOK == false then
+                        detail.status = "blocked"
+                        if not failure then failure, failureReason = detail, trainerWhy end
+                    elseif trainersOK == nil then
+                        detail.status = "unknown"
+                        if not failure then failure, failureReason = detail, trainerWhy end
+                    else
+                        local quote = routeQuote(recipe, route, snapshot, remaining, purchaseSource, state, pricingContext, condCtx, playerFaction, accessibleTrainers)
+                        detail.quote = quote
+                        if quote and quote.usable then
+                            detail.missingReasons = {}
+                            if type(quote.cost) == "number" and not quote.acquisitionPending then
+                                if not bestCost or quote.cost < bestCost then
+                                    best, bestCost = detail, quote.cost
+                                end
+                            elseif not unpriced then
+                                unpriced = detail
                             end
-                        elseif not unpriced then
-                            unpriced = detail
+                        elseif not failure then
+                            failure, failureReason = detail, (quote and quote.reason) or "formulaUnavailable"
                         end
-                    elseif not failure then
-                        failure, failureReason = detail, (quote and quote.reason) or "formulaUnavailable"
                     end
                 end
             end

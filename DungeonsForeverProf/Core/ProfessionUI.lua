@@ -799,8 +799,13 @@ do
     if PD.SETTING_DEF.autoUseBagMaterials == nil then PD.SETTING_DEF.autoUseBagMaterials = false end
     if PD.SETTING_DEF.autoConsiderAuctionSupply == nil then PD.SETTING_DEF.autoConsiderAuctionSupply = false end
     if PD.SETTING_DEF.autoBuyLimitedFormulas == nil then PD.SETTING_DEF.autoBuyLimitedFormulas = false end
-    if PD.SETTING_DEF.autoAllowBindOnPickupFormulas == nil then PD.SETTING_DEF.autoAllowBindOnPickupFormulas = false end
+    if PD.SETTING_DEF.autoAllowDropFormulas == nil then PD.SETTING_DEF.autoAllowDropFormulas = false end
     if PD.SETTING_DEF.autoAllowCurrencyFormulas == nil then PD.SETTING_DEF.autoAllowCurrencyFormulas = false end
+    if PD.SETTING_DEF.autoExcludeQuestRecipes == nil then PD.SETTING_DEF.autoExcludeQuestRecipes = true end
+    if PD.SETTING_DEF.autoExcludeQuestTrainers == nil then PD.SETTING_DEF.autoExcludeQuestTrainers = true end
+    if PD.SETTING_DEF.autoExcludeQuestVendors == nil then PD.SETTING_DEF.autoExcludeQuestVendors = true end
+    if PD.SETTING_DEF.autoExcludeInstanceVendors == nil then PD.SETTING_DEF.autoExcludeInstanceVendors = true end
+    if PD.SETTING_DEF.autoExcludeInstanceTrainers == nil then PD.SETTING_DEF.autoExcludeInstanceTrainers = true end
     if PD.SETTING_DEF.autoScheme == nil then PD.SETTING_DEF.autoScheme = "cheapest" end
     if PD.SETTING_DEF.autoSecondaryLeveling == nil then PD.SETTING_DEF.autoSecondaryLeveling = false end
     if PD.SETTING_DEF.autoResidualMass == nil then PD.SETTING_DEF.autoResidualMass = false end
@@ -818,8 +823,8 @@ end
 PD.RECOVERY_FEES = { 0, 5, 10, 15, 20 }
 
 PD.GATHER_SLUGS = { mining = true, herbalism = true, skinning = true, fishing = true }
-PD.SETTING_TOG_MAX = 16
-PD.SETTING_HELP_MAX = 18
+PD.SETTING_TOG_MAX = 24
+PD.SETTING_HELP_MAX = 28
 local function ProfDB()
     local dbMod = getDBMod()
     if type(dbMod) == "table" and type(dbMod.Get) == "function" then
@@ -844,8 +849,10 @@ do
     if next(PD.PROF_SETTING_KEYS) == nil then
         PD.PROF_SETTING_KEYS = {
             autoRoute = true, autoScheme = true, autoOnlyAH = true, autoConsiderAuctionSupply = true,
-            autoUseBagMaterials = true, autoBuyLimitedFormulas = true, autoAllowBindOnPickupFormulas = true,
-            autoAllowCurrencyFormulas = true, autoSecondaryLeveling = true, autoFromCurrent = true,
+            autoUseBagMaterials = true, autoBuyLimitedFormulas = true, autoAllowDropFormulas = true,
+            autoAllowCurrencyFormulas = true, autoExcludeQuestRecipes = true, autoExcludeQuestTrainers = true,
+            autoExcludeQuestVendors = true, autoExcludeInstanceVendors = true, autoExcludeInstanceTrainers = true,
+            autoSecondaryLeveling = true, autoFromCurrent = true,
             autoStartSkill = true, autoCraftTools = true, recoveryEnabled = true,
             recoveryFeePercent = true, autoResidualMass = true, autoSkillBudget = true,
         }
@@ -1576,8 +1583,12 @@ function PD.VendorSrcLine(src, fid)
     if #vs > 1 then pre = pre .. format(L["(%d人)"], #vs) end
     pre = pre .. ":"
     local nm = PD.VendorName(v)
-    if v.zone and v.zone ~= "" then
-        nm = nm .. "(" .. tostring(v.zone) .. ")"
+    local vz = v.zone
+    if (not vz or vz == "") and PD.NpcZoneLabel then
+        vz = PD.NpcZoneLabel(v.id or v.npcID)
+    end
+    if vz and vz ~= "" then
+        nm = nm .. "(" .. tostring(vz) .. ")"
     end
     local cost = PD.VendorCostText(o)
     local val = nm
@@ -10414,9 +10425,14 @@ function PD.RecipeLearningView(recipe, frozen)
     if route then return {allowed=true,status="allowed",route=route,quote=quote,frozen=true} end
     local skill=tonumber(recipe.learn)
     local state=skill and {skill={[recipe.profession]=skill}} or nil
-    local pricing={allowBindOnPickupFormulas=PD.Setting("autoAllowBindOnPickupFormulas",recipe.profession),
+    local pricing={allowLimitedFormulas=PD.Setting("autoBuyLimitedFormulas",recipe.profession),
+        allowDropFormulas=PD.Setting("autoAllowDropFormulas",recipe.profession),
         allowCurrencyFormulas=PD.Setting("autoAllowCurrencyFormulas",recipe.profession),
-        allowLimitedFormulas=PD.Setting("autoBuyLimitedFormulas",recipe.profession)}
+        excludeQuestRecipes=PD.Setting("autoExcludeQuestRecipes",recipe.profession),
+        excludeQuestTrainers=PD.Setting("autoExcludeQuestTrainers",recipe.profession),
+        excludeQuestVendors=PD.Setting("autoExcludeQuestVendors",recipe.profession),
+        excludeInstanceVendors=PD.Setting("autoExcludeInstanceVendors",recipe.profession),
+        excludeInstanceTrainers=PD.Setting("autoExcludeInstanceTrainers",recipe.profession)}
     local allowed,reason,detail=E.SelectLearningRoute(recipe,nil,state,nil,nil,pricing)
     local view={allowed=allowed,reason=reason,status=detail and detail.status,
         route=detail and detail.route,quote=detail and detail.quote,detail=detail}
@@ -10458,6 +10474,152 @@ function PD.ZoneTypeTag(areaID)
     if zt == "pvp" or zt == "arena" then return L["战场"] end
     if zt == "world" then return L["大世界"] end
     return nil
+end
+
+function PD.NpcAreaIDs(npc)
+    local out, seen = {}, {}
+    if type(npc) ~= "table" then return out end
+    for _, sp in ipairs(npc.spawns or {}) do
+        local aid = type(sp) == "table" and (sp.areaID or sp.zoneID) or nil
+        if type(aid) == "number" and aid > 0 and not seen[aid] then
+            seen[aid] = true
+            out[#out + 1] = aid
+        end
+    end
+    for _, aid in ipairs(npc.areaIDs or {}) do
+        if type(aid) == "number" and aid > 0 and not seen[aid] then
+            seen[aid] = true
+            out[#out + 1] = aid
+        end
+    end
+    return out
+end
+
+function PD.NpcZoneLabel(npcID)
+    if type(npcID) ~= "number" or npcID <= 0 then return nil end
+    local ds = getDS()
+    local npc = ds and ds.Npc and ds.Npc(npcID)
+    if type(npc) ~= "table" then return nil end
+    local aids = PD.NpcAreaIDs(npc)
+    local aid = aids[1]
+    if not aid then return nil end
+    local zn = ds and ds.RawText and ds.RawText("zone", aid)
+    if not zn or zn == "" then return nil end
+    local zt = PD.ZoneTypeTag(aid)
+    if zt and zt ~= L["大世界"] then
+        return "[" .. zt .. "·" .. tostring(zn) .. "]"
+    end
+    return tostring(zn)
+end
+
+function PD.IsInstanceNpc(npcID)
+    if type(npcID) ~= "number" or npcID <= 0 then return false end
+    local ds = getDS()
+    if not (ds and ds.Npc and ds.Zone) then return false end
+    local npc = ds.Npc(npcID)
+    if type(npc) ~= "table" then return false end
+    for _, aid in ipairs(PD.NpcAreaIDs(npc)) do
+        local z = ds.Zone(aid)
+        if type(z) == "table" and (z.zoneType == "dungeon" or z.zoneType == "raid") then
+            return true
+        end
+    end
+    return false
+end
+
+function PD.ConditionsHaveQuestGate(conds)
+    if type(conds) ~= "table" then return false end
+    for _, c in ipairs(conds) do
+        if type(c) == "table" then
+            if c.kind == "questGroup" or c.kind == "quest" then return true end
+            if type(c.textKey) == "string" and c.textKey:sub(1, 18) == "cond:quest_unlock:" then
+                return true
+            end
+            if PD.ConditionsHaveQuestGate(c.any)
+                or PD.ConditionsHaveQuestGate(c.all)
+                or PD.ConditionsHaveQuestGate(c.conditions) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function PD.RecipeHasQuestUnlock(r)
+    local ds = getDS()
+    local spell = type(r) == "table" and (r.spellID or r.spell or r[1]) or nil
+    if type(spell) ~= "number" or not (ds and ds.LearningRoutes) then return false end
+    local lr = ds.LearningRoutes(spell)
+    local routes = (type(lr) == "table" and lr.routes) or lr
+    if type(routes) ~= "table" then return false end
+    for _, rt in ipairs(routes) do
+        if type(rt) == "table" then
+            if rt.kind == "quest" then return true end
+            if type(rt.questIDs) == "table" and #rt.questIDs > 0 then return true end
+            if PD.ConditionsHaveQuestGate(rt.conditions) then return true end
+            if rt.kind == "trainer" then
+                for _, tr in ipairs(rt.trainers or {}) do
+                    local nid = type(tr) == "table" and tr.npcID or tr
+                    if type(tr) == "table" and PD.ConditionsHaveQuestGate(tr.conditions) then return true end
+                    local npc = type(nid) == "number" and ds.Npc and ds.Npc(nid) or nil
+                    if npc and PD.ConditionsHaveQuestGate(npc.accessConditions) then return true end
+                end
+            elseif rt.kind == "item" and type(rt.teachingItemID) == "number" then
+                local vo = ds.VendorOffers and ds.VendorOffers(rt.teachingItemID)
+                local offers = (type(vo) == "table" and vo.offers) or vo
+                for _, o in ipairs(type(offers) == "table" and offers or {}) do
+                    if type(o) == "table" then
+                        if PD.ConditionsHaveQuestGate(o.conditions) then return true end
+                        local npc = type(o.npcID) == "number" and ds.Npc and ds.Npc(o.npcID) or nil
+                        if npc and PD.ConditionsHaveQuestGate(npc.accessConditions) then return true end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
+function PD.RecipeHasInstanceVendor(r)
+    local ds = getDS()
+    local spell = type(r) == "table" and (r.spellID or r.spell or r[1]) or nil
+    if type(spell) ~= "number" or not (ds and ds.LearningRoutes) then return false end
+    local lr = ds.LearningRoutes(spell)
+    local routes = (type(lr) == "table" and lr.routes) or lr
+    if type(routes) ~= "table" then return false end
+    for _, rt in ipairs(routes) do
+        if type(rt) == "table" and rt.kind == "item" and type(rt.teachingItemID) == "number" then
+            local vo = ds.VendorOffers and ds.VendorOffers(rt.teachingItemID)
+            local offers = (type(vo) == "table" and vo.offers) or vo
+            for _, o in ipairs(type(offers) == "table" and offers or {}) do
+                if type(o) == "table" and PD.IsInstanceNpc(o.npcID) then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+function PD.RecipeHasInstanceTrainer(r)
+    local ds = getDS()
+    local spell = type(r) == "table" and (r.spellID or r.spell or r[1]) or nil
+    if type(spell) ~= "number" or not (ds and ds.LearningRoutes) then return false end
+    local lr = ds.LearningRoutes(spell)
+    local routes = (type(lr) == "table" and lr.routes) or lr
+    if type(routes) ~= "table" then return false end
+    for _, rt in ipairs(routes) do
+        if type(rt) == "table" and rt.kind == "trainer" then
+            for _, tr in ipairs(rt.trainers or {}) do
+                local nid = type(tr) == "table" and tr.npcID or tr
+                if PD.IsInstanceNpc(nid) then return true end
+            end
+            for _, nid in ipairs(rt.trainerIDs or rt.npcIDs or {}) do
+                if PD.IsInstanceNpc(nid) then return true end
+            end
+        end
+    end
+    return false
 end
 
 function PD.NpcClassTag(cls)
@@ -11208,8 +11370,12 @@ function PD.VendorLines(s, fid, routeConds)
             if ftag then nm = nm .. " " .. ftag end
             local zn = v.zone
             local areaID = v.areaID or v.area
-            if (not zn or zn == "") and npc and npc.spawns and npc.spawns[1] then
-                areaID = npc.spawns[1].areaID or areaID
+            if (not zn or zn == "") and npc then
+                if npc.spawns and npc.spawns[1] then
+                    areaID = npc.spawns[1].areaID or areaID
+                elseif npc.areaIDs and npc.areaIDs[1] then
+                    areaID = npc.areaIDs[1] or areaID
+                end
                 zn = areaID and ds and ds.RawText and ds.RawText("zone", areaID)
             end
             if zn and zn ~= "" then
@@ -11374,10 +11540,16 @@ function PD.TeachRoster(spell)
         local npc = ds.Npc and ds.Npc(nid)
         local sp = npc and npc.spawns and npc.spawns[1]
         local mp = sp and sp.uiMapID
-        local aid = sp and (sp.areaID or sp.zoneID) or nil
+        local aid = (sp and (sp.areaID or sp.zoneID)) or (npc and npc.areaIDs and npc.areaIDs[1]) or nil
         local loc = (sp and (mp or aid) and sp.x and sp.y) and { aid, mp, sp.x, sp.y } or nil
         local zn = (aid and ds.RawText and ds.RawText("zone", aid))
             or (mp and PD.MapName(mp, "")) or ""
+        if zn ~= "" and aid then
+            local zt = PD.ZoneTypeTag(aid)
+            if zt and zt ~= L["大世界"] then
+                zn = "[" .. zt .. "·" .. tostring(zn) .. "]"
+            end
+        end
         out[#out + 1] = {
             npcID = nid,
             name = (ds.NpcName and ds.NpcName(nid)) or ("#" .. tostring(nid)),
@@ -11400,7 +11572,9 @@ function PD.TeachInfo(spell)
     local out = {}
     if cnt and cnt <= PD.TEACH_SHOW then
         for i = 1, #(list or {}) do
-            if list[i].loc then out[#out + 1] = list[i] end
+            if list[i].loc or (list[i].zone and list[i].zone ~= "") then
+                out[#out + 1] = list[i]
+            end
         end
     end
     if (not cnt) or #out == 0 then
@@ -11421,9 +11595,10 @@ end
 function PD.TeachLines(spell, plain)
     local cnt, list = PD.TeachInfo(spell)
     if not cnt then return nil end
-    local out = {}
+    local out, locCnt = {}, 0
     for i = 1, #list do
         local e = list[i]
+        if e.loc then locCnt = locCnt + 1 end
         local nm = format(L["训练师：%s"], e.name)
         if e.zone ~= "" then nm = nm .. " · " .. e.zone end
         out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
@@ -11434,8 +11609,8 @@ function PD.TeachLines(spell, plain)
             if access then out[#out+1]={"  "..access,0.81,0.85,0.89} end
         end
     end
-    if not plain then
-        out[#out + 1] = { #list == 1 and L["点击：在地图上标记该 NPC"]
+    if not plain and locCnt > 0 then
+        out[#out + 1] = { locCnt == 1 and L["点击：在地图上标记该 NPC"]
             or L["点击：选择要标记的 NPC"], 1, 0.82, 0 }
     end
     return out
@@ -11445,11 +11620,17 @@ function PD.TeachAct(spell)
     return function(zone)
         local cnt, list = PD.TeachInfo(spell)
         if not (list and #list > 0) then return end
-        if #list == 1 then
+        local pinned = {}
+        for i = 1, #list do
+            if list[i].loc then pinned[#pinned + 1] = list[i] end
+        end
+        if #pinned == 0 then
+            PD.MarkVendorLoc(nil)
+        elseif #pinned == 1 then
             PD.HideVendorPick()
-            PD.MarkVendorLoc(list[1].loc)
+            PD.MarkVendorLoc(pinned[1].loc)
         else
-            PD.VendorPickToggle(zone, list, L["选择要标记的训练师"])
+            PD.VendorPickToggle(zone, pinned, L["选择要标记的训练师"])
         end
     end
 end
@@ -13431,6 +13612,9 @@ PD.SRC_DROP_KEY = "__srcdrop"
 PD.SRC_NIP_KEY = "__srcnip"
 PD.SRC_UNKNOWN_KEY = "__srcunk"
 PD.SRC_VENDOR_KEY = "__srcvendor"
+PD.SRC_QUEST_UNLOCK_KEY = "__srcquestunlock"
+PD.SRC_INSTANCE_VENDOR_KEY = "__srcinstvendor"
+PD.SRC_INSTANCE_TRAINER_KEY = "__srcinsttrainer"
 
 local function v2SrcInfo(rec)
     local ds = getDS()
@@ -13494,6 +13678,9 @@ end
 function PD.RowCurHit(r, mk)
     mk = mk or PD.moneyKey
     if mk == nil then return true end
+    if mk == PD.SRC_QUEST_UNLOCK_KEY then return PD.RecipeHasQuestUnlock(r) end
+    if mk == PD.SRC_INSTANCE_VENDOR_KEY then return PD.RecipeHasInstanceVendor(r) end
+    if mk == PD.SRC_INSTANCE_TRAINER_KEY then return PD.RecipeHasInstanceTrainer(r) end
     if mk == PD.SRC_TRAINER_KEY or mk == PD.SRC_DROP_KEY
         or mk == PD.SRC_NIP_KEY or mk == PD.SRC_UNKNOWN_KEY
         or mk == PD.SRC_VENDOR_KEY then
@@ -13521,6 +13708,15 @@ function PD.CurCounts(d)
             end
             local sk = PD.SrcBucketOf(r)
             if sk then c[sk] = (c[sk] or 0) + 1 end
+            if PD.RecipeHasQuestUnlock(r) then
+                c[PD.SRC_QUEST_UNLOCK_KEY] = (c[PD.SRC_QUEST_UNLOCK_KEY] or 0) + 1
+            end
+            if PD.RecipeHasInstanceVendor(r) then
+                c[PD.SRC_INSTANCE_VENDOR_KEY] = (c[PD.SRC_INSTANCE_VENDOR_KEY] or 0) + 1
+            end
+            if PD.RecipeHasInstanceTrainer(r) then
+                c[PD.SRC_INSTANCE_TRAINER_KEY] = (c[PD.SRC_INSTANCE_TRAINER_KEY] or 0) + 1
+            end
         end
     end
     for _, ce in pairs(d.catalogEntries or {}) do
@@ -13784,6 +13980,12 @@ function PD.RecipeCurItems(d)
             nm = L["来源未知"]
         elseif id == PD.SRC_VENDOR_KEY then
             nm = L["商人售卖"]
+        elseif id == PD.SRC_QUEST_UNLOCK_KEY then
+            nm = L["任务解锁"]
+        elseif id == PD.SRC_INSTANCE_VENDOR_KEY then
+            nm = L["副本商人"]
+        elseif id == PD.SRC_INSTANCE_TRAINER_KEY then
+            nm = L["副本训练师"]
         else
             nm = PD.CurName(id)
         end
@@ -16000,9 +16202,14 @@ function PD.BuildLvOpts(slug, current)
         onlyAH = PD.Setting("autoOnlyAH",slug),
         useBagMaterials = PD.BagMaterialsAvailable(slug) and PD.Setting("autoUseBagMaterials",slug),
         considerAuctionSupply = PD.Setting("autoConsiderAuctionSupply",slug),
-        allowBindOnPickupFormulas = PD.Setting("autoAllowBindOnPickupFormulas",slug),
-        allowCurrencyFormulas = PD.Setting("autoAllowCurrencyFormulas",slug),
         allowLimitedFormulas = PD.Setting("autoBuyLimitedFormulas",slug),
+        allowDropFormulas = PD.Setting("autoAllowDropFormulas",slug),
+        allowCurrencyFormulas = PD.Setting("autoAllowCurrencyFormulas",slug),
+        excludeQuestRecipes = PD.Setting("autoExcludeQuestRecipes",slug),
+        excludeQuestTrainers = PD.Setting("autoExcludeQuestTrainers",slug),
+        excludeQuestVendors = PD.Setting("autoExcludeQuestVendors",slug),
+        excludeInstanceVendors = PD.Setting("autoExcludeInstanceVendors",slug),
+        excludeInstanceTrainers = PD.Setting("autoExcludeInstanceTrainers",slug),
         target = PD.LvTarget(slug),
         scheme = PD.FixedOnly(slug) and "fixed" or fish and "fishing" or PD.SettingRaw("autoScheme",slug),
         allowSecondaryLeveling = PD.Setting("autoSecondaryLeveling",slug),
@@ -17791,7 +17998,11 @@ function PD.RowsFormulaShop(rows, data, foldKey, represented)
         if selected=="acquire" then tag=PD.PurchaseSource(entry) end
         if tagKind=="none" and blockedText then
             if entry.reason=="limitedFormulaDisabled" or entry.reason=="formulaLimited"
-                or entry.reason=="bindOnPickupFormulaDisabled" or entry.reason=="currencyFormulaDisabled" then
+                or entry.reason=="bindOnPickupFormulaDisabled" or entry.reason=="dropFormulaDisabled"
+                or entry.reason=="currencyFormulaDisabled"
+                or entry.reason=="questRecipeExcluded" or entry.reason=="questTrainerExcluded"
+                or entry.reason=="questVendorExcluded"
+                or entry.reason=="instanceVendorExcluded" or entry.reason=="instanceTrainerExcluded" then
                 tag=L["采购受设置限制"]
             elseif entry.reason=="learningDataMissing" or entry.reason=="learningRequirementsUnknown" then
                 tag=L["资料待补"]
@@ -18757,7 +18968,7 @@ PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoStartSkill", "autoSecondaryLeveling", "computationSpeed" }, 1 },
-    { L["采购与配方"], { "autoUseBagMaterials", "autoSkillBudget", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
+    { L["采购与配方"], { "autoUseBagMaterials", "autoSkillBudget", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowDropFormulas", "autoAllowCurrencyFormulas", "autoExcludeQuestRecipes", "autoExcludeQuestTrainers", "autoExcludeQuestVendors", "autoExcludeInstanceVendors", "autoExcludeInstanceTrainers" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
     { L["扫描数据"], { "clearScanData" }, 1 },
 }
@@ -18793,14 +19004,34 @@ function PD.RowsSettings(rows)
           desc = L["允许限量商人报价与拍卖行报价比较，选择更便宜的购买渠道。"],
           d1 = L["默认关闭；关闭时仍可使用有价格且近期在售数量至少1张的拍卖行图纸。"],
           d2 = L["开启后可能选择限量商人，到访时可能无货；非金币拾取绑定来源仍需对应许可。"] },
-        { k = "autoAllowBindOnPickupFormulas", name = L["允许非金币获取的拾取绑定图纸"],
-          desc = L["允许掉落、任务、通货或物品兑换取得的拾取绑定图纸参与路线。"],
-          d1 = L["默认关闭；开启包含通货兑换。纯金币NPC购买和合格拍卖行报价不受此开关限制。"],
-          d2 = L["获取和兑换需求单独列出，不把未知成本当作0金币；开始制作前需实际取得并学习图纸。"] },
+        { k = "autoAllowDropFormulas", name = L["允许拾取绑定掉落图纸"],
+          desc = L["仅允许通过怪物掉落、宝箱或采集等非金币方式取得的拾取绑定图纸参与路线。"],
+          d1 = L["默认关闭；纯金币NPC购买和合格拍卖行报价不受此开关限制。"],
+          d2 = L["开启后不把未知掉落成本当作 0 金币，并在清单中单独列出获取需求。"] },
         { k = "autoAllowCurrencyFormulas", name = L["允许通货兑换图纸"],
-          desc = L["总开关关闭时，单独允许通货或物品兑换的拾取绑定图纸。"],
-          d1 = L["默认关闭；任一开关开启即可规划兑换。合格拍卖行报价不受此开关限制。"],
-          d2 = L["金币加通货或物品也属于兑换；仅此项开启不放行掉落或任务，限量NPC仍受限量开关约束。"] },
+          desc = L["独立允许通过通货或物品兑换获取的图纸参与路线。"],
+          d1 = L["默认关闭；与其他开关完全独立。合格拍卖行报价不受此开关限制。"],
+          d2 = L["金币加通货或物品也属于兑换；限量NPC仍受限量开关约束。"] },
+        { k = "autoExcludeQuestRecipes", name = L["排除任务直授/奖励配方"],
+          desc = L["排除任务直接学会的配方、带任务前置的配方路线及拾取绑定任务奖励图纸（无视角色是否已完成任务）。"],
+          d1 = L["默认开启；关闭后允许任务直授或任务奖励图纸参与路线。"],
+          d2 = L["若配方已学会、背包已持有图纸，或图纸有普通商人/拍卖行渠道，仍会保留可用渠道。"] },
+        { k = "autoExcludeQuestTrainers", name = L["排除需任务解锁的训练师"],
+          desc = L["排除需要完成前置任务才能学习的训练师（如炼金变色药水训练师、急救大师任务训练师）。"],
+          d1 = L["默认开启；若同一配方有其他无需任务前置的训练师或图纸渠道，仍会正常采用。"],
+          d2 = L["仅影响配方学习路径，不拦截专业 225→300 大师阶位上限提示。"] },
+        { k = "autoExcludeQuestVendors", name = L["排除需任务解锁的商人"],
+          desc = L["排除需要完成前置任务（或携带任务道具）才能购买图纸的商人（如通灵学院鬼魂商人）。"],
+          d1 = L["默认开启；若同一图纸另有无前置普通商人或拍卖行报价，仍会正常采用。"],
+          d2 = L["关闭后按当前角色任务与道具满足情况判断是否可向该商人采购。"] },
+        { k = "autoExcludeInstanceVendors", name = L["排除副本内商人"],
+          desc = L["排除位于地下城或团队副本内的图纸商人（如黑石深渊、厄运之槌、安其拉废墟、诺莫瑞根商人）。"],
+          d1 = L["默认开启；若同一图纸另有大世界普通商人或拍卖行报价，仍会正常采用。"],
+          d2 = L["按专业独立保存；如需把副本内商人纳入采购比价，可单独关闭此项。"] },
+        { k = "autoExcludeInstanceTrainers", name = L["排除副本内训练师"],
+          desc = L["排除位于地下城或团队副本内的配方训练师（如奥达曼安诺拉、黑翼之巢克里希克）。"],
+          d1 = L["默认开启，但附魔专业默认关闭（225 级必去奥达曼升上限，可顺手学安诺拉的 230–250 配方）。"],
+          d2 = L["仅影响配方学习路径，绝不拦截专业 225→300 大师阶位上限指引。"] },
         { k = "autoFromCurrent", name = L["从当前技能开始计算"],
           desc = L["开启 = 只算当前技能到 300 的路线；关闭 = 从 1 全量重算整条路线（预估全程花费）"],
           d1 = L["开启：适合练级中途打开手册直接照着做。"],

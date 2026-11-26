@@ -476,9 +476,14 @@ function XP.ValidateLearning(plan, slug, seg)
     end
     local profession = seg.profession or slug
     local pricing = {
-        allowBindOnPickupFormulas = readSettingBool("autoAllowBindOnPickupFormulas", slug),
-        allowCurrencyFormulas = readSettingBool("autoAllowCurrencyFormulas", slug),
         allowLimitedFormulas = readSettingBool("autoBuyLimitedFormulas", slug),
+        allowDropFormulas = readSettingBool("autoAllowDropFormulas", slug),
+        allowCurrencyFormulas = readSettingBool("autoAllowCurrencyFormulas", slug),
+        excludeQuestRecipes = readSettingBool("autoExcludeQuestRecipes", slug),
+        excludeQuestTrainers = readSettingBool("autoExcludeQuestTrainers", slug),
+        excludeQuestVendors = readSettingBool("autoExcludeQuestVendors", slug),
+        excludeInstanceVendors = readSettingBool("autoExcludeInstanceVendors", slug),
+        excludeInstanceTrainers = readSettingBool("autoExcludeInstanceTrainers", slug),
     }
     local key = table.concat({
         tostring(current),
@@ -486,9 +491,14 @@ function XP.ValidateLearning(plan, slug, seg)
         tostring(store and store.clientInputRevision or 0),
         tostring(seg.segmentID or spell),
         tostring(professions[profession] and professions[profession].cur),
-        tostring(pricing.allowBindOnPickupFormulas),
-        tostring(pricing.allowCurrencyFormulas),
         tostring(pricing.allowLimitedFormulas),
+        tostring(pricing.allowDropFormulas),
+        tostring(pricing.allowCurrencyFormulas),
+        tostring(pricing.excludeQuestRecipes),
+        tostring(pricing.excludeQuestTrainers),
+        tostring(pricing.excludeQuestVendors),
+        tostring(pricing.excludeInstanceVendors),
+        tostring(pricing.excludeInstanceTrainers),
     }, ":")
     local cached = learningChecks[plan]
     if cached and cached.key == key and not cached.inventoryDependent then

@@ -495,8 +495,13 @@ local function routeForCalc(slug, skill)
             start = PD.AutoStartSkillOf and PD.AutoStartSkillOf(slug, skill) or ((PD.Setting("autoFromCurrent",slug) and skill) and math.max(1, skill) or 1),
             onlyAH = PD.Setting("autoOnlyAH",slug),
             allowLimitedFormulas=PD.Setting("autoBuyLimitedFormulas",slug),
-            allowBindOnPickupFormulas=PD.Setting("autoAllowBindOnPickupFormulas",slug),
-            allowCurrencyFormulas=PD.Setting("autoAllowCurrencyFormulas",slug), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
+            allowDropFormulas=PD.Setting("autoAllowDropFormulas",slug),
+            allowCurrencyFormulas=PD.Setting("autoAllowCurrencyFormulas",slug),
+            excludeQuestRecipes=PD.Setting("autoExcludeQuestRecipes",slug),
+            excludeQuestTrainers=PD.Setting("autoExcludeQuestTrainers",slug),
+            excludeQuestVendors=PD.Setting("autoExcludeQuestVendors",slug),
+            excludeInstanceVendors=PD.Setting("autoExcludeInstanceVendors",slug),
+            excludeInstanceTrainers=PD.Setting("autoExcludeInstanceTrainers",slug), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
         }
         opts.target = routeTarget(slug)
         local res = RA.Get(slug, opts)

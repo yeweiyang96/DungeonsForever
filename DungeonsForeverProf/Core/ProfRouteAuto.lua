@@ -3227,10 +3227,11 @@ local function Fingerprint(opts, slug)
         local ok, v = pcall(Pol.LearningObservationFingerprint)
         if ok and v ~= nil then learnObsFp = v end
     end
-    return format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+    return format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH), tostring(opts.considerAuctionSupply),
-        tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas),
-        tostring(opts.allowLimitedFormulas),
+        tostring(opts.allowLimitedFormulas), tostring(opts.allowDropFormulas), tostring(opts.allowCurrencyFormulas),
+        tostring(opts.excludeQuestRecipes), tostring(opts.excludeQuestTrainers), tostring(opts.excludeQuestVendors),
+        tostring(opts.excludeInstanceVendors), tostring(opts.excludeInstanceTrainers),
         tostring(opts.target and math.floor(tonumber(opts.target) or cfgCap())),
         tostring(opts.scheme),
         tostring(opts.allowSecondaryLeveling),
@@ -3247,11 +3248,17 @@ function RA.QuoteSig(slug)
     local rev = AB and AB.SupplyRevision and AB.SupplyRevision() or 0
     local fee = tonumber(readSettingRaw("recoveryFeePercent", slug, defFee)) or defFee
     local lim = readSetting("autoBuyLimitedFormulas", slug, false) and 1 or 0
-    local bop = readSetting("autoAllowBindOnPickupFormulas", slug, false) and 1 or 0
+    local drp = readSetting("autoAllowDropFormulas", slug, false) and 1 or 0
     local currency = readSetting("autoAllowCurrencyFormulas", slug, false) and 1 or 0
+    local exQR = readSetting("autoExcludeQuestRecipes", slug, true) and 1 or 0
+    local exQT = readSetting("autoExcludeQuestTrainers", slug, true) and 1 or 0
+    local exQV = readSetting("autoExcludeQuestVendors", slug, true) and 1 or 0
+    local exIV = readSetting("autoExcludeInstanceVendors", slug, true) and 1 or 0
+    local exIT = readSetting("autoExcludeInstanceTrainers", slug, slug ~= "enchanting") and 1 or 0
     local rec = readSetting("recoveryEnabled", slug, false) and 1 or 0
     local tool = readSetting("autoCraftTools", slug, true) and 1 or 0
-    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(bop) .. ":" .. tostring(currency)
+    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(drp) .. ":" .. tostring(currency)
+        .. ":" .. tostring(exQR) .. tostring(exQT) .. tostring(exQV) .. tostring(exIV) .. tostring(exIT)
         .. ":" .. tostring(rec) .. ":" .. tostring(tool)
 end
 
@@ -3315,8 +3322,13 @@ local function baseOptionsFor(slug, current, skipExecutionInventory)
         onlyAH = readSetting("autoOnlyAH", slug, true),
         considerAuctionSupply = readSetting("autoConsiderAuctionSupply", slug, false),
         allowLimitedFormulas = readSetting("autoBuyLimitedFormulas", slug, false),
-        allowBindOnPickupFormulas = readSetting("autoAllowBindOnPickupFormulas", slug, false),
+        allowDropFormulas = readSetting("autoAllowDropFormulas", slug, false),
         allowCurrencyFormulas = readSetting("autoAllowCurrencyFormulas", slug, false),
+        excludeQuestRecipes = readSetting("autoExcludeQuestRecipes", slug, true),
+        excludeQuestTrainers = readSetting("autoExcludeQuestTrainers", slug, true),
+        excludeQuestVendors = readSetting("autoExcludeQuestVendors", slug, true),
+        excludeInstanceVendors = readSetting("autoExcludeInstanceVendors", slug, true),
+        excludeInstanceTrainers = readSetting("autoExcludeInstanceTrainers", slug, slug ~= "enchanting"),
         target = target,
         scheme = scheme,
         allowSecondaryLeveling = allowSec,

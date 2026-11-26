@@ -338,8 +338,14 @@ local DIAG_KEYS = {
     professionChanged = "专业学习状态或旧路线规则已变化，请重新计算路线。",
     pricingPolicyChanged = "专业学习状态或旧路线规则已变化，请重新计算路线。",
     formulaUnavailable = "未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。",
-    bindOnPickupFormulaDisabled = "非金币获取的拾取绑定图纸未开启；此配方暂不参与路线。",
-    currencyFormulaDisabled = "非金币拾取绑定与通货兑换均未开启；此配方暂不参与路线。",
+    bindOnPickupFormulaDisabled = "拾取绑定掉落图纸未开启；此配方暂不参与路线。",
+    dropFormulaDisabled = "拾取绑定掉落图纸未开启；可在设置中开启「允许拾取绑定掉落图纸」。",
+    currencyFormulaDisabled = "通货兑换图纸未开启；可在设置中开启「允许通货兑换图纸」。",
+    questRecipeExcluded = "已排除任务直授/奖励配方；可在设置中关闭「排除任务直授/奖励配方」或开启拍卖行。",
+    questTrainerExcluded = "已排除需任务解锁的训练师；可在设置中关闭「排除需任务解锁的训练师」或开启拍卖行。",
+    questVendorExcluded = "已排除需任务解锁的商人；可在设置中关闭「排除需任务解锁的商人」或使用拍卖行图纸。",
+    instanceVendorExcluded = "已排除副本内商人；可在设置中关闭「排除副本内商人」或使用拍卖行图纸。",
+    instanceTrainerExcluded = "已排除副本内训练师；可在设置中关闭「排除副本内训练师」。",
     formulaAcquisitionPending = "请先取得并学习所需图纸，再开始制作。",
     formulaAuctionSupplyUnknown = "请打开拍卖行完成一次完整扫描，确认图纸在售后重新计算路线。",
     formulaAuctionSupplyInsufficient = "本次扫描的图纸数量不够；请打开拍卖行完成一次完整扫描后重新计算，或选择其他图纸来源。",
@@ -1367,22 +1373,78 @@ local function formulaContext(context)
     return context.snapshot or context
 end
 
+local function settingFlagCapture(context, field, setting, profession, defaultVal)
+    if type(context) == "table" and context[field] ~= nil then return context[field] == true end
+    local snapshot = type(context) == "table" and context.snapshot or nil
+    if type(snapshot) == "table" and snapshot[field] ~= nil then return snapshot[field] == true end
+    local slug = profession or (type(context) == "table" and (context.profession or context.targetProfession))
+        or (type(snapshot) == "table" and snapshot.targetProfession)
+    local dbMod = getDB()
+    local profDef
+    if type(dbMod) == "table" and type(dbMod.PROF_SETTING_DEF) == "table" and type(slug) == "string" then
+        local pd = dbMod.PROF_SETTING_DEF[slug]
+        if type(pd) == "table" and pd[setting] ~= nil then profDef = pd[setting] == true end
+    end
+    local fallback = profDef
+    if fallback == nil then fallback = defaultVal == true end
+    if snapshot or (type(context) == "table" and (context.prices ~= nil or context.known ~= nil or context.recipes ~= nil)) then
+        return fallback
+    end
+    local settings = getSettings()
+    if type(settings) == "table" and type(settings.SettingRaw) == "function" then
+        local v = settings.SettingRaw(setting, slug)
+        if v ~= nil then return v == true end
+    end
+    return fallback
+end
+
 if type(E.AllowLimitedFormulas) ~= "function" then
     function E.AllowLimitedFormulas(context, profession)
-        return settingPermission(context, "allowLimitedFormulas", "autoBuyLimitedFormulas", profession)
+        return settingFlagCapture(context, "allowLimitedFormulas", "autoBuyLimitedFormulas", profession, false)
     end
 end
 
-if type(E.AllowBindOnPickupFormulas) ~= "function" then
-    function E.AllowBindOnPickupFormulas(context, profession)
-        return settingPermission(context, "allowBindOnPickupFormulas", "autoAllowBindOnPickupFormulas", profession)
+if type(E.AllowDropFormulas) ~= "function" then
+    function E.AllowDropFormulas(context, profession)
+        return settingFlagCapture(context, "allowDropFormulas", "autoAllowDropFormulas", profession, false)
     end
 end
 
 if type(E.AllowCurrencyFormulas) ~= "function" then
     function E.AllowCurrencyFormulas(context, profession)
-        return E.AllowBindOnPickupFormulas(context, profession)
-            or settingPermission(context, "allowCurrencyFormulas", "autoAllowCurrencyFormulas", profession)
+        return settingFlagCapture(context, "allowCurrencyFormulas", "autoAllowCurrencyFormulas", profession, false)
+    end
+end
+
+if type(E.ExcludeQuestRecipes) ~= "function" then
+    function E.ExcludeQuestRecipes(context, profession)
+        return settingFlagCapture(context, "excludeQuestRecipes", "autoExcludeQuestRecipes", profession, true)
+    end
+end
+
+if type(E.ExcludeQuestTrainers) ~= "function" then
+    function E.ExcludeQuestTrainers(context, profession)
+        return settingFlagCapture(context, "excludeQuestTrainers", "autoExcludeQuestTrainers", profession, true)
+    end
+end
+
+if type(E.ExcludeQuestVendors) ~= "function" then
+    function E.ExcludeQuestVendors(context, profession)
+        return settingFlagCapture(context, "excludeQuestVendors", "autoExcludeQuestVendors", profession, true)
+    end
+end
+
+if type(E.ExcludeInstanceVendors) ~= "function" then
+    function E.ExcludeInstanceVendors(context, profession)
+        return settingFlagCapture(context, "excludeInstanceVendors", "autoExcludeInstanceVendors", profession, true)
+    end
+end
+
+if type(E.ExcludeInstanceTrainers) ~= "function" then
+    function E.ExcludeInstanceTrainers(context, profession)
+        local slug = profession or (type(context) == "table" and (context.profession or context.targetProfession))
+            or (type(context) == "table" and type(context.snapshot) == "table" and context.snapshot.targetProfession)
+        return settingFlagCapture(context, "excludeInstanceTrainers", "autoExcludeInstanceTrainers", slug, slug ~= "enchanting")
     end
 end
 
@@ -2279,9 +2341,14 @@ local function baseCapture(slug, opts, tick)
             end
             s.recipes = recipes
         end
-        s.allowLimitedFormulas = E.AllowLimitedFormulas(opts)
-        s.allowBindOnPickupFormulas = E.AllowBindOnPickupFormulas(opts)
-        s.allowCurrencyFormulas = E.AllowCurrencyFormulas(opts)
+        s.allowLimitedFormulas = E.AllowLimitedFormulas(opts, slug)
+        s.allowDropFormulas = E.AllowDropFormulas(opts, slug)
+        s.allowCurrencyFormulas = E.AllowCurrencyFormulas(opts, slug)
+        s.excludeQuestRecipes = E.ExcludeQuestRecipes(opts, slug)
+        s.excludeQuestTrainers = E.ExcludeQuestTrainers(opts, slug)
+        s.excludeQuestVendors = E.ExcludeQuestVendors(opts, slug)
+        s.excludeInstanceVendors = E.ExcludeInstanceVendors(opts, slug)
+        s.excludeInstanceTrainers = E.ExcludeInstanceTrainers(opts, slug)
         if s.coverageComplete == nil then s.coverageComplete = false end
         s.essenceConversions = ess and ess.Enabled and ess.Enabled(slug, opts, s) or false
         if s.toolGoals == nil then E.CaptureToolGoals(s, slug, opts) end
@@ -2303,9 +2370,14 @@ local function baseCapture(slug, opts, tick)
         routeContext = context,
         stamp = Now(),
         character = E.CharacterKey(),
-        allowLimitedFormulas = E.AllowLimitedFormulas(opts),
-        allowBindOnPickupFormulas = E.AllowBindOnPickupFormulas(opts),
-        allowCurrencyFormulas = E.AllowCurrencyFormulas(opts),
+        allowLimitedFormulas = E.AllowLimitedFormulas(opts, slug),
+        allowDropFormulas = E.AllowDropFormulas(opts, slug),
+        allowCurrencyFormulas = E.AllowCurrencyFormulas(opts, slug),
+        excludeQuestRecipes = E.ExcludeQuestRecipes(opts, slug),
+        excludeQuestTrainers = E.ExcludeQuestTrainers(opts, slug),
+        excludeQuestVendors = E.ExcludeQuestVendors(opts, slug),
+        excludeInstanceVendors = E.ExcludeInstanceVendors(opts, slug),
+        excludeInstanceTrainers = E.ExcludeInstanceTrainers(opts, slug),
         considerAuctionSupply = opts.considerAuctionSupply,
     }
     if opts.level ~= nil then
