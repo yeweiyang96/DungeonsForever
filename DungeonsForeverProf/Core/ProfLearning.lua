@@ -461,10 +461,22 @@ local function knownRecipe(recipe, snapshot, state)
 end
 
 local function professionClassEligibility(recipe, snapshot)
-    if recipe.profession ~= "poisons" then return true end
+    local reqClass
+    if recipe.profession == "poisons" then
+        reqClass = 4
+    elseif recipe.profession == "comprehension" then
+        reqClass = 8
+    else
+        return true
+    end
     local id = identity(snapshot, "classID", _G.UnitClass)
     if type(id) ~= "number" or id < 1 then return false, "clientDataPending", { status = "unknown" } end
-    if id ~= 4 then return false, "poisonRogueRequired", { status = "blocked" } end
+    if id ~= reqClass then
+        if recipe.profession == "poisons" then
+            return false, "poisonRogueRequired", { status = "blocked" }
+        end
+        return false, "characterClassRequired", { status = "blocked" }
+    end
     return true
 end
 
