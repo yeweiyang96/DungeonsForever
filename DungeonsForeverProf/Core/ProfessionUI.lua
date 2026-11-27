@@ -2827,7 +2827,14 @@ function PD.PCWipe(r)
         end
     end
     if r.pcBtn then
-        for k = 1, 2 do if r.pcBtn[k] then r.pcBtn[k]:Hide() end end
+        for k = 1, 2 do
+            if r.pcBtn[k] then
+                r.pcBtn[k]:SetScript("OnClick", nil)
+                r.pcBtn[k]:SetScript("OnEnter", nil)
+                r.pcBtn[k]:SetScript("OnLeave", nil)
+                r.pcBtn[k]:Hide()
+            end
+        end
     end
 end
 
@@ -3155,8 +3162,58 @@ function PD.PCApply(r, spec, w, h)
         return
     end
     r.__pcLeft = nil
+    local hBtnSpec = d.headerBtn
+    local hBtnW = 0
     if r.pcBtn then
-        for k = 1, 2 do if r.pcBtn[k] then r.pcBtn[k]:Hide() end end
+        local btn1 = r.pcBtn[1]
+        if btn1 and type(hBtnSpec) == "table" then
+            btn1:SetText(hBtnSpec.text or "")
+            local fs = btn1:GetFontString()
+            local bw = 58
+            if fs then
+                local okw, tw = pcall(fs.GetStringWidth, fs)
+                if okw and type(tw) == "number" and tw > 0 then bw = math.max(math.ceil(tw) + 18, 58) end
+            end
+            btn1:SetWidth(bw)
+            if SetButtonSelected then SetButtonSelected(btn1, hBtnSpec.on == true, "main") end
+            btn1:ClearAllPoints()
+            btn1:SetPoint("TOPRIGHT", r, "TOPRIGHT", -pad, -(pad + 4))
+            local act = hBtnSpec.act
+            btn1:SetScript("OnClick", function(_, m)
+                if m ~= "LeftButton" then return end
+                if type(act) == "function" then act() end
+                playSoundSafe(1)
+            end)
+            local tipText = hBtnSpec.tip
+            if type(tipText) == "string" and tipText ~= "" then
+                btn1:SetScript("OnEnter", function(self)
+                    if GameTooltip and GameTooltip.SetOwner then
+                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                        GameTooltip:SetText(tipText, 1, 1, 1, 1, true)
+                        GameTooltip:Show()
+                    end
+                end)
+                btn1:SetScript("OnLeave", function()
+                    if GameTooltip and GameTooltip.Hide then GameTooltip:Hide() end
+                end)
+            else
+                btn1:SetScript("OnEnter", nil)
+                btn1:SetScript("OnLeave", nil)
+            end
+            btn1:Show()
+            hBtnW = bw
+        elseif btn1 then
+            btn1:SetScript("OnClick", nil)
+            btn1:SetScript("OnEnter", nil)
+            btn1:SetScript("OnLeave", nil)
+            btn1:Hide()
+        end
+        if r.pcBtn[2] then
+            r.pcBtn[2]:SetScript("OnClick", nil)
+            r.pcBtn[2]:SetScript("OnEnter", nil)
+            r.pcBtn[2]:SetScript("OnLeave", nil)
+            r.pcBtn[2]:Hide()
+        end
     end
     if r.__pcClick and r:IsMouseEnabled() then r:EnableMouse(false) end
     r.icon:ClearAllPoints()
@@ -3200,9 +3257,9 @@ function PD.PCApply(r, spec, w, h)
     else
         r.__pcRight:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
     end
-    r.__pcRight:SetText(d.right or "")
-    local rw = 0
-    if (d.right or "") ~= "" then
+    r.__pcRight:SetText((hBtnW > 0) and "" or (d.right or ""))
+    local rw = hBtnW
+    if hBtnW == 0 and (d.right or "") ~= "" then
         r.__pcRight:Show()
         local okw, ww = pcall(r.__pcRight.GetStringWidth, r.__pcRight)
         if okw and type(ww) == "number" and ww > 0 then rw = ww end
@@ -3210,9 +3267,10 @@ function PD.PCApply(r, spec, w, h)
         r.__pcRight:Hide()
     end
     local nmMax = math.max(w - nx - pad - math.max(rw + 8, 24), 52)
+    local nameDy = (hBtnW > 0 and (d.maxLv or 0) == 0) and (pad + 8) or PD.PC_NAME_DY
     r.a:ClearAllPoints()
     r.a:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.PC_FS_NAME, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
-    r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx, -PD.PC_NAME_DY)
+    r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx, -nameDy)
     r.a:SetWidth(nmMax)
     r.a:SetJustifyH("LEFT")
     r.a:SetText(PD.FitName(d.name, nmMax, PD.PC_FS_NAME))
@@ -3278,7 +3336,9 @@ function PD.PCApply(r, spec, w, h)
                 end
                 nm:SetText(row.name or "")
                 local cc = PD.RowClassColor(row.cls)
-                if cc then
+                if row.empty or row.more then
+                    nm:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
+                elseif cc then
                     nm:SetTextColor(cc[1], cc[2], cc[3])
                 elseif row.cur then
                     nm:SetTextColor(accent[1], accent[2], accent[3])
@@ -8867,40 +8927,40 @@ function PD.RowsWatchMgr(rows)
         PushText(rows, L["打开这个页面会自动扫描当前角色的冷却配方。"], 14, C_GREY, 1)
         return
     end
-    local on, todo = 0, 0
+    local todo = 0
     for i = 1, #list do
-        if list[i].on then on = on + 1 end
         if list[i].todo then todo = todo + 1 end
     end
     PushHead(rows, L["冷却管理"], 1, nil,
-             format(L["共 %d 项 · 追踪 %d 项 · 待办 %d 项 · 点卡片上的按钮切换"], #list, on, todo), 112)
+             format(L["共 %d 项 · 地图待办 %d 项 · 冷却就绪时在左侧地图待办提醒"], #list, todo), 112)
     local cards = {}
     for i = 1, #list do
         local it = list[i]
         local spell = it.spell
-        local wantOn, wantTodo = not it.on, not it.todo
+        local wantTodo = not it.todo
+        local charRows = (type(it.rows) == "table" and #it.rows > 0) and it.rows or {
+            { name = L["暂无已学角色"], text = "", empty = true },
+        }
         cards[#cards + 1] = {
-            compact = true,
             icon = it.item,
+            it = it.item and { it.item } or nil,
+            spell = spell,
             name = it.name,
-            on = it.on,
-            btns = {
-                { text = it.on and L["追踪中"] or L["追踪"],
-                  on = it.on,
-                  act = function()
-                      local cw = getCDWatch()
-                      if cw and cw.SetEnabled then cw.SetEnabled(spell, wantOn) end
-                  end },
-                { text = it.todo and L["待办中"] or L["非待办"],
-                  on = it.todo,
-                  act = function()
-                      local cw = getCDWatch()
-                      if cw and cw.SetTodo then cw.SetTodo(spell, wantTodo) end
-                  end },
+            rows = charRows,
+            headerBtn = {
+                text = it.todo and L["待办中"] or L["加入待办"],
+                on = it.todo == true,
+                tip = it.todo
+                    and L["已加入左侧地图待办：本账号任意已学角色冷却就绪时自动提醒。点击关闭。"]
+                    or L["点击加入左侧地图待办：本账号任意已学角色冷却就绪时自动提醒。"],
+                act = function()
+                    local cw = getCDWatch()
+                    if cw and cw.SetTodo then cw.SetTodo(spell, wantTodo) end
+                end,
             },
         }
     end
-    PD.PushCardRow(rows, cards, 4)
+    PD.PushCardRow(rows, cards, 3)
 end
 
 local function MapIDAlive(mapID)
@@ -21254,7 +21314,7 @@ function PD.IsNavSlug(slug)
     return false
 end
 
-function PD.Show(slug)
+function PD.Show(slug, tab, subTab)
     if type(slug) ~= "string" then return end
     if slug ~= "__index" and not PD.IsNavSlug(slug) then
         slug = PD.DefaultSlug()
@@ -21279,6 +21339,17 @@ function PD.Show(slug)
         PD.setOpen = false
         PD.searchQ = nil
         if PD.searchBox then PD.searchBox.eb:SetText("") end
+    end
+    if type(tab) == "string" and tab ~= "" then
+        PD.tab = tab
+        PD.setOpen = false
+    end
+    if subTab == "doc" or (subTab == "mgr" and PD.HasCooldownRecipes(slug)) then
+        PD.subTab = subTab
+        PD.subTabSlug = slug
+        local db = ProfDB()
+        if type(db.subTab) ~= "table" then db.subTab = {} end
+        if slug ~= "__index" then db.subTab[slug] = subTab end
     end
     if not PD.built then
         PD.wantOpen = true

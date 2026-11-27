@@ -471,7 +471,7 @@ function E.ReadRecipe(spell, observedInfo, infoAlreadyRead)
         if type(info.learned) == "boolean" then r.learned = info.learned end
         if type(info.hasCooldown) == "boolean" then r.cooldown = info.hasCooldown; r.cooldownVerified = true end
         local cw = getCDWatch()
-        if cw and info.learned == true and type(cw.MarkChar) == "function" then
+        if cw and info.learned == true and info.hasCooldown == true and type(cw.MarkChar) == "function" then
             local charKey = type(cw.CharKey) == "function" and cw.CharKey() or E.CharacterKey()
             local charName = type(cw.Name) == "function" and cw.Name()
                 or (type(_G.UnitName) == "function" and select(2, pcall(_G.UnitName, "player")))

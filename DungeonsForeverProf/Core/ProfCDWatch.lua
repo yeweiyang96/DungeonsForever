@@ -118,19 +118,28 @@ local function clsMap()
 end
 
 local TODO_DEF = { [17187] = true, [1317279] = true }
+local slugOf
 
 function W.TodoOn(spell)
     local v = todoOns()[spell]
     if v ~= nil then return v == true end
+    if offs()[spell] == true then return false end
     return TODO_DEF[spell] == true
 end
 
 function W.SetTodo(spell, on)
     if type(spell) ~= "number" then return false end
     on = (on == true)
-    if W.TodoOn(spell) == on then return false end
+    if W.TodoOn(spell) == on and todoOns()[spell] ~= nil then return false end
     local o = todoOns()
-    if on then o[spell] = true else o[spell] = false end
+    if on then
+        o[spell] = true
+        local slug = slugOf(spell)
+        if type(slug) == "string" and slug ~= "" then W.Mark(spell, slug) end
+    else
+        o[spell] = false
+    end
+    offs()[spell] = nil
     local pd = getProfModule()
     if pd and pd.RequestRender then pcall(pd.RequestRender) end
     local zh = getZoneHint()
@@ -139,24 +148,11 @@ function W.SetTodo(spell, on)
 end
 
 function W.Enabled(spell)
-    return offs()[spell] ~= true
+    return W.TodoOn(spell)
 end
 
 function W.SetEnabled(spell, on)
-    if type(spell) ~= "number" then return false end
-    local o = offs()
-    if on then
-        if o[spell] == nil then return false end
-        o[spell] = nil
-    else
-        if o[spell] == true then return false end
-        o[spell] = true
-    end
-    local pd = getProfModule()
-    if pd and pd.RequestRender then pcall(pd.RequestRender) end
-    local zh = getZoneHint()
-    if zh and zh.RefreshSoft then pcall(zh.RefreshSoft, true) end
-    return true
+    return W.SetTodo(spell, on)
 end
 
 W.Store = store
@@ -358,7 +354,7 @@ local function confirmedUnlearned(spell, info)
     return set ~= nil and set[spell] == true
 end
 
-local function slugOf(spell)
+slugOf = function(spell)
     local l = list()
     if type(l[spell]) == "string" then return l[spell] end
     local DS = getDS()
@@ -513,10 +509,8 @@ local function scanRows(slug)
             if info and info.learned == true then
                 W.UnmarkChar(spell, key)
                 W.MarkChar(spell, key, nm)
-                if W.Enabled(spell) then
-                    local left, dur = liveCD(spell)
-                    if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
-                end
+                local left, dur = liveCD(spell)
+                if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
             elseif confirmedUnlearned(spell, info) then
                 W.UnmarkChar(spell, key)
                 local by = store()[spell]
@@ -660,6 +654,26 @@ local function itemName(id, spell)
     return nil
 end
 
+local function recipeName(spell, item)
+    if type(spell) == "number" then
+        local DS = getDS()
+        if DS and type(DS.RawText) == "function" then
+            local snm = DS.RawText("spell", spell)
+            if type(snm) == "string" and snm ~= "" then return snm end
+        end
+        local cs = _G.C_Spell
+        if type(cs) == "table" and type(cs.GetSpellName) == "function" then
+            local ok, v = pcall(cs.GetSpellName, spell)
+            if ok and type(v) == "string" and v ~= "" then return v end
+        end
+        if type(_G.GetSpellInfo) == "function" then
+            local ok, v = pcall(_G.GetSpellInfo, spell)
+            if ok and type(v) == "string" and v ~= "" then return v end
+        end
+    end
+    return itemName(item, spell)
+end
+
 local function recipeMats(rec)
     if type(rec) ~= "table" or type(rec.reagents) ~= "table" then return nil end
     local out = {}
@@ -730,6 +744,86 @@ end
 
 W.FmtLeft = fmtLeft
 
+local MAX_CARD_ROWS = 4
+
+local function buildCharStatus(spell, slug, db, k, cur, t)
+    local by = type(db[spell]) == "table" and db[spell] or {}
+    local rows = {}
+    for key, rec in pairs(by) do
+        local marks = k[key]
+        local learned = type(marks) == "table" and marks[spell] ~= nil
+        if learned and type(rec) == "table" and (rec.prof == nil or rec.prof == slug) then
+            if type(rec.t) == "number" and (t - rec.t) > KEEP_SEC then
+                by[key] = nil
+            else
+                rows[#rows + 1] = {
+                    key = key,
+                    name = rec.n or key,
+                    left = (type(rec.u) == "number") and (rec.u - t) or nil,
+                    cls = clsOf(key, rec),
+                }
+            end
+        end
+    end
+    for key, marks in pairs(k) do
+        if type(marks) == "table" and marks[spell] and type(by[key]) ~= "table" then
+            rows[#rows + 1] = {
+                key = key,
+                name = marks[spell],
+                left = nil,
+                cls = clsOf(key, nil),
+            }
+        end
+    end
+    if #rows == 0 then
+        return {}, 0, nil, 0
+    end
+    table.sort(rows, function(a, b)
+        local ac, bc = (a.key == cur), (b.key == cur)
+        if ac ~= bc then return ac end
+        local al, bl = (a.left or 0), (b.left or 0)
+        if al ~= bl then return al < bl end
+        return tostring(a.name or "") < tostring(b.name or "")
+    end)
+    local free, best = 0, nil
+    for i = 1, #rows do
+        local it = rows[i]
+        if it.left == nil or it.left <= 0 then
+            free = free + 1
+        elseif not best or it.left < best then
+            best = it.left
+        end
+    end
+    local limit = (#rows <= MAX_CARD_ROWS) and #rows or MAX_ROWS
+    local shown = {}
+    local myName = W.Name()
+    local myCls = nil
+    for i = 1, limit do
+        local it = rows[i]
+        local c = it.cls
+        if not c and it.name == myName then
+            if not myCls then myCls = charClass() end
+            c = myCls
+        end
+        shown[#shown + 1] = {
+            key = it.key,
+            name = it.name,
+            text = (it.left == nil) and tr("可再做") or fmtLeft(it.left),
+            free = (it.left == nil or it.left <= 0),
+            cur = (it.key == cur),
+            cls = c,
+        }
+    end
+    if #rows > limit then
+        shown[#shown + 1] = {
+            name = format(tr("另有 %d 个角色"), #rows - limit),
+            text = "",
+            more = true,
+        }
+    end
+    return shown, free, best, #rows
+end
+
 function W.Cards(slug)
     local out = {}
     if type(slug) ~= "string" then return out end
@@ -740,10 +834,10 @@ function W.Cards(slug)
     local t = now()
     local spells = {}
     for spell, s in pairs(l) do
-        if s == slug and W.Enabled(spell) then spells[spell] = true end
+        if s == slug and W.TodoOn(spell) then spells[spell] = true end
     end
     for spell, by in pairs(db) do
-        if type(by) == "table" and W.Enabled(spell) then
+        if type(by) == "table" and W.TodoOn(spell) then
             for _, rec in pairs(by) do
                 if type(rec) == "table" and rec.prof == slug then
                     spells[spell] = true
@@ -755,90 +849,23 @@ function W.Cards(slug)
     for spell in pairs(spells) do
         local rdsCheck = recipeEntryDS(slug, spell)
         if rdsCheck == nil or hasRecipeCooldown(spell, rdsCheck) then
-        local by = type(db[spell]) == "table" and db[spell] or {}
-        local rows = {}
-        for key, rec in pairs(by) do
-            local marks = k[key]
-            local learned = type(marks) == "table" and marks[spell] ~= nil
-            if learned and type(rec) == "table" and (rec.prof == nil or rec.prof == slug) then
-                if type(rec.t) == "number" and (t - rec.t) > KEEP_SEC then
-                    by[key] = nil
-                else
-                    rows[#rows + 1] = {
-                        key = key,
-                        name = rec.n or key,
-                        left = (type(rec.u) == "number") and (rec.u - t) or nil,
-                        cls = clsOf(key, rec),
-                    }
-                end
-            end
-        end
-        for key, marks in pairs(k) do
-            if type(marks) == "table" and marks[spell] and type(by[key]) ~= "table" then
-                rows[#rows + 1] = {
-                    key = key,
-                    name = marks[spell],
-                    left = nil,
-                    cls = clsOf(key, nil),
+            local shown, free, best, count = buildCharStatus(spell, slug, db, k, cur, t)
+            if count > 0 then
+                local rds = recipeEntryDS(slug, spell)
+                local item = rds and rds.outputItemID or nil
+                local mats = recipeMats(rds)
+                out[#out + 1] = {
+                    spell = spell,
+                    item = item,
+                    name = recipeName(spell, item),
+                    mats = mats,
+                    gain = gainOf(item, mats),
+                    rows = shown,
+                    free = free,
+                    best = best,
+                    count = count,
                 }
             end
-        end
-        if #rows > 0 then
-            table.sort(rows, function(a, b)
-                local ac, bc = (a.key == cur), (b.key == cur)
-                if ac ~= bc then return ac end
-                return (a.left or 0) < (b.left or 0)
-            end)
-            local rds = recipeEntryDS(slug, spell)
-            local item = rds and rds.outputItemID or nil
-            local mats = recipeMats(rds)
-            local free, best = 0, nil
-            for i = 1, #rows do
-                local it = rows[i]
-                if it.left == nil or it.left <= 0 then
-                    free = free + 1
-                elseif not best or it.left < best then
-                    best = it.left
-                end
-            end
-            local shown = {}
-            local myName = W.Name()
-            local myCls = nil
-            for i = 1, #rows do
-                local it = rows[i]
-                if i <= MAX_ROWS then
-                    local c = it.cls
-                    if not c and it.name == myName then
-                        if not myCls then myCls = charClass() end
-                        c = myCls
-                    end
-                    shown[#shown + 1] = {
-                        name = it.name,
-                        text = (it.left == nil) and tr("可再做") or fmtLeft(it.left),
-                        free = (it.left == nil or it.left <= 0),
-                        cur = (it.key == cur),
-                        cls = c,
-                    }
-                end
-            end
-            if #rows > MAX_ROWS then
-                shown[#shown + 1] = {
-                    name = format(tr("另有 %d 个角色"), #rows - MAX_ROWS),
-                    text = "",
-                }
-            end
-            out[#out + 1] = {
-                spell = spell,
-                item = item,
-                name = itemName(item, spell),
-                mats = mats,
-                gain = gainOf(item, mats),
-                rows = shown,
-                free = free,
-                best = best,
-                count = #rows,
-            }
-        end
         end
     end
     table.sort(out, function(a, b)
@@ -856,9 +883,27 @@ function W.TodoList()
     local l = list()
     local k = know()
     local t = now()
+    local candidates = {}
     for spell, slug in pairs(l) do
+        if type(spell) == "number" and type(slug) == "string" then
+            candidates[spell] = slug
+        end
+    end
+    for _, marks in pairs(k) do
+        if type(marks) == "table" then
+            for spell in pairs(marks) do
+                if type(spell) == "number" and candidates[spell] == nil then
+                    local slug = slugOf(spell)
+                    if type(slug) == "string" and slug ~= "" then
+                        candidates[spell] = slug
+                    end
+                end
+            end
+        end
+    end
+    for spell, slug in pairs(candidates) do
         local rdsTodo = recipeEntryDS(slug, spell)
-        if W.Enabled(spell) and W.TodoOn(spell) and (rdsTodo == nil or hasRecipeCooldown(spell, rdsTodo)) then
+        if W.TodoOn(spell) and (rdsTodo == nil or hasRecipeCooldown(spell, rdsTodo)) then
             local by = type(db[spell]) == "table" and db[spell] or {}
             local names, byc = {}, {}
             for key, rec in pairs(by) do
@@ -889,7 +934,7 @@ function W.TodoList()
                     spell = spell,
                     slug = slug,
                     item = item,
-                    name = itemName(item, spell),
+                    name = recipeName(spell, item),
                     by = names,
                     byc = byc,
                 }
@@ -918,6 +963,7 @@ function W.Manage(slug)
     table.sort(ids)
     local l = list()
     local db = store()
+    local k = know()
     local cur = W.CharKey()
     local t = now()
     for i = 1, #ids do
@@ -932,18 +978,37 @@ function W.Manage(slug)
                 left = rec.u - t
                 if left < 0 then left = 0 end
             end
+            local shown, free, best, count = buildCharStatus(spell, slug, db, k, cur, t)
             local item = recDS.outputItemID
+            local todo = W.TodoOn(spell)
             out[#out + 1] = {
                 spell = spell,
                 item = item,
-                name = itemName(item, spell),
-                on = W.Enabled(spell),
-                todo = W.TodoOn(spell),
+                name = recipeName(spell, item),
+                on = todo,
+                todo = todo,
+                rows = shown,
+                free = free,
+                best = best,
+                count = count,
                 left = left,
                 has = (type(rec) == "table"),
             }
         end
     end
+    table.sort(out, function(a, b)
+        local ak = (a.count or 0) > 0
+        local bk = (b.count or 0) > 0
+        if ak ~= bk then return ak end
+        if ak then
+            local af = (a.free or 0) > 0
+            local bf = (b.free or 0) > 0
+            if af ~= bf then return af end
+            local ab, bb = (a.best or 0), (b.best or 0)
+            if ab ~= bb then return ab < bb end
+        end
+        return (a.spell or 0) < (b.spell or 0)
+    end)
     return out
 end
 
@@ -951,7 +1016,7 @@ function W.ManageCount(slug)
     local list_ = W.Manage(slug)
     local on = 0
     for _, it in ipairs(list_) do
-        if it.on then on = on + 1 end
+        if it.todo then on = on + 1 end
     end
     return #list_, on
 end

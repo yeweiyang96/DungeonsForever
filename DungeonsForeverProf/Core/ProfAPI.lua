@@ -822,9 +822,9 @@ function API.Refresh()
   if ui and type(ui.Refresh) == "function" then return ui.Refresh() end
 end
 
-function API.Show(slug)
+function API.Show(slug, tab, subTab)
   local ui = delegates.ui
-  if ui and type(ui.Show) == "function" then return ui.Show(slug) end
+  if ui and type(ui.Show) == "function" then return ui.Show(slug, tab, subTab) end
 end
 
 function API.OnItemData(itemID)

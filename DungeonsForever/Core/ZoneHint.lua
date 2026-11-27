@@ -1428,7 +1428,7 @@ local function PProfCD(ctx)
                 jump = function()
                     if ns.OpenPage then pcall(ns.OpenPage, "Professions") end
                     local a = (type(ns.EnsureProfAPI) == "function" and ns.EnsureProfAPI()) or ns.ProfAPI
-                    if a and slug and a.Show then pcall(a.Show, slug) end
+                    if a and slug and a.Show then pcall(a.Show, slug, "overview", "mgr") end
                     return true
                 end,
                 jumpTip = L["点击打开专业页"],
