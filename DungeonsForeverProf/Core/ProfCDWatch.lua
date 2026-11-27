@@ -387,14 +387,63 @@ local function recipeEntryDS(slug, spell)
     return nil
 end
 
+local function isCraftableCooldownRecipe(rec)
+    if type(rec) ~= "table" then return false end
+    if rec.availability ~= "live" then return false end
+    if rec.categoryKey == "camping" then return false end
+    if rec.outputKind == "effect" then return false end
+    if type(rec.outputItemID) ~= "number" or rec.outputItemID <= 0 then return false end
+    return (type(rec.cooldownSeconds) == "number" and rec.cooldownSeconds > 0)
+        or (type(rec.cooldownGroup) == "string" and rec.cooldownGroup ~= "")
+end
+
 local function hasRecipeCooldown(spell, rec)
     if type(rec) == "table" then
         if rec.availability ~= "live" then return false end
+        if rec.categoryKey == "camping" or rec.outputKind == "effect" then return false end
+        if type(rec.outputItemID) ~= "number" or rec.outputItemID <= 0 then return false end
         if type(rec.cooldownSeconds) == "number" and rec.cooldownSeconds > 0 then return true end
         if type(rec.cooldownGroup) == "string" and rec.cooldownGroup ~= "" then return true end
         return baseCD(spell) == true
     end
     return baseCD(spell) == true
+end
+
+local hasCDCache = {}
+
+function W.HasCooldownRecipes(slug)
+    if type(slug) ~= "string" or slug == "" then return false end
+    local cached = hasCDCache[slug]
+    if cached ~= nil then return cached end
+    local DS = getDS()
+    if not DS or type(DS.Recipes) ~= "function" then return false end
+    if type(DS.RecipeProfessions) == "function" then
+        local profs = DS.RecipeProfessions()
+        local listed = false
+        if type(profs) == "table" then
+            for i = 1, #profs do
+                if profs[i] == slug then listed = true; break end
+            end
+        end
+        if not listed then
+            hasCDCache[slug] = false
+            return false
+        end
+    end
+    local ok, bucket = pcall(DS.Recipes, slug)
+    local recipes = ok and type(bucket) == "table" and bucket.recipes or nil
+    if type(recipes) ~= "table" then
+        hasCDCache[slug] = false
+        return false
+    end
+    for _, rec in pairs(recipes) do
+        if isCraftableCooldownRecipe(rec) then
+            hasCDCache[slug] = true
+            return true
+        end
+    end
+    hasCDCache[slug] = false
+    return false
 end
 
 function W.Record(spell, slug, left, dur)
@@ -432,6 +481,11 @@ function W.Observe(spell, slug)
     if type(spell) ~= "number" or spell <= 0 then return false end
     if type(slug) ~= "string" then slug = slugOf(spell) end
     if type(slug) ~= "string" then return false end
+    local rds = recipeEntryDS(slug, spell)
+    if type(rds) == "table" and (rds.categoryKey == "camping" or rds.outputKind == "effect"
+        or type(rds.outputItemID) ~= "number" or rds.outputItemID <= 0) then
+        return false
+    end
     local left, dur = liveCD(spell)
     if not left then return false end
     return W.Record(spell, slug, left, dur)
@@ -699,6 +753,8 @@ function W.Cards(slug)
         end
     end
     for spell in pairs(spells) do
+        local rdsCheck = recipeEntryDS(slug, spell)
+        if rdsCheck == nil or hasRecipeCooldown(spell, rdsCheck) then
         local by = type(db[spell]) == "table" and db[spell] or {}
         local rows = {}
         for key, rec in pairs(by) do
@@ -783,6 +839,7 @@ function W.Cards(slug)
                 count = #rows,
             }
         end
+        end
     end
     table.sort(out, function(a, b)
         local af = (a.free or 0) > 0
@@ -800,7 +857,8 @@ function W.TodoList()
     local k = know()
     local t = now()
     for spell, slug in pairs(l) do
-        if W.Enabled(spell) and W.TodoOn(spell) then
+        local rdsTodo = recipeEntryDS(slug, spell)
+        if W.Enabled(spell) and W.TodoOn(spell) and (rdsTodo == nil or hasRecipeCooldown(spell, rdsTodo)) then
             local by = type(db[spell]) == "table" and db[spell] or {}
             local names, byc = {}, {}
             for key, rec in pairs(by) do
@@ -865,7 +923,8 @@ function W.Manage(slug)
     for i = 1, #ids do
         local spell = ids[i]
         local recDS = recipes[spell]
-        if type(recDS) == "table" and recDS.availability == "live" and l[spell] == slug then
+        if type(recDS) == "table" and (isCraftableCooldownRecipe(recDS)
+            or (l[spell] == slug and hasRecipeCooldown(spell, recDS))) then
             local by = type(db[spell]) == "table" and db[spell] or {}
             local rec = by[cur]
             local left

@@ -56,6 +56,13 @@ DB.PROF_SETTING_DEF = {
     enchanting = {
         autoExcludeInstanceTrainers = false,
     },
+    mining = {
+        autoRoute = true,
+        autoScheme = "cost",
+        autoCraftTools = false,
+        autoSecondaryLeveling = false,
+        auctionRecoveryEnabled = false,
+    },
 }
 
 DB.PROF_SETTING_KEYS = {
@@ -337,6 +344,11 @@ end
 
 function DB.SettingRaw(k, slug)
     if RETIRED_SETTINGS[k] then return nil end
+    if slug == "mining" then
+        if k == "autoRoute" then return true end
+        if k == "autoScheme" then return "cost" end
+        if k == "recoveryEnabled" or k == "auctionRecoveryEnabled" then return false end
+    end
     if k == "recoveryEnabled" then
         if isFixedOnly(slug) then return false end
         return DB.SettingRaw("autoScheme", slug) == "net"
@@ -372,6 +384,11 @@ end
 
 function DB.SetSettingRaw(k, value, slug)
     if RETIRED_SETTINGS[k] then return nil end
+    if slug == "mining" then
+        if k == "autoRoute" then value = true
+        elseif k == "autoScheme" then value = "cost"
+        elseif k == "recoveryEnabled" or k == "auctionRecoveryEnabled" then return false end
+    end
     if k == "recoveryEnabled" then
         if isFixedOnly(slug) then return nil end
         local on = value and true or false

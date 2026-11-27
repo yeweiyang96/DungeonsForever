@@ -462,6 +462,19 @@ function E.HasRoute(slug)
     return false
 end
 
+function E.SupportsHUD(slug)
+    if not slug or slug == "__index" then return false end
+    if slug == "herbalism" or slug == "skinning" or slug == "fishing" then return false end
+    if slug == "mining" then
+        local view = getPD()
+        if view and type(view.GatherMode) == "function" then
+            return view.GatherMode("mining") == "smelt"
+        end
+        return E.DbProf().gatherMode == "smelt"
+    end
+    return E.HasRoute(slug)
+end
+
 function E.Following(slug)
     local s = E.State()
     return (s and s.slug == slug) and true or false

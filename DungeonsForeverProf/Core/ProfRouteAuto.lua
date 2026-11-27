@@ -2931,13 +2931,37 @@ local function baseOptionsFor(slug, current, skipExecutionInventory)
         end
     end
     local target = readTargetSkill(slug)
-    local rawScheme = readSettingRaw("autoScheme", slug, "cost")
-    local scheme = isFixedOnly(slug) and "fixed" or (fish and "fishing") or (rawScheme == "net" and "net" or "cost")
+    local isMining = (slug == "mining")
+    local rawScheme = isMining and "cost" or readSettingRaw("autoScheme", slug, "cost")
+    local scheme = isFixedOnly(slug) and "fixed" or (fish and "fishing") or (isMining and "cost") or (rawScheme == "net" and "net" or "cost")
     local xp = getExecution()
     local execInv = nil
     if not skipExecutionInventory and xp and type(xp.GetContinuation) == "function" then
         local okInv, inv = pcall(xp.GetContinuation, slug)
         if okInv then execInv = inv end
+    end
+    if isMining then
+        return {
+            start = start,
+            onlyAH = readSetting("autoOnlyAH", slug, true),
+            considerAuctionSupply = readSetting("autoConsiderAuctionSupply", slug, false),
+            allowLimitedFormulas = false,
+            allowDropFormulas = false,
+            allowCurrencyFormulas = false,
+            excludeQuestRecipes = true,
+            excludeQuestTrainers = true,
+            excludeQuestVendors = true,
+            excludeInstanceVendors = true,
+            excludeInstanceTrainers = true,
+            auctionRecoveryEnabled = false,
+            routeRiskMode = readSettingRaw("autoRouteRiskMode", slug, "expected"),
+            reserveMode = readSettingRaw("autoReserveMode", slug, "safe"),
+            target = target,
+            scheme = "cost",
+            allowSecondaryLeveling = false,
+            secondaryProfession = nil,
+            executionInventory = execInv,
+        }
     end
     return {
         start = start,

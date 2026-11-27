@@ -1057,10 +1057,18 @@ local function jumpCraft(stepIdx)
 end
 PF.JumpCraft = jumpCraft
 
+local function supportsHUD(eng, slug)
+    if not eng then return false end
+    if type(eng.SupportsHUD) == "function" then
+        return eng.SupportsHUD(slug) == true
+    end
+    return eng.HasRoute and eng.HasRoute(slug) == true or false
+end
+
 local importTries = 0
 local function DoImport(slug, profName)
     local eng = getEngine()
-    if not (eng and eng.HasRoute(slug)) then return end
+    if not supportsHUD(eng, slug) then return end
     local s0 = eng.State()
     local tmp
     if s0 and s0.slug == slug then
@@ -1846,9 +1854,23 @@ function PF.PaintMute(btn)
     end
 end
 
+function PF.HideIfUnsupported(slug)
+    local eng = getEngine()
+    local s = eng and eng.State and eng.State()
+    if not s or not s.slug then return false end
+    if slug and s.slug ~= slug then return false end
+    if eng.SupportsHUD and eng.SupportsHUD(s.slug) then return false end
+    s.hidden = true
+    if PF.f and PF.f.IsShown and PF.f:IsShown() then
+        PF.f:Hide()
+    end
+    syncHUDRuntime()
+    return true
+end
+
 function PF.Toggle(slug)
     local eng = getEngine()
-    if not (eng and eng.HasRoute(slug)) then return end
+    if not supportsHUD(eng, slug) then return end
     if not hostReady() then return end
     if PF.ConnectExecution then PF.ConnectExecution() end
     local p = eng.DbProf()
@@ -2535,6 +2557,12 @@ local function paintImpl()
     f.barBG:SetWidth(W - 20)
     if not (state and state.slug) then f:Hide(); return end
     local slug = state.slug
+    if eng.SupportsHUD and not eng.SupportsHUD(slug) then
+        state.hidden = true
+        f:Hide()
+        syncHUDRuntime()
+        return
+    end
     local mode, steps = eng.RouteFor(slug, state.skill)
     if not steps then f:Hide(); return end
     local p = eng.ProfInfo(slug)
@@ -2737,7 +2765,7 @@ end
 function PF.PaintButton(bt, slug)
     if not bt then return end
     local eng = getEngine()
-    local ok = hostReady() and slug and slug ~= "__index" and eng and eng.HasRoute(slug)
+    local ok = hostReady() and slug and slug ~= "__index" and supportsHUD(eng, slug)
     if not ok then
         bt:SetShown(false)
         return
@@ -2773,7 +2801,7 @@ end
 function PF.PaintImportBtn(bt, slug)
     if not bt then return end
     local eng = getEngine()
-    local ok = hostReady() and slug and slug ~= "__index" and eng and eng.HasRoute(slug)
+    local ok = hostReady() and slug and slug ~= "__index" and supportsHUD(eng, slug)
     if not ok then
         bt:SetShown(false)
         return
@@ -2838,6 +2866,10 @@ PF.__onPlanChanged = function(slug)
     local eng = getEngine()
     local state = eng and eng.State()
     if not state or state.slug ~= slug then return end
+    if eng.SupportsHUD and not eng.SupportsHUD(slug) then
+        PF.HideIfUnsupported(slug)
+        return
+    end
     PF.InvalidateRoute()
     PF.Sync()
     if PF.f and not state.hidden then

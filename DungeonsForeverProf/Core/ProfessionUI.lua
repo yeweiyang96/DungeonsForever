@@ -656,12 +656,22 @@ PD.SUB2_Y = PD.SUB_Y + PD.SUB_H + 8
 PD.BODY_TOP = PD.SUB_Y + PD.SUB_H + 8
 PD.BODY_TOP2 = PD.SUB2_Y + PD.SUB_H + 8
 PD.BODY_BOT = PD.CARD_INSET + 8
-PD.SUB2_DEF = { { key = "watch", text = L["关注信息"] },
-                { key = "doc",   text = L["文本资料"] } }
-PD.subTab = "watch"
+PD.SUB2_DEF = { { key = "doc", text = L["传承与营地"] },
+                { key = "mgr", text = L["冷却管理"] } }
+PD.subTab = "doc"
+
+function PD.HasCooldownRecipes(slug)
+    slug = slug or PD.cur
+    if not slug or slug == "__index" then return false end
+    local cw = getCDWatch()
+    if cw and type(cw.HasCooldownRecipes) == "function" then
+        return cw.HasCooldownRecipes(slug) == true
+    end
+    return false
+end
 
 function PD.BodyTop()
-    if PD.tab == "overview" and not PD.setOpen then return PD.BODY_TOP2 end
+    if PD.tab == "overview" and not PD.setOpen and PD.cur ~= "__index" then return PD.BODY_TOP2 end
     return PD.BODY_TOP
 end
 PD.FAC_ICON = {
@@ -839,6 +849,7 @@ end
 
 function PD.RecoveryModeActive(slug, plan)
     slug = slug or PD.cur
+    if slug == "mining" then return false end
     if PD.FixedOnly(slug) or PD.CookingFishingMode(slug) then return false end
     if not (PD.AutoRouteEnabled and PD.AutoRouteEnabled(slug)) then return false end
     if PD.SettingRaw("autoScheme", slug) ~= "net" then return false end
@@ -1025,7 +1036,7 @@ function PD.SetCookingRoute(mode)
 end
 
 function PD.SetRouteScheme(key)
-    if PD.FixedOnly() then return end
+    if PD.FixedOnly() or PD.cur == "mining" then return end
     if type(key) ~= "string" or key == "" then return end
     local wasFishing = PD.CookingFishingMode()
     if wasFishing then ProfDB().cookingRoute = "standard" end
@@ -1040,7 +1051,7 @@ function PD.SetRouteScheme(key)
 end
 
 function PD.ShowSchemeMenu(owner)
-    if PD.FixedOnly() then return end
+    if PD.FixedOnly() or PD.cur == "mining" then return end
     local ra = raMod()
     local order = (ra and ra.SchemeOrder and ra.SchemeOrder()) or {}
     if #order == 0 then
@@ -1073,23 +1084,11 @@ function PD.ShowSchemeMenu(owner)
             func = function() PD.SetRouteScheme(sk) end,
         }
     end
-    if PD.cur == "mining" then
-        local smelt = PD.GatherMode("mining") == "smelt"
-        items[#items + 1] = {
-            text = L["采集路线"],
-            checked = not smelt,
-            color = (not smelt) and { 1, 0.82, 0 } or nil,
-            func = function()
-                ProfDB().gatherMode = "gather"
-                PD.RequestRender()
-            end,
-        }
-    end
     hui.ShowMenu(items, { owner = owner, anchor = owner })
 end
 
 function PD.CycleRouteScheme()
-    if PD.FixedOnly() then return end
+    if PD.FixedOnly() or PD.cur == "mining" then return end
     if PD.CookingFishingMode() then return end
     local ra = raMod()
     local order = (ra and ra.SchemeOrder and ra.SchemeOrder()) or {}
@@ -1749,9 +1748,72 @@ function PD.GatherMode(slug)
     return (ProfDB().gatherMode == "smelt") and "smelt" or "gather"
 end
 
+function PD.IsMiningSmelt(slug)
+    slug = slug or PD.cur
+    return slug == "mining" and PD.GatherMode("mining") == "smelt"
+end
+
 function PD.IsGatherRoute(slug)
     slug = slug or PD.cur
     return PD.GATHER_SLUGS[slug] and not (slug == "mining" and PD.GatherMode(slug) == "smelt")
+end
+
+function PD.SupportsHUD(slug)
+    slug = slug or PD.cur
+    if not slug or slug == "__index" then return false end
+    if PD.IsGatherRoute(slug) then return false end
+    local eng = getFrom("ProfFollowEngine")
+    if eng and type(eng.SupportsHUD) == "function" then
+        return eng.SupportsHUD(slug) == true
+    end
+    return true
+end
+
+function PD.SetMiningMode(mode)
+    mode = (mode == "smelt") and "smelt" or "gather"
+    if PD.GatherMode("mining") == mode then return end
+    ProfDB().gatherMode = mode
+    if mode == "gather" then
+        if PD.autoPage == "exclusions" then PD.FlushPolicies() end
+        PD.autoPage = "route"
+        PD.exclusionsOpen = false
+        PD.partnerPicker = nil
+        local pf = getFollow()
+        if pf and pf.HideIfUnsupported then pcall(pf.HideIfUnsupported, "mining") end
+    else
+        PD.SetSettingRaw("autoRoute", true, "mining")
+        PD.SetSettingRaw("autoScheme", "cost", "mining")
+        PD.autoPage = "route"
+    end
+    local pf = getFollow()
+    if pf and pf.InvalidateRoute then pcall(pf.InvalidateRoute) end
+    if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+    playSoundSafe(1)
+    PD.RequestRender()
+end
+
+function PD.ShowMiningModeMenu(owner)
+    local hui = getHui()
+    local smelt = PD.GatherMode("mining") == "smelt"
+    if not (owner and hui and hui.ShowMenu) then
+        PD.SetMiningMode(smelt and "gather" or "smelt")
+        return
+    end
+    local items = {
+        {
+            text = L["采集"],
+            checked = not smelt,
+            color = (not smelt) and { 1, 0.82, 0 } or nil,
+            func = function() PD.SetMiningMode("gather") end,
+        },
+        {
+            text = L["熔炼"],
+            checked = smelt,
+            color = smelt and { 1, 0.82, 0 } or nil,
+            func = function() PD.SetMiningMode("smelt") end,
+        },
+    }
+    hui.ShowMenu(items, { owner = owner, anchor = owner })
 end
 
 do
@@ -2248,7 +2310,6 @@ end
 if not PD.built then
     PD.cur = nil
     PD.tab = "overview"
-    PD.campView = "a"
     PD.autoPage = "route"
     PD.shopGroup = false
     PD.toolKey = nil
@@ -3746,20 +3807,6 @@ function PD.PaintRows(rows)
     elseif PD.gcRoot and PD.gcRoot:IsShown() then
         PD.gcRoot:Hide()
     end
-    if PD.wantBonusTable and PD.bonusTable then
-        PD.placeBonusTable(h1)
-        if PD.bonusTitleNote then
-            PD.bonusTitleNote:ClearAllPoints()
-            PD.bonusTitleNote:SetPoint("TOPRIGHT", PD.child, "TOPRIGHT",
-                                       -PD.LIST_PAD, -(h1 - 19))
-            PD.bonusTitleNote:Show()
-        end
-        h1 = h1 + (PD.bonusTableH or 0) + 2 * PD.SEC_PAD + 8
-    elseif PD.bonusTable then
-        if PD.bonusTitleNote then PD.bonusTitleNote:Hide() end
-        PD.bonusTable:Hide()
-        if PD.bonusCard then PD.bonusCard:Hide() end
-    end
     if PD.wantTrainerBoard and PD.trainerBoard then
         PD.placeTrainerBoard(h1)
         h1 = h1 + (PD.trainerBoardH or 0) + 2 * PD.SEC_PAD + 8
@@ -3771,30 +3818,6 @@ function PD.PaintRows(rows)
         PD.child:SetHeight(y[1] + extraH + 10)
     else
         PD.child:SetHeight(math.max(h1, y[1], y[2], y[3], y[4], y[5], y[6]) + 10)
-    end
-    if PD.mgrBtn then
-        if PD.wantMgrBtn and PD.child then
-            local bt = PD.mgrBtn
-            local txt = (PD.subTab == "mgr") and L["返回追踪"] or L["冷却管理"]
-            if bt.__txt ~= txt then
-                bt.__txt = txt
-                bt:SetText(txt)
-            end
-            local headW = PD.curHeadW or 0
-            if headW <= 0 and PD.mgrMsr then
-                PD.mgrMsr:SetText((PD.subTab == "mgr") and L["冷却管理"] or L["冷却追踪"])
-                local okw, v = pcall(PD.mgrMsr.GetStringWidth, PD.mgrMsr)
-                if okw and type(v) == "number" then headW = v end
-                PD.mgrMsr:SetText("")
-            end
-            bt:ClearAllPoints()
-            bt:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.GRID_X + 6 + headW + 6,
-                        -(y0 + 4 + (PD.TEXT_H - PD.SUB_H) / 2))
-            bt:SetFrameLevel((PD.child:GetFrameLevel() or 0) + 200)
-            bt:Show()
-        else
-            PD.mgrBtn:Hide()
-        end
     end
     if PD.UpdateVScroll then PD.UpdateVScroll() end
     PD.FlushPendingRows()
@@ -4953,125 +4976,6 @@ function PD.BindRow(r, spec, h)
     if spec.priceCols then PD.PaintCrateColumns(r,spec,h,padL) end
 end
 
-PD.BT_COL1 = 88
-PD.BT_W_LAST = 236
-PD.BT_H_HEAD = 28
-PD.BT_LINE_H = 19
-PD.BT_ROW_MIN = 34
-
-function PD.BuildBonusTable(parent)
-    local card = CreateFrame("Frame", nil, parent)
-    PD.bonusCard = card
-    local hui = getHui()
-    if hui and hui.BuildRoundedBG and hui.layer then
-        hui.BuildRoundedBG(card, 6, hui.layer.L2, "both", true, 1)
-    end
-    card:Hide()
-    local root = CreateFrame("Frame", nil, card)
-    PD.bonusTable = root
-    local W = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.SEC_IN
-    root:SetSize(W, 10)
-    PD.BT_W = W
-    PD.BT_COLW = math.floor((W - PD.BT_COL1 - PD.BT_W_LAST) / 3)
-
-    local heads = { L["专业"], format(L["技能 %d"], 20), format(L["技能 %d"], 140),
-                    format(L["技能 %d"], 300), L["职业版对照 / 其他功能"] }
-    for j, txt in ipairs(heads) do
-        local fs = MakeFS(root, 14, C_GOLD, "LEFT")
-        local x = (j == 1) and 0 or (PD.BT_COL1 + (j - 2) * PD.BT_COLW)
-        fs:SetPoint("TOPLEFT", root, "TOPLEFT", x, -5)
-        fs:SetText(txt)
-    end
-    local tipBtn = CreateFrame("Button", nil, root)
-    tipBtn:EnableMouse(true)
-    tipBtn:SetSize(PD.BT_W_LAST - 6, PD.BT_H_HEAD - 2)
-    tipBtn:SetPoint("TOPLEFT", root, "TOPLEFT", PD.BT_COL1 + 3 * PD.BT_COLW, -2)
-    tipBtn:SetScript("OnEnter", function(self)
-        PD.TipShow(self, {
-            { L["职业版对照 / 其他功能"], 1, 0.82, 0 },
-            { L["数值以 60 级为基准、随等级成长 —— 游戏内低等级看到的数字更小属正常缩放。"] },
-        })
-    end)
-    tipBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    local rule = root:CreateTexture(nil, "ARTWORK")
-    rule:SetHeight(1)
-    if getHui() and getHui().layer then
-        local dv = getHui().layer.DIV
-        rule:SetColorTexture(dv[1], dv[2], dv[3], dv[4] or 1)
-    else
-        rule:SetColorTexture(1, 0.75, 0.35, 0.35)
-    end
-    rule:SetPoint("TOPLEFT", root, "TOPLEFT", 0, -PD.BT_H_HEAD + 3)
-    rule:SetPoint("RIGHT", root, "RIGHT", 0, 0)
-
-    root.__rows = {}
-    local profOrder = getProfCfg().ORDER or {}
-    for k = 1, #profOrder do
-        local r = CreateFrame("Button", nil, root)
-        r:EnableMouse(true)
-        r.icon = r:CreateTexture(nil, "ARTWORK")
-        r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        if getHui() and getHui().RoundIcon then getHui().RoundIcon(r.icon) end
-        r.icon:SetSize(15, 15)
-        r.icon:SetPoint("LEFT", r, "LEFT", 0, 0)
-        r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetWordWrap(false)
-        r.name:SetPoint("LEFT", r, "LEFT", 21, 0)
-        r.cells = {}
-        for j = 1, 3 do
-            local fs = MakeFS(r, 14, C_TEXT, "LEFT")
-            fs:SetWordWrap(true)
-            fs:SetWidth(PD.BT_COLW - 6)
-            fs:SetPoint("TOPLEFT", r, "TOPLEFT", PD.BT_COL1 + (j - 1) * PD.BT_COLW, -7)
-            r.cells[j] = fs
-        end
-        local cx = PD.BT_COL1 + 3 * PD.BT_COLW
-        r.cmp1 = MakeFS(r, 14, C_GREY, "LEFT")
-        r.cmp1:SetWordWrap(true)
-        r.cmp1:SetWidth(PD.BT_W_LAST - 10)
-        r.cmp1:SetPoint("TOPLEFT", r, "TOPLEFT", cx, -7)
-        r.cmp2 = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.cmp2:SetWordWrap(true)
-        r.cmp2:SetWidth(PD.BT_W_LAST - 10)
-        r.cmp2:SetPoint("TOPLEFT", r, "TOPLEFT", cx, -26)
-        r.sep = r:CreateTexture(nil, "OVERLAY")
-        r.sep:SetHeight(1)
-        r.sep:SetColorTexture(1, 1, 1, 0.08)
-        r.sep:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
-        r.sep:SetPoint("RIGHT", r, "RIGHT", 0, 0)
-        r.hl = r:CreateTexture(nil, "BACKGROUND")
-        r.hl:SetAllPoints()
-        if getHui() and getHui().layer then
-            local c4 = getHui().layer.L4
-            r.hl:SetColorTexture(c4[1], c4[2], c4[3], c4[4] or 1)
-        else
-            r.hl:SetColorTexture(1, 1, 1, 0.04)
-        end
-        r.hl:Hide()
-        r:SetScript("OnEnter", function(self)
-            self.hl:Show()
-            if self.__lines and #self.__lines > 0 then
-                PD.TipShow(self, self.__lines)
-            end
-        end)
-        r:SetScript("OnLeave", function(self)
-            self.hl:Hide()
-            GameTooltip:Hide()
-        end)
-        root.__rows[k] = r
-    end
-    root:Hide()
-    card:Hide()
-end
-
-local function btLines(fs, est)
-    if fs.GetNumLines then
-        local n = fs:GetNumLines()
-        if type(n) == "number" and n > 0 then return n end
-    end
-    return est
-end
-
 local CAMP_STATION_EXCLUDED = {
     anvil = true,
     forge = true,
@@ -5194,143 +5098,6 @@ local function campReagentText(reagents)
     return table.concat(out, ", ")
 end
 
-function PD.FillBonusTable()
-    local root = PD.bonusTable
-    if not root then
-        return
-    end
-    local ds = getDS()
-    local profOrder = getProfCfg().ORDER or {}
-    local used = 0
-    local yCur = -PD.BT_H_HEAD
-    local lastUsed = nil
-    for _, slug in ipairs(profOrder) do
-        local p = ds and ds.Profession and ds.Profession(slug)
-        local camp = (ds and ds.CampObjectsByProfession and ds.CampObjectsByProfession(slug)) or {}
-        local r = root.__rows[used + 1]
-        if r and p and #camp > 0 then
-            local t1, t2, t3, caps = {}, {}, {}, {}
-            local buffTxt, cmpName = "", ""
-            for _, c in ipairs(camp) do
-                local tier = tonumber(c.tier)
-                local lv = c.reqSkill or 0
-                local bucket, tag
-                if tier == 0 or tier == 1 then
-                    bucket = t1
-                    if lv > 0 and lv ~= 20 and lv ~= 1 then tag = format("(%d)", lv) end
-                elseif tier == 2 then
-                    bucket = t2
-                    if lv > 0 and lv ~= 140 and lv ~= 150 then tag = format("(%d)", lv) end
-                elseif tier == 3 then
-                    bucket = t3
-                    if lv > 0 and lv ~= 300 then tag = format("(%d)", lv) end
-                elseif tier == 4 then
-                    bucket = nil
-                elseif lv == 20 or lv == 1 then
-                    bucket = t1
-                elseif lv == 140 or lv == 150 or lv == 125 then
-                    bucket = t2
-                elseif lv == 300 then
-                    bucket = t3
-                elseif lv < 140 then
-                    bucket, tag = t1, format("(%d)", lv)
-                else
-                    bucket, tag = t3, format("(%d)", lv)
-                end
-                if bucket then
-                    bucket[#bucket + 1] = campNameOf(c) .. (tag or "")
-                end
-                local btxt = (ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))) or ""
-                if btxt ~= "" and buffTxt == "" then
-                    buffTxt = btxt
-                    cmpName = (ds.RawText and ds.RawText("camp", c.campKey, "buffName")) or ""
-                end
-                if c.campfireCapacity and tostring(c.campfireCapacity) ~= "" then
-                    caps[#caps + 1] = tostring(c.campfireCapacity)
-                end
-            end
-            SetIcon(r.icon, p.icon)
-            r.name:SetText((ds.ProfessionName and ds.ProfessionName(slug)) or slug)
-            r.cells[1]:SetText(table.concat(t1, "、"))
-            r.cells[2]:SetText(table.concat(t2, "、"))
-            r.cells[3]:SetText(table.concat(t3, "、"))
-            local firstDesc = (ds.RawText and (ds.RawText("camp", camp[1].campKey, "description") or ds.RawText("camp", camp[1].campKey, "desc"))) or ""
-            if buffTxt ~= "" then
-                r.cmp1:SetText(cmpName ~= "" and cmpName or L["营地增益"])
-                r.cmp1:SetTextColor(Unpack(C_GREY))
-                r.cmp2:SetText(format("|cff7fdc7f%s|r", buffTxt))
-            elseif #caps > 0 then
-                r.cmp1:SetText(L["功能"])
-                r.cmp2:SetText(format("|cff7fdc7f%s|r", format(L["营火容量 %s"], table.concat(caps, "/"))))
-            else
-                r.cmp1:SetText(L["功能"])
-                r.cmp2:SetText(format("|cff9a958a%s|r", firstDesc))
-            end
-            local lines = {}
-            for _, c in ipairs(camp) do
-                lines[#lines + 1] = { campNameOf(c), 1, 0.82, 0 }
-                local desc = ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))
-                if desc and desc ~= "" then
-                    lines[#lines + 1] = { desc, 0.88, 0.88, 0.88 }
-                end
-                local buff = ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
-                if buff and buff ~= "" then
-                    lines[#lines + 1] = { format(L["增益：%s"], buff), 0.5, 0.9, 0.5 }
-                end
-                if c.replacesCampKey and c.replacesCampKey ~= "" then
-                    local repName = (ds.RawText and ds.RawText("camp", c.replacesCampKey, "name")) or c.replacesCampKey
-                    lines[#lines + 1] = { format("%s: %s", L["升级前序"], repName), 0.7, 0.85, 1 }
-                end
-                if c.exclusiveSpellID then
-                    lines[#lines + 1] = { format("%s: %s", L["互斥"], SpellName(c.exclusiveSpellID)), 0.95, 0.65, 0.35 }
-                end
-                if c.reagents and #c.reagents > 0 then
-                    lines[#lines + 1] = { format(L["材料：%s"], campReagentText(c.reagents)), 0.7, 0.7, 0.7 }
-                end
-                if c.formulaItemIDs and c.formulaItemIDs[1] then
-                    lines[#lines + 1] = { format(L["图纸：%s"], PD.ItemName(c.formulaItemIDs[1])) }
-                end
-            end
-            r.__lines = lines
-            local plain = (r.cmp2:GetText():gsub("|cff%x%x%x%x%x%x", ""))
-            plain = (plain:gsub("|r", ""))
-            local need = btLines(r.cmp1, 1) + btLines(r.cmp2, #PD.Wrap(plain, 14, PD.BT_W_LAST - 10))
-            for j = 1, 3 do
-                local n = btLines(r.cells[j], #PD.Wrap(r.cells[j]:GetText(), 14, PD.BT_COLW - 6))
-                if n > need then need = n end
-            end
-            local rowH = math.max(PD.BT_ROW_MIN, need * PD.BT_LINE_H + 10)
-            r:SetPoint("TOPLEFT", root, "TOPLEFT", 0, yCur)
-            r:SetSize(PD.BT_W, rowH)
-            r.sep:Show()
-            r:Show()
-            yCur = yCur - rowH
-            lastUsed = r
-            used = used + 1
-        elseif r then
-            r:Hide()
-        end
-    end
-    if lastUsed then lastUsed.sep:Hide() end
-    for i = used + 1, #root.__rows do
-        local r = root.__rows[i]
-        if r then r:Hide() end
-    end
-    PD.bonusTableH = -yCur
-    root:SetHeight(PD.bonusTableH)
-end
-
-function PD.placeBonusTable(y)
-    PD.FillBonusTable()
-    PD.bonusCard:ClearAllPoints()
-    PD.bonusCard:SetPoint("TOPLEFT", PD.child, "TOPLEFT", 0, -y)
-    PD.bonusCard:SetSize(PD.RIGHT_W - PD.SEC_PAD_X, (PD.bonusTableH or 0) + 2 * PD.SEC_PAD)
-    PD.bonusCard:Show()
-    PD.bonusTable:ClearAllPoints()
-    PD.bonusTable:SetPoint("TOPLEFT", PD.bonusCard, "TOPLEFT", PD.LIST_PAD, -PD.SEC_PAD)
-    PD.bonusTable:Show()
-end
-
 local TR_RANK_COLOR = { { 0.36, 0.79, 0.65 }, { 0.94, 0.62, 0.15 },
                         { 0.85, 0.35, 0.19 }, { 0.64, 0.18, 0.18 } }
 
@@ -5352,7 +5119,7 @@ local TR_RANK_DEFAULT = {
     apprentice = L["初级"],
     journeyman = L["中级"],
     expert = L["高级"],
-    artisan = L["大师级"],
+    artisan = L["大师"],
 }
 
 local TR_ZONE_CACHE = {}
@@ -5579,12 +5346,6 @@ end
 
 local function ixCardSub(slug, p)
     local ds = getDS()
-    if slug == "camping" then
-        local n = 0
-        local objs = ds and ds.CampObjects and ds.CampObjects() or {}
-        for _ in pairs(objs) do n = n + 1 end
-        return format(L["物件 %d · 职业加成"], n)
-    end
     if p.section == "gathering" then
         local g = ds and ds.GatheringGuide and ds.GatheringGuide(slug)
         local bands = g and g.bands
@@ -5605,9 +5366,9 @@ local function ixCardSub(slug, p)
 end
 
 local function ixGroupOf(p)
+    if p.kind == "system" then return 4 end
     if p.section == "crafting" then return 1 end
     if p.section == "gathering" then return 2 end
-    if p.section == "camping" then return 4 end
     return 3
 end
 
@@ -5644,7 +5405,7 @@ function PD.BuildIndexGrid(parent)
         L["制造专业 —— 每个角色选两个主要专业"],
         L["采集专业 —— 为制造专业提供材料"],
         L["次要专业 —— 每个角色三个都能学"],
-        L["营地系统"],
+        L["特殊技能"],
     }
     local w = PD.GRID_W
     local root = CreateFrame("Frame", nil, parent)
@@ -5703,12 +5464,7 @@ function PD.BuildIndexGrid(parent)
             c:SetScript("OnLeave", function(self) PD.SetCardHover(self, false) end)
             c:SetScript("OnClick", function(self)
                 playSoundSafe(1)
-                if slug == "camping" then
-                    PD.Show("camping")
-                    PD.campView = "bonus"
-                else
-                    PD.Show(slug)
-                end
+                PD.Show(slug)
             end)
             c:SetScript("OnMouseWheel", function(_, delta)
                 local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
@@ -5718,31 +5474,28 @@ function PD.BuildIndexGrid(parent)
         end
     end
 
-    PD.ixNote = MakeFS(root, 10, C_GREY, "CENTER")
-    PD.ixNote:SetText(L["营地档位对照表 →「营地系统」"])
-
     local y = 0
     for gi = 1, 4 do
         local head = PD.ixHeads[gi]
-        head:ClearAllPoints()
-        head:SetPoint("TOPLEFT", root, "TOPLEFT", 0, -y)
-        y = y + PD.IX_HEAD_H
         local cards = byGroup[gi]
-        local rows = math.ceil(#cards / PD.IX_COLS)
-        for k, c in ipairs(cards) do
-            local row = math.floor((k - 1) / PD.IX_COLS)
-            local col = (k - 1) % PD.IX_COLS
-            c:ClearAllPoints()
-            c:SetPoint("TOPLEFT", root, "TOPLEFT",
-                       col * (PD.IX_COLW + PD.IX_GAP), -(y + row * (PD.IX_CARD_H + PD.IX_ROWW_GAP)))
-            c:SetSize(PD.IX_COLW, PD.IX_CARD_H)
+        if #cards > 0 then
+            head:ClearAllPoints()
+            head:SetPoint("TOPLEFT", root, "TOPLEFT", 0, -y)
+            head:Show()
+            y = y + PD.IX_HEAD_H
+            local rows = math.ceil(#cards / PD.IX_COLS)
+            for k, c in ipairs(cards) do
+                local row = math.floor((k - 1) / PD.IX_COLS)
+                local col = (k - 1) % PD.IX_COLS
+                c:ClearAllPoints()
+                c:SetPoint("TOPLEFT", root, "TOPLEFT",
+                           col * (PD.IX_COLW + PD.IX_GAP), -(y + row * (PD.IX_CARD_H + PD.IX_ROWW_GAP)))
+                c:SetSize(PD.IX_COLW, PD.IX_CARD_H)
+            end
+            y = y + rows * PD.IX_CARD_H + (rows - 1) * PD.IX_ROWW_GAP + PD.IX_GROUP_GAP
+        else
+            head:Hide()
         end
-        if gi == 4 then
-            PD.ixNote:ClearAllPoints()
-            PD.ixNote:SetPoint("LEFT", root, "LEFT",
-                               PD.IX_COLW + PD.IX_GAP + 8, -(y + math.floor(PD.IX_CARD_H / 2)))
-        end
-        y = y + rows * PD.IX_CARD_H + (rows - 1) * PD.IX_ROWW_GAP + PD.IX_GROUP_GAP
     end
     PD.ixGridH = y
     root:SetHeight(y)
@@ -6269,10 +6022,20 @@ function PD.Build(page)
         seenNav.crates = true
         profOrder[#profOrder + 1] = "crates"
     end
-    for _, g in ipairs({ { kind = "primary", label = L["主专业"] },
-                         { kind = "secondary", label = L["次专业"] },
-                         { kind = "system", label = L["营地系统"] },
-                         { kind = "crates", label = L["声望"] } }) do
+    local navGroups = {}
+    if type(pcfg.NAV_GROUPS) == "table" and #pcfg.NAV_GROUPS > 0 then
+        for _, ng in ipairs(pcfg.NAV_GROUPS) do
+            navGroups[#navGroups + 1] = { kind = ng.key, label = L[ng.labelKey] or ng.labelKey }
+        end
+    else
+        navGroups = {
+            { kind = "primary", label = L["主专业"] },
+            { kind = "secondary", label = L["次专业"] },
+            { kind = "system", label = L["特殊技能"] },
+            { kind = "crates", label = L["声望"] },
+        }
+    end
+    for _, g in ipairs(navGroups) do
         local list = {}
         for _, slug in ipairs(profOrder) do
             local p = profEntryOf(slug)
@@ -6309,22 +6072,13 @@ function PD.Build(page)
 
     PD.sub2Btns = {}
     for _, def in ipairs(PD.SUB2_DEF) do
-        local bt = NewButton(page, def.text, PD.SUB_W, PD.SUB_H, 14)
+        local tw = PD.ToolSize(def.text)
+        local bw = math.max(PD.SUB_W, tonumber(tw) or PD.SUB_W)
+        local bt = NewButton(page, def.text, bw, PD.SUB_H, 14)
         SetButtonSelected(bt, false)
         bt:Hide()
         bt:SetScript("OnClick", function() PD.SetSubTab(def.key) end)
         PD.sub2Btns[def.key] = bt
-    end
-    do
-        local bt = NewButton(page, L["冷却管理"], 96, PD.SUB_H, 14)
-        SetButtonSelected(bt, false)
-        bt:Hide()
-        bt:SetScript("OnClick", function()
-            PD.SetSubTab((PD.subTab == "mgr") and "watch" or "mgr")
-        end)
-        PD.mgrBtn = bt
-        PD.mgrMsr = MakeFS(page, 16, C_WHITE, "LEFT")
-        PD.mgrMsr:Hide()
     end
     coroutine.yield()
 
@@ -7088,8 +6842,6 @@ function PD.Build(page)
     end)
     coroutine.yield()
 
-    PD.BuildBonusTable(child)
-    coroutine.yield()
     PD.BuildTrainerBoard(child)
     coroutine.yield()
 
@@ -7172,12 +6924,6 @@ function PD.Build(page)
         hp:Hide()
         PD.setHelps[i] = hp
     end
-    coroutine.yield()
-
-    PD.bonusTitleNote = MakeFS(child, 14, C_GREY, "RIGHT")
-    PD.bonusTitleNote:SetText(
-        L["营地增益不与同类职业增益叠加、效果略低于职业版（如王者祝福 10% → 营地 8%）。"])
-    PD.bonusTitleNote:Hide()
     coroutine.yield()
 
     PD.BuildIndexGrid(child)
@@ -7436,20 +7182,24 @@ function PD.PickTabs()
     end
     PD.subTabEndX = shown * PD.SUB_STEP
     if PD.sub2Btns then
-        local wide = (PD.tab == "overview" and PD.avail.overview and not PD.setOpen) and true or false
-        local idx = 0
+        local wide = (PD.tab == "overview" and PD.avail.overview and not PD.setOpen and PD.cur ~= "__index") and true or false
+        local hasCD = wide and PD.HasCooldownRecipes(PD.cur)
+        local xOff = 0
         for _, def in ipairs(PD.SUB2_DEF) do
             local bt = PD.sub2Btns[def.key]
+            local show = wide and (def.key == "doc" or (def.key == "mgr" and hasCD))
             local sel = (PD.subTab == def.key)
-                          or (def.key == "watch" and PD.subTab == "mgr")
-            local key = (wide and "1" or "0") .. "|" .. idx .. "|" .. (sel and "1" or "0")
-            if bt.__sub2Key ~= key then
+            local tw = show and PD.ToolSize(def.text) or 0
+            local bw = show and math.max(PD.SUB_W, tonumber(tw) or PD.SUB_W) or 0
+            local key = (show and "1" or "0") .. "|" .. xOff .. "|" .. bw .. "|" .. (sel and "1" or "0") .. "|" .. def.text
+            if bt and bt.__sub2Key ~= key then
                 bt.__sub2Key = key
-                bt:SetShown(wide)
-                if wide then
+                bt:SetShown(show)
+                if show then
+                    bt:SetSize(bw, PD.SUB_H)
                     bt:ClearAllPoints()
                     bt:SetPoint("TOPLEFT", PD.page, "TOPLEFT",
-                                PD.RIGHT_X + idx * PD.SUB_STEP, -PD.SUB2_Y)
+                                PD.RIGHT_X + xOff, -PD.SUB2_Y)
                     bt:SetText(def.text)
                     SetButtonSelected(bt, sel)
                     local sfs = bt:GetFontString()
@@ -7462,7 +7212,7 @@ function PD.PickTabs()
                     end
                 end
             end
-            if wide then idx = idx + 1 end
+            if show then xOff = xOff + bw + 8 end
         end
     end
     if PD.revertBt then
@@ -7517,10 +7267,8 @@ function PD.PickTabs()
         end
     end
     local pf = getFollow()
-    local gr = getGatherRoutes()
     if pf and pf.PaintButton and PD.hudBtn then
-        if PD.tab == "leveling" and not PD.setOpen
-           and (not PD.IsGatherRoute() or (gr and gr.HasRoute and gr.HasRoute(PD.cur))) then
+        if PD.tab == "leveling" and not PD.setOpen and PD.SupportsHUD(PD.cur) then
             pcall(pf.PaintButton, PD.hudBtn, PD.cur)
         else
             PD.hudBtn:Hide()
@@ -8066,31 +7814,93 @@ function PD.TipTile(tf, lines)
     end)
 end
 
-function PD.ShowGatherRouteMenu(owner)
-    local hui = getHui()
-    if not (owner and hui and hui.ShowMenu) then return end
-    local smelt = PD.GatherMode("mining") == "smelt"
-    local items = {
-        {
-            text = L["采集路线"],
-            checked = not smelt,
-            color = (not smelt) and { 1, 0.82, 0 } or nil,
-            func = function()
-                ProfDB().gatherMode = "gather"
-                PD.RequestRender()
-            end,
-        },
-        {
-            text = L["熔炼路线"],
-            checked = smelt,
-            color = smelt and { 1, 0.82, 0 } or nil,
-            func = function()
-                ProfDB().gatherMode = "smelt"
-                PD.RequestRender()
-            end,
-        },
-    }
-    hui.ShowMenu(items, { owner = owner, anchor = owner })
+local function gatherProgressText(slug, curLv)
+    if not curLv then return "-" end
+    local ds = getDS()
+    if slug == "fishing" then
+        local guide = ds and ds.FishingGuide and ds.FishingGuide()
+        local steps = guide and guide.fishingSteps or {}
+        for index, step in ipairs(steps) do
+            if curLv >= step.from and (curLv < step.to or (index == #steps and curLv == step.to)) then
+                return format(L["%d - %d"], step.from, step.to)
+            end
+        end
+        return "-"
+    end
+    local gg = ds and ds.GatheringGuide and ds.GatheringGuide(slug)
+    local bands = gg and gg.bands or {}
+    for i, b in ipairs(bands) do
+        local lo = b.minSkill or 1
+        local hi = b.maxSkill
+        if not hi then
+            local nxt = bands[i + 1] and bands[i + 1].minSkill
+            hi = nxt and (nxt - 1) or 300
+            if hi < lo then hi = lo end
+        end
+        if curLv >= lo and curLv <= hi then
+            return (hi > lo) and format(L["%d - %d"], lo, hi) or tostring(lo)
+        end
+    end
+    return "-"
+end
+
+function PD.PaintMiningGatherTiles()
+    local tiles = PD.lvTiles
+    if PD.tab ~= "leveling" or PD.setOpen then
+        for _, k in ipairs(PD.chipOrder or { "mode", "scheme", "ahRec", "budget", "target", "spec" }) do
+            if tiles[k] then
+                tiles[k].__use = false
+                tiles[k]:Hide()
+            end
+        end
+        if PD.setCard then PD.setCard:Hide() end
+        tiles.cost:Hide()
+        return 0
+    end
+    if tiles.ahRec then tiles.ahRec.__use = false; tiles.ahRec:Hide() end
+    tiles.target.__use = false; tiles.target:Hide()
+    tiles.spec.__use = false; tiles.spec:Hide(); tiles.spec:SetScript("OnClick", nil)
+    tiles.mode.__use, tiles.scheme.__use, tiles.budget.__use = true, true, true
+    local _learned = PD.ProfLearned()
+    local curLv = _learned and _learned.mining and _learned.mining.cur or nil
+    local prog = gatherProgressText("mining", curLv)
+
+    tiles.mode.label:SetText(L["模式"])
+    tiles.mode.val:SetText(L["采集"])
+    tiles.mode.val:SetTextColor(Unpack(C_WHITE))
+    PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
+    tiles.mode:SetScript("OnClick", function()
+        PD.ShowMiningModeMenu(tiles.mode)
+        playSoundSafe(1)
+    end)
+    PD.TipTile(tiles.mode, {
+        { L["采集路线：按技能区间推荐实地挖矿区域"], 1, 0.82, 0 },
+        { L["点击在采集 / 熔炼之间切换"], 0.7, 0.7, 0.7 },
+    })
+
+    tiles.scheme.label:SetText(L["当前技能"])
+    tiles.scheme.val:SetText(curLv and tostring(curLv) or L["未学"])
+    tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
+    tiles.scheme:SetScript("OnClick", nil)
+    PD.TipTile(tiles.scheme, { { L["读取角色当前的专业技能值"], 0.7, 0.7, 0.7 } })
+    PD.PaintTileBorder(tiles.scheme, { 1, 1, 1, 0.10 })
+
+    tiles.budget.label:SetText(L["路线进度"])
+    tiles.budget.val:SetText(prog)
+    tiles.budget.val:SetTextColor(Unpack(C_WHITE))
+    tiles.budget:SetScript("OnClick", nil)
+    PD.TipTile(tiles.budget, { { L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 } })
+    PD.PaintTileBorder(tiles.budget, { 1, 1, 1, 0.10 })
+
+    tiles.cost.label:SetText(L["路线范围"])
+    tiles.cost.val:SetText("1 - 300")
+    tiles.cost.val:SetTextColor(Unpack(C_WHITE))
+    PD.SetBadge(nil)
+    PD.SetSub(nil)
+    tiles.cost:SetScript("OnEnter", nil)
+    tiles.cost:SetScript("OnLeave", nil)
+    PD.PlaceCards(3)
+    return PD.LV_TILE_H + 8
 end
 
 function PD.PaintGatherTiles()
@@ -8116,55 +7926,16 @@ function PD.PaintGatherTiles()
     tiles.scheme:SetScript("OnClick", nil)
     local _learned = PD.ProfLearned()
     local curLv = _learned and _learned[PD.cur] and _learned[PD.cur].cur or nil
-    local ds = getDS()
-    local prog = "-"
-    if PD.cur == "fishing" and curLv then
-        local guide = ds and ds.FishingGuide and ds.FishingGuide()
-        local steps = guide and guide.fishingSteps or {}
-        for index, step in ipairs(steps) do
-            if curLv >= step.from and (curLv < step.to or (index == #steps and curLv == step.to)) then
-                prog = format(L["%d - %d"], step.from, step.to)
-                break
-            end
-        end
-    elseif curLv then
-        local gg = ds and ds.GatheringGuide and ds.GatheringGuide(PD.cur)
-        local bands = gg and gg.bands or {}
-        for i, b in ipairs(bands) do
-            local lo = b.minSkill or 1
-            local hi = b.maxSkill
-            if not hi then
-                local nxt = bands[i + 1] and bands[i + 1].minSkill
-                hi = nxt and (nxt - 1) or 300
-                if hi < lo then hi = lo end
-            end
-            if curLv >= lo and curLv <= hi then
-                prog = (hi > lo) and format(L["%d - %d"], lo, hi) or tostring(lo)
-                break
-            end
-        end
-    end
+    local prog = gatherProgressText(PD.cur, curLv)
     tiles.mode.label:SetText(L["当前技能"])
     tiles.mode.val:SetText(curLv and tostring(curLv) or L["未学"])
+    tiles.mode.val:SetTextColor(Unpack(C_WHITE))
     PD.TipTile(tiles.mode, { { L["读取角色当前的专业技能值"], 0.7, 0.7, 0.7 } })
     PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
     tiles.scheme.label:SetText(L["路线进度"])
-    local smelt = PD.GatherMode("mining") == "smelt"
-    tiles.scheme.val:SetText((PD.cur == "mining") and
-        ((smelt and L["熔炼路线"] or L["采集路线"]) .. " " .. prog) or prog)
-    if PD.cur == "mining" then
-        tiles.scheme:SetScript("OnClick", function()
-            PD.ShowGatherRouteMenu(tiles.scheme)
-            playSoundSafe(1)
-        end)
-    else
-        tiles.scheme:SetScript("OnClick", nil)
-    end
-    PD.TipTile(tiles.scheme, (PD.cur == "mining") and {
-        { L["点击选择采集路线或熔炼路线"], 0.9, 0.78, 0.35 },
-        { smelt and L["列表中绿色高亮行 = 当前技能可练的熔炼区间"]
-            or L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 },
-    } or { { L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 } })
+    tiles.scheme.val:SetText(prog)
+    tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
+    PD.TipTile(tiles.scheme, { { L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 } })
     PD.PaintTileBorder(tiles.scheme, { 1, 1, 1, 0.10 })
     tiles.cost.label:SetText(L["路线范围"])
     tiles.cost.val:SetText("1 - 300")
@@ -8180,7 +7951,6 @@ end
 function PD.PaintLvTiles()
     local tiles = PD.lvTiles
     if not (tiles and tiles.mode) then return 0 end
-    if PD.IsGatherRoute() then return PD.PaintGatherTiles() end
     if PD.tab ~= "leveling" or PD.setOpen then
         for _, k in ipairs(PD.chipOrder or { "mode", "scheme", "ahRec", "budget", "target", "spec" }) do
             if tiles[k] then
@@ -8192,7 +7962,13 @@ function PD.PaintLvTiles()
         tiles.cost:Hide()
         return 0
     end
+    if PD.cur == "mining" and PD.GatherMode("mining") ~= "smelt" then
+        return PD.PaintMiningGatherTiles()
+    end
+    if PD.IsGatherRoute() then return PD.PaintGatherTiles() end
+    local isMiningSmelt = (PD.cur == "mining")
     for _, k in ipairs({ "mode", "scheme", "target" }) do tiles[k].__use = true end
+    if isMiningSmelt then tiles.scheme.__use = false; tiles.scheme:Hide() end
     if tiles.ahRec then tiles.ahRec.__use = false end
     tiles.spec.__use = false
     tiles.spec:SetScript("OnClick", nil)
@@ -8201,10 +7977,15 @@ function PD.PaintLvTiles()
     local scanNotice=PD.ScanSnapshotText()
     local fishRoute = PD.CookingFishingMode()
     local v = PD.LvTarget()
-    local auto = PD.Setting("autoRoute")
+    local auto = isMiningSmelt or PD.Setting("autoRoute")
     local warnAuto = s.autoSetting and (not s.ahOK or s.feasible == false)
     local fixedOnly = PD.FixedOnly()
-    if fixedOnly then
+    if isMiningSmelt then
+        tiles.mode:SetScript("OnClick", function()
+            PD.ShowMiningModeMenu(tiles.mode)
+            playSoundSafe(1)
+        end)
+    elseif fixedOnly then
         tiles.mode:SetScript("OnClick", nil)
     else
         tiles.mode:SetScript("OnClick", function()
@@ -8226,7 +8007,21 @@ function PD.PaintLvTiles()
     end
     local snapSec, snapDays = PD.SnapshotAge(s)
     local TipOn = PD.TipTile
-    if fixedOnly then
+    if isMiningSmelt then
+        tiles.mode.label:SetText(L["模式"])
+        tiles.mode.val:SetText(L["熔炼"])
+        tiles.mode.val:SetTextColor(Unpack(C_WHITE))
+        PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
+        local modeLines = {
+            { L["熔炼路线：自动按最低成本计算熔炼升级方案"], 1, 0.82, 0 },
+            { L["点击在采集 / 熔炼之间切换"], 0.7, 0.7, 0.7 },
+        }
+        if warnAuto then
+            modeLines[#modeLines + 1] = { L["计算结果尚不完整，请查看路线中的缺价或配方提示。"],
+                                          0.95, 0.75, 0.4 }
+        end
+        TipOn(tiles.mode, modeLines)
+    elseif fixedOnly then
         tiles.mode.label:SetText(L["模式"])
         tiles.mode.val:SetText(L["固定"])
         tiles.mode.val:SetTextColor(Unpack(C_WHITE))
@@ -8249,45 +8044,50 @@ function PD.PaintLvTiles()
         end
         TipOn(tiles.mode, modeLines)
     end
-    local sch = (auto and not fishRoute and PD.SettingRaw("autoScheme")) or (auto and s.scheme) or "cost"
+    local sch = isMiningSmelt and "cost" or ((auto and not fishRoute and PD.SettingRaw("autoScheme")) or (auto and s.scheme) or "cost")
     if sch == "cheapest" then sch = "cost" end
-    tiles.scheme.label:SetText(L["路线方案"])
-    local ra = raMod()
-    tiles.scheme.val:SetText(fishRoute and L["钓鱼路线"]
-        or (not auto and L["固定参考"])
-        or ((ra and ra.SchemeLabel) and ra.SchemeLabel(sch) or L["最低成本"]))
-    if fixedOnly then
+    if isMiningSmelt then
+        tiles.scheme.__use = false
         tiles.scheme:SetScript("OnClick", nil)
     else
-        tiles.scheme:SetScript("OnClick", function() PD.ShowSchemeMenu(tiles.scheme) end)
-    end
-    tiles.scheme.val:SetTextColor(Unpack((auto or fishRoute) and C_WHITE or C_GREY))
-    local schemeDesc = {
-        cost = L["按材料采购、自制中间品与图纸总支出最低选路"],
-        net = L["扣除剩余产物预计回血收入后，按净花费最低选路"],
-    }
-    local schemeLines = {}
-    local sorder = (getRA() and getRA().SchemeOrder and getRA().SchemeOrder()) or {}
-    for _, sk in ipairs(sorder) do
-        local curK = auto and (not fishRoute) and (sk == sch)
-        local nm = (getRA() and getRA().SchemeLabel) and getRA().SchemeLabel(sk) or sk
-        local head = curK and "|cffffd100" or "|cffffffff"
-        schemeLines[#schemeLines + 1] = {
-            head .. nm .. "|r|cff8f8f8f：|r|cffb3b3b3" .. (schemeDesc[sk] or "") .. "|r",
-            1, 1, 1,
+        tiles.scheme.label:SetText(L["路线方案"])
+        local ra = raMod()
+        tiles.scheme.val:SetText(fishRoute and L["钓鱼路线"]
+            or (not auto and L["固定参考"])
+            or ((ra and ra.SchemeLabel) and ra.SchemeLabel(sch) or L["最低成本"]))
+        if fixedOnly then
+            tiles.scheme:SetScript("OnClick", nil)
+        else
+            tiles.scheme:SetScript("OnClick", function() PD.ShowSchemeMenu(tiles.scheme) end)
+        end
+        tiles.scheme.val:SetTextColor(Unpack((auto or fishRoute) and C_WHITE or C_GREY))
+        local schemeDesc = {
+            cost = L["按材料采购、自制中间品与图纸总支出最低选路"],
+            net = L["扣除剩余产物预计回血收入后，按净花费最低选路"],
         }
+        local schemeLines = {}
+        local sorder = (getRA() and getRA().SchemeOrder and getRA().SchemeOrder()) or {}
+        for _, sk in ipairs(sorder) do
+            local curK = auto and (not fishRoute) and (sk == sch)
+            local nm = (getRA() and getRA().SchemeLabel) and getRA().SchemeLabel(sk) or sk
+            local head = curK and "|cffffd100" or "|cffffffff"
+            schemeLines[#schemeLines + 1] = {
+                head .. nm .. "|r|cff8f8f8f：|r|cffb3b3b3" .. (schemeDesc[sk] or "") .. "|r",
+                1, 1, 1,
+            }
+        end
+        if fishRoute then
+            schemeLines = {
+                {L["1–225 参考烹饪指南；之后优先容易钓取的鱼。"], 1, 0.82, 0},
+                {L["鱼类自行钓取；其他材料比较 NPC 与拍卖行的实际采购费用。"], 0.7, 0.7, 0.7},
+                {L["鱼类不计金币成本；图纸仍按实际采购来源计费。"], 0.7, 0.7, 0.7},
+                {L["点击可切换到其他路线方案"], 0.7, 0.7, 0.7},
+            }
+        else
+            schemeLines[#schemeLines + 1] = { auto and L["点击切换路线方案"] or L["点击选择自动路线方案"], 0.7, 0.7, 0.7 }
+        end
+        TipOn(tiles.scheme, schemeLines)
     end
-    if fishRoute then
-        schemeLines = {
-            {L["1–225 参考烹饪指南；之后优先容易钓取的鱼。"], 1, 0.82, 0},
-            {L["鱼类自行钓取；其他材料比较 NPC 与拍卖行的实际采购费用。"], 0.7, 0.7, 0.7},
-            {L["鱼类不计金币成本；图纸仍按实际采购来源计费。"], 0.7, 0.7, 0.7},
-            {L["点击可切换到其他路线方案"], 0.7, 0.7, 0.7},
-        }
-    else
-        schemeLines[#schemeLines + 1] = { auto and L["点击切换路线方案"] or L["点击选择自动路线方案"], 0.7, 0.7, 0.7 }
-    end
-    TipOn(tiles.scheme, schemeLines)
     tiles.budget.__use = PD.AutoRouteEnabled() and not fishRoute
     if tiles.budget.__use then
         local rmode = PD.SettingRaw("autoReserveMode", PD.cur)
@@ -8510,7 +8310,7 @@ function PD.PaintLvTiles()
     end
     tiles.cost:SetScript("OnEnter", nil)
     tiles.cost:SetScript("OnLeave", nil)
-    if fixedOnly then tiles.scheme.__use = false end
+    if fixedOnly or isMiningSmelt then tiles.scheme.__use = false end
     local n = 0
     for _, k in ipairs(PD.chipOrder) do
         if tiles[k].__use then n = n + 1 end
@@ -9007,25 +8807,8 @@ function PD.RowsOverview(rows)
             PD.PushCampCards(rows, PD.cur)
             PushGap(rows, PD.OV_GUT, 1)
         end
-
-        if PD.cur == "camping" and PD.campView == "bonus" then
-            PushHead(rows, L["全部专业的营地物件档位对照"], nil, 16)
-            rows[#rows].noSec = true
-        end
     end
     PD.PushGuideTopics(rows, p)
-    if PD.cur == "camping" and PD.campView ~= "bonus" then
-        PD.wantBonusTable = false
-        for _, slug in ipairs(getProfCfg().ORDER or {}) do
-            local scamps = ds and ds.CampObjectsByProfession and ds.CampObjectsByProfession(slug)
-            if type(scamps) == "table" and #scamps > 0 then
-                local pr = profEntryOf(slug)
-                PushHead(rows, (pr and pr.name) or slug, 1)
-                PD.PushCampCards(rows, slug)
-                PushGap(rows, PD.OV_GUT, 1)
-            end
-        end
-    end
 
     local secN = 0
     for _, sp in ipairs(rows) do
@@ -9047,26 +8830,24 @@ function PD.SyncSubTab(slug)
     end
     local db = ProfDB()
     local mem = type(db.subTab) == "table" and db.subTab[slug] or nil
-    if mem == "watch" or mem == "doc" then
-        PD.subTab = mem
+    if mem == "mgr" and PD.HasCooldownRecipes(slug) then
+        PD.subTab = "mgr"
         return
     end
-    local W = getCDWatch()
-    local has = false
-    if W and W.Cards then
-        local ok, cards = pcall(W.Cards, slug)
-        if ok and type(cards) == "table" and #cards > 0 then has = true end
+    if type(db.subTab) == "table" and db.subTab[slug] == "watch" then
+        db.subTab[slug] = "doc"
     end
-    PD.subTab = has and "watch" or "doc"
+    PD.subTab = "doc"
 end
 
 function PD.SetSubTab(key)
-    if key ~= "watch" and key ~= "doc" and key ~= "mgr" then return end
+    if key ~= "doc" and key ~= "mgr" then return end
+    if key == "mgr" and not PD.HasCooldownRecipes(PD.cur) then return end
     if PD.subTab == key then return end
     PD.subTab = key
     local db = ProfDB()
     if type(db.subTab) ~= "table" then db.subTab = {} end
-    if PD.cur and PD.cur ~= "__index" and key ~= "mgr" then db.subTab[PD.cur] = key end
+    if PD.cur and PD.cur ~= "__index" then db.subTab[PD.cur] = key end
     PD.RequestRender()
     playSoundSafe(1)
 end
@@ -9120,50 +8901,6 @@ function PD.RowsWatchMgr(rows)
         }
     end
     PD.PushCardRow(rows, cards, 4)
-end
-
-local NOTE_H = 20
-
-function PD.RowsWatch(rows)
-    PushGap(rows, 4, 1)
-    PushHead(rows, L["冷却追踪"], 1)
-    local W = getCDWatch()
-    if not (type(W) == "table" and type(W.Cards) == "function") then
-        PushText(rows, L["专业冷却模块尚未就绪"], 14, C_GREY, 1, NOTE_H)
-        return
-    end
-    local cards = W.Cards(PD.cur)
-    local hint = false
-    if #cards == 0 then
-        hint = true
-        local known = 0
-        if type(W.Manage) == "function" then known = #W.Manage(PD.cur) end
-        if known > 0 then
-            PushText(rows, L["还没确认角色是否学会这些配方"], 14, C_GREY, 1, NOTE_H)
-            PushText(rows, L["打开一次专业技能窗口（做东西的那个），就能认出每个角色学过哪些。"], 14, C_GREY, 1, NOTE_H)
-        else
-            PushText(rows, L["还没有扫描到带冷却的配方"], 14, C_GREY, 1, NOTE_H)
-            PushText(rows, L["打开这个页面会自动扫描当前角色的冷却配方。"], 14, C_GREY, 1, NOTE_H)
-        end
-    else
-        local list = {}
-        for i = 1, #cards do
-            local c = cards[i]
-            local item = { name = c.name, icon = c.item, rows = c.rows }
-            if type(c.gain) == "number" then
-                item.right = (c.gain >= 0 and "+" or "") .. PD.MoneyBrief(c.gain)
-                item.rightColor = (c.gain >= 0) and C_GOLD or { 0.90, 0.35, 0.35 }
-                item.rightFs = 14
-            else
-                item.right = L["价格待补全"]
-                item.rightFs = 14
-            end
-            list[#list + 1] = item
-        end
-        PD.PushCardRow(rows, list)
-    end
-    if not hint then PushGap(rows, PD.SEC_GAP, 1) end
-    PushText(rows, L["记录只在你登录该角色时更新；离线角色按最后记录时间推算，可能偏差。"], 14, C_GREY, 1, NOTE_H)
 end
 
 local function MapIDAlive(mapID)
@@ -16238,7 +15975,9 @@ end
 
 function PD.AutoRouteEnabled(slug)
     slug = slug or PD.cur
-    if not slug or PD.FixedOnly(slug) or PD.IsGatherRoute(slug) then return false end
+    if not slug or PD.FixedOnly(slug) then return false end
+    if slug == "mining" then return PD.GatherMode("mining") == "smelt" end
+    if PD.IsGatherRoute(slug) then return false end
     if PD.CookingFishingMode(slug) or PD.Setting("autoRoute",slug) then return true end
     local context = PD.RoutePairContext(slug)
     return context and context.requiresPartner or false
@@ -17666,9 +17405,6 @@ function PD.RowsLeveling(rows)
             PushGap(rows, 4)
         else
             local warn = {}
-            if PD.cur == "mining" then
-                note(L["固定路线的制作次数来自参考指南；材料和产量优先读取客户端，缺失时使用参考资料。"])
-            end
             if fixedSum and not fixedSum.priced and not fixedSum.referenceOnly then
                 warn[#warn + 1] = { L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], 0.95, 0.75, 0.4, warning = true }
             elseif fixedSum then
@@ -19326,16 +19062,13 @@ function PD.LevelTool()
                                 iconColor = { 1, 1, 1 }, tip = rankTip }
         end
     end
-    if not PD.FixedOnly() then
+    if not PD.FixedOnly() and PD.cur ~= "mining" then
         if fishRoute or PD.Setting("autoRoute") then
             local pairContext = not fishRoute and PD.RoutePairContext() or nil
             if pairContext and pairContext.requiresPartner then
                 list[#list + 1] = {key = "partner", align = "right",
                                    text = L["搭配专业"], on = PD.partnerPicker == PD.cur}
             end
-        end
-        if PD.cur == "mining" then
-            list[#list + 1] = {key = "gather_mode", align = "left", text = L["采集路线"]}
         end
     end
     local xp = getExec()
@@ -19486,11 +19219,6 @@ function PD.LevelTool()
         elseif k == "stop_search" then
             local ra = raMod()
             if ra and ra.Cancel then ra.Cancel(PD.cur) end
-        elseif k == "gather_mode" then
-            ProfDB().gatherMode = "gather"
-            if PD.autoPage == "exclusions" then PD.autoPage = "route" end
-            PD.exclusionsOpen = false
-            PD.FlushPolicies()
         elseif k == "track" then
             local T = getExec()
             if T and T.GetActive and T.GetActive(PD.cur) then
@@ -19584,10 +19312,17 @@ PD.SET_GROUPS = {
     { L["回血设置"], { "auctionRecoveryEnabled", "recoveryFee" }, 2 },
 }
 
+PD.MINING_SMELT_SET_GROUPS = {
+    { L["路线计算"], { "autoFromCurrent", "autoStartSkill", "autoUseBagMaterials", "autoRouteRiskMode", "autoOnlyAH" }, 1 },
+    { L["界面显示"], { "greyPassed", "hlCurrent" }, 2 },
+    { L["数据维护"], { "clearScanData" }, 2 },
+}
+
 function PD.SettingsResetSpecs(slug)
     slug = slug or PD.cur
     local fixedOnly = PD.FixedOnly(slug)
     local gatherRoute = PD.IsGatherRoute(slug)
+    local miningSmelt = PD.IsMiningSmelt(slug)
     local fishRoute = PD.CookingFishingMode(slug)
     local autoRouteOn = PD.AutoRouteEnabled(slug) and not fixedOnly
     local recModeOn = PD.RecoveryModeActive(slug)
@@ -19595,6 +19330,17 @@ function PD.SettingsResetSpecs(slug)
         { k = "greyPassed", route = false },
         { k = "hlCurrent", route = false },
     }
+    if miningSmelt then
+        local fromCurrent = PD.Setting("autoFromCurrent", slug)
+        specs[#specs + 1] = { k = "autoFromCurrent", route = true }
+        specs[#specs + 1] = { k = "autoStartSkill", route = true, num = true, visible = not fromCurrent }
+        if PD.BagMaterialsAvailable(slug) then
+            specs[#specs + 1] = { k = "autoUseBagMaterials", route = true }
+        end
+        specs[#specs + 1] = { k = "autoRouteRiskMode", route = true, raw = true }
+        specs[#specs + 1] = { k = "autoOnlyAH", route = true }
+        return specs, true
+    end
     if autoRouteOn and not fixedOnly and not gatherRoute then
         local fromCurrent = PD.Setting("autoFromCurrent", slug)
         specs[#specs + 1] = { k = "autoFromCurrent", route = true }
@@ -19718,6 +19464,7 @@ function PD.RowsSettings(rows)
     PD.gridSepOn = true
     local fixedOnly = PD.FixedOnly()
     local gatherRoute = PD.IsGatherRoute()
+    local miningSmelt = PD.IsMiningSmelt()
     local fishRoute = PD.CookingFishingMode()
     local autoRouteOn = PD.AutoRouteEnabled() and not fixedOnly
     local recModeOn = PD.RecoveryModeActive()
@@ -19841,9 +19588,22 @@ function PD.RowsSettings(rows)
     }
     local byKey = {}
     for _, d in ipairs(defs) do byKey[d.k] = d end
+    local MINING_SMELT_ALLOWED = {
+        greyPassed = true,
+        hlCurrent = true,
+        autoFromCurrent = true,
+        autoUseBagMaterials = true,
+        autoRouteRiskMode = true,
+        autoOnlyAH = true,
+    }
     local function allowed(k)
         if k == "greyPassed" or k == "hlCurrent" then return true end
         if fixedOnly or gatherRoute then return false end
+        if miningSmelt then
+            if not MINING_SMELT_ALLOWED[k] then return false end
+            if k == "autoUseBagMaterials" then return PD.BagMaterialsAvailable() end
+            return true
+        end
         if k == "auctionRecoveryEnabled" then return recModeOn end
         if not autoRouteOn then return false end
         if k == "autoUseBagMaterials" then return PD.BagMaterialsAvailable() end
@@ -19884,7 +19644,7 @@ function PD.RowsSettings(rows)
                      { format(L["当前 %d%%；点击选择常用比例或自定义（0–25%%）。"], fee), 0.7, 0.7, 0.7 } },
         }
     end
-    for _, grp in ipairs(PD.SET_GROUPS) do
+    for _, grp in ipairs(miningSmelt and PD.MINING_SMELT_SET_GROUPS or PD.SET_GROUPS) do
         local gcol = (grp[3] == 2) and 2 or 1
         local items = {}
         for _, key in ipairs(grp[2]) do
@@ -19948,15 +19708,20 @@ function PD.PlaceSettingsToggles(rows)
                         bt:SetText(label)
                     end
                     local _, autoActive = PD.SettingsResetSpecs(PD.cur)
+                    local miningSmelt = PD.IsMiningSmelt(PD.cur)
                     local modified = PD.HasCustomLevelingSettings(PD.cur)
                     if bt.SetEnabled then bt:SetEnabled(modified) end
                     local tip = {
                         { label, 1, 0.82, 0 },
-                        { autoActive
+                        { miningSmelt
+                            and L["将采矿熔炼「升级」页的路线计算与界面显示设置恢复为默认配置。"]
+                            or (autoActive
                             and L["将当前专业「升级」页的路线计算、配方来源、回血与界面显示设置恢复为默认配置。"]
-                            or L["将「升级」页的界面显示开关恢复为默认配置。"], 0.85, 0.85, 0.85 },
+                            or L["将「升级」页的界面显示开关恢复为默认配置。"]), 0.85, 0.85, 0.85 },
                     }
-                    if autoActive then
+                    if miningSmelt then
+                        tip[#tip + 1] = { L["不影响模式、备料方式、目标等级、排除项与扫描数据。"], 0.7, 0.7, 0.7 }
+                    elseif autoActive then
                         tip[#tip + 1] = { L["不影响模式、路线方案、目标等级、专精、排除项、易卖清单与扫描数据。"], 0.7, 0.7, 0.7 }
                     end
                     if not modified then
@@ -21169,7 +20934,7 @@ function PD.Render()
     end
     RememberLast()
     local cw = getCDWatch()
-    if cw and cw.AutoScan and PD.cur and PD.cur ~= "__index" then
+    if cw and cw.AutoScan and PD.cur and PD.cur ~= "__index" and PD.HasCooldownRecipes(PD.cur) then
         pcall(cw.AutoScan, PD.cur)
     end
 
@@ -21180,7 +20945,6 @@ function PD.Render()
     PD.wantIndexGrid = false
     PD.wantGCards = false
     PD.gcSpec = nil
-    PD.wantBonusTable = false
     PD.wantTrainerBoard = false
     PD.hasSecs = false
     PD.noSecCard = false
@@ -21215,7 +20979,6 @@ function PD.Render()
         end
     end
 
-    PD.wantMgrBtn = nil
     if PD.setOpen then
         PD.gridSplit = true
         PD.RowsSettings(rows)
@@ -21227,19 +20990,11 @@ function PD.Render()
         PD.hideDivider = true
         if PD.cur == "__index" then
             PD.RowsOverview(rows)
-        elseif PD.subTab == "watch" then
+        elseif PD.subTab == "mgr" and PD.HasCooldownRecipes(PD.cur) then
             PD.pcSpanAll = true
-            PD.wantMgrBtn = true
-            PD.RowsWatch(rows)
-        elseif PD.subTab == "mgr" then
-            PD.pcSpanAll = true
-            PD.wantMgrBtn = true
             PD.RowsWatchMgr(rows)
         else
-            if PD.cur == "camping" then
-                PD.campView = "bonus"
-                PD.wantBonusTable = true
-            end
+            PD.subTab = "doc"
             PD.RowsOverview(rows)
         end
     elseif PD.tab == "trainer" then
@@ -21491,8 +21246,20 @@ function PD.RequestRows(rows)
     if PD.notReady and not PD.sweeping then PD.ScheduleSweep() end
 end
 
+function PD.IsNavSlug(slug)
+    if type(slug) ~= "string" or slug == "" then return false end
+    local pcfg = getProfCfg()
+    if type(pcfg.BY_SLUG) == "table" and pcfg.BY_SLUG[slug] then return true end
+    if type(pcfg.VIRTUAL_ENTRIES) == "table" and pcfg.VIRTUAL_ENTRIES[slug] then return true end
+    return false
+end
+
 function PD.Show(slug)
     if type(slug) ~= "string" then return end
+    if slug ~= "__index" and not PD.IsNavSlug(slug) then
+        slug = PD.DefaultSlug()
+        if not slug then return end
+    end
     perfBegin("专业·" .. tostring(slug))
     PD.HideVendorPick()
     if slug ~= PD.cur then
@@ -21508,7 +21275,6 @@ function PD.Show(slug)
         PD.toolKey = nil
         PD.moneyKey = nil
         PD.specKey = nil
-        PD.campView = "a"
         PD.tab = "overview"
         PD.setOpen = false
         PD.searchQ = nil
@@ -21527,7 +21293,6 @@ function PD.SetTab(key)
     PD.setOpen = false
     PD.wlPicking = false
     PD.subTabSlug = nil
-    if PD.mgrBtn then PD.mgrBtn:Hide() end
     PD.ResetItemNameMemo()
     if not (PD.avail and PD.avail[key]) then return end
     local wasCrate = (PD.tab == "crate" or PD.tab == "writ")
@@ -21563,10 +21328,10 @@ function PD.DefaultSlug()
 end
 
 function PD.EnsureCur()
-    if PD.cur and PD.cur ~= "__index" then return end
+    if PD.cur and PD.cur ~= "__index" and PD.IsNavSlug(PD.cur) then return end
     local db = ProfDB()
     local slug = db.lastSlug
-    if not (slug and profEntryOf(slug)) then slug = PD.DefaultSlug() end
+    if not (slug and PD.IsNavSlug(slug) and profEntryOf(slug)) then slug = PD.DefaultSlug() end
     if slug then
         PD.cur = slug
         PD.toolKey = nil

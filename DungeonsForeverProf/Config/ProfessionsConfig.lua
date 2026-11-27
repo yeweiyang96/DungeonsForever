@@ -17,7 +17,6 @@ local C = {
     "first-aid",
     "poisons",
     "comprehension",
-    "camping",
   },
   VIRTUAL_ENTRIES = {
     crates = {
@@ -33,7 +32,7 @@ local C = {
   NAV_GROUPS = {
     { key = "primary", labelKey = "主专业" },
     { key = "secondary", labelKey = "次专业" },
-    { key = "system", labelKey = "营地系统" },
+    { key = "system", labelKey = "特殊技能" },
     { key = "crates", labelKey = "声望" },
   },
   BY_SLUG = {
@@ -243,16 +242,6 @@ local C = {
       supportsExecution = false,
       hasOverviewOnly = true,
       subRank = 2,
-    },
-    camping = {
-      order = 15,
-      navGroup = "system",
-      section = "camping",
-      guideKey = "camping",
-      inGetProfessions = false,
-      supportsAutoRoute = false,
-      supportsExecution = false,
-      hasCampBonusView = true,
     },
   },
   SKILL_LINE_TO_SLUG = {

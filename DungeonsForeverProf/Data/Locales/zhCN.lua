@@ -8388,7 +8388,7 @@ ns.Data.locales.zhCN = ns.Data._freeze({
     [98285] = "露营基础：工程学",
     [98286] = "露营基础：附魔",
   },
-  rank = { apprentice = "学徒", artisan = "工匠", expert = "专家", journeyman = "技工" },
+  rank = { apprentice = "学徒", artisan = "大师", expert = "专家", journeyman = "技工" },
   spell = {
     [818] = "基础营火",
     [2149] = "手工皮靴",

@@ -8352,7 +8352,7 @@ ns.Data.locales.zhTW = ns.Data._freeze({
     [98285] = "紮營入門指南：工程學",
     [98286] = "紮營入門指南：附魔",
   },
-  rank = { apprentice = "學徒", artisan = "工匠", expert = "專家", journeyman = "技工" },
+  rank = { apprentice = "學徒", artisan = "大師", expert = "專家", journeyman = "技工" },
   spell = {
     [818] = "基礎營火",
     [2149] = "手工皮靴",
