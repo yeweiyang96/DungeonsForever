@@ -670,8 +670,16 @@ function PD.HasCooldownRecipes(slug)
     return false
 end
 
+function PD.HasOverviewSubtabs(slug)
+    slug = slug or PD.cur
+    if not slug or slug == "__index" or slug == "comprehension" or slug == "poisons" or slug == "crates" then
+        return false
+    end
+    return true
+end
+
 function PD.BodyTop()
-    if PD.tab == "overview" and not PD.setOpen and PD.cur ~= "__index" then return PD.BODY_TOP2 end
+    if PD.tab == "overview" and not PD.setOpen and PD.HasOverviewSubtabs(PD.cur) then return PD.BODY_TOP2 end
     return PD.BODY_TOP
 end
 PD.FAC_ICON = {
@@ -3600,12 +3608,21 @@ function PD.SideRow(idx)
     r = made
     r:SetFrameLevel((PD.side:GetFrameLevel() or 0) + 3)
     r:SetSize(PD.RIGHT_W, PD.ROW_H)
+    r:EnableMouseWheel(true)
+    r:SetScript("OnMouseWheel", function(_, delta)
+        if PD.sideScroll and PD.side then
+            local hb = getHostBridge()
+            if hb and hb.WheelScroll then hb.WheelScroll(PD.sideScroll, PD.side, delta) end
+            if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
+        end
+    end)
     PD.sideRows[idx] = r
     return r
 end
 
 function PD.PaintSide(list)
     PD.sideRows = PD.sideRows or {}
+    local sx = PD.__sideOffX or 0
     local used = {}
     for k = 1, #list do
         local spec = list[k]
@@ -3613,7 +3630,7 @@ function PD.PaintSide(list)
         if r then
             used[k] = true
             r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", PD.side, "TOPLEFT", spec.__gx, -spec.__gtop)
+            r:SetPoint("TOPLEFT", PD.side, "TOPLEFT", spec.__gx - sx, -spec.__gtop)
             r:SetSize(spec.__gw, spec.__gh)
             r:Show()
             PD.BindRow(r, spec, spec.__gh)
@@ -3638,6 +3655,7 @@ function PD.PaintRows(rows)
     local grid = PD.gridSplit and true or false
     local gTop, gBot
     local sideFix = (PD.sideFixed and PD.side) and true or false
+    if PD.sideScroll then PD.sideScroll:SetShown(sideFix) end
     if PD.side then PD.side:SetShown(sideFix) end
     local sideSpecs = {}
     local ROW_W = PD.GRID_W
@@ -3844,9 +3862,10 @@ function PD.PaintRows(rows)
                 local c = pool and pool[idx]
                 if c then
                     local padL = PD.secPadL or PD.SEC_PAD_X
+                    local ox = (holder == PD.side) and (PD.__sideOffX or 0) or 0
                     c:ClearAllPoints()
                     c:SetPoint("TOPLEFT", holder, "TOPLEFT",
-                               b.x0 - padL, -(b.y0 - PD.SEC_PAD))
+                               b.x0 - padL - ox, -(b.y0 - PD.SEC_PAD))
                     c:SetSize((b.x1 - b.x0) + padL + PD.SEC_PAD_X,
                               (b.y1 - b.y0) + 2 * PD.SEC_PAD)
                     c:Show()
@@ -3876,10 +3895,23 @@ function PD.PaintRows(rows)
     local extraH = h1 - math.max(y[1], y[2], y[3], y[4], y[5], y[6])
     if sideFix then
         PD.child:SetHeight(y[1] + extraH + 10)
+        if PD.side then
+            local sideH = (y[2] or 0) + PD.SEC_PAD + 10
+            PD.side:SetHeight(math.max(sideH, 10))
+        end
+        if PD.sideScroll then
+            local sKey = tostring(PD.__pageKey) .. "|" .. tostring(PD.writSel) .. "|" .. tostring(PD.crateSel)
+            if sKey ~= PD.__sideScrollKey then
+                PD.__sideScrollKey = sKey
+                PD.sideScroll:SetVerticalScroll(0)
+            end
+        end
     else
         PD.child:SetHeight(math.max(h1, y[1], y[2], y[3], y[4], y[5], y[6]) + 10)
+        PD.__sideScrollKey = nil
     end
     if PD.UpdateVScroll then PD.UpdateVScroll() end
+    if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
     PD.FlushPendingRows()
     return truncated
 end
@@ -6778,12 +6810,123 @@ function PD.Build(page)
     end
     coroutine.yield()
 
-    local side = CreateFrame("Frame", nil, page)
-    side:SetPoint("TOPLEFT", scroll, "TOPLEFT", 0, 0)
-    side:SetPoint("BOTTOMRIGHT", scroll, "BOTTOMRIGHT", 0, 0)
-    side:SetFrameLevel((scroll:GetFrameLevel() or 0) + 20)
-    side:Hide()
+    local sideScroll = CreateFrame("ScrollFrame", nil, page)
+    if sideScroll.SetClipsChildren then sideScroll:SetClipsChildren(true) end
+    sideScroll:EnableMouseWheel(true)
+    sideScroll:SetFrameLevel((scroll:GetFrameLevel() or 0) + 20)
+    sideScroll:Hide()
+    local side = CreateFrame("Frame", nil, sideScroll)
+    side:SetSize(PD.COL_RW, 10)
+    sideScroll:SetScrollChild(side)
+    sideScroll:SetScript("OnMouseWheel", function(_, delta)
+        local hb = getHostBridge()
+        if hb and hb.WheelScroll then hb.WheelScroll(sideScroll, side, delta) end
+        if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
+    end)
+    PD.sideScroll = sideScroll
     PD.side = side
+    coroutine.yield()
+
+    local sideTrack = CreateFrame("Frame", nil, page, "BackdropTemplate")
+    if hui and hui.BuildCapsule and hui.layer then
+        hui.BuildCapsule(sideTrack, 3, hui.layer.L2)
+    else
+        sideTrack:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        sideTrack:SetBackdropColor(0, 0, 0, 0.25)
+        sideTrack:SetBackdropBorderColor(1, 1, 1, 0.08)
+    end
+    sideTrack:SetWidth(9)
+    sideTrack:SetPoint("TOPRIGHT", sideScroll, "TOPRIGHT", -1, -2)
+    sideTrack:SetPoint("BOTTOMRIGHT", sideScroll, "BOTTOMRIGHT", -1, 2)
+    sideTrack:SetFrameLevel((sideScroll:GetFrameLevel() or 0) + 10)
+    sideTrack:Hide()
+    local sideThumb = CreateFrame("Button", nil, sideTrack)
+    sideThumb:SetWidth(6)
+    sideThumb:EnableMouse(true)
+    local stp, stx = nil, nil
+    if hui and hui.BuildCapsule and hui.layer then
+        stp = hui.BuildCapsule(sideThumb, 2, hui.layer.L4)
+    else
+        stx = sideThumb:CreateTexture(nil, "OVERLAY")
+        stx:SetAllPoints()
+        stx:SetColorTexture(1, 1, 1, 0.30)
+    end
+    sideThumb:SetScript("OnEnter", function()
+        if stp and hui and hui.layer then
+            local L5 = hui.layer.L5
+            for _, t in ipairs(stp) do t:SetVertexColor(L5[1], L5[2], L5[3]) end
+        elseif stx then
+            stx:SetColorTexture(1, 1, 1, 0.45)
+        end
+    end)
+    sideThumb:SetScript("OnLeave", function()
+        if stp and hui and hui.layer then
+            local L4 = hui.layer.L4
+            for _, t in ipairs(stp) do t:SetVertexColor(L4[1], L4[2], L4[3]) end
+        elseif stx then
+            stx:SetColorTexture(1, 1, 1, 0.30)
+        end
+    end)
+    sideThumb:SetPoint("TOP", sideTrack, "TOP", 0, -1)
+    PD.sideTrack = sideTrack
+    function PD.UpdateSideVScroll()
+        local sc, ch = PD.sideScroll, PD.side
+        if not (sc and ch) then return end
+        if PD.setOpen or not PD.sideFixed or not sc:IsShown() then
+            sideTrack:Hide()
+            return
+        end
+        local viewH = sc:GetHeight()
+        local contentH = ch:GetHeight()
+        if type(viewH) ~= "number" or type(contentH) ~= "number" or contentH <= viewH + 2 or viewH <= 0 then
+            if sc.GetVerticalScroll and sc:GetVerticalScroll() ~= 0 then sc:SetVerticalScroll(0) end
+            sideTrack:Hide()
+            return
+        end
+        sideTrack:Show()
+        local trackH = (sideTrack:GetHeight() or 0) - 2
+        if trackH <= 0 then return end
+        local maxScroll = contentH - viewH
+        local vpos = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
+        if type(vpos) ~= "number" then vpos = 0 end
+        if vpos > maxScroll then
+            vpos = maxScroll
+            sc:SetVerticalScroll(vpos)
+        elseif vpos < 0 then
+            vpos = 0
+            sc:SetVerticalScroll(0)
+        end
+        local frac = math.min(1, math.max(0, vpos / maxScroll))
+        local th = math.max(24, trackH * viewH / contentH)
+        sideThumb:SetHeight(th)
+        sideThumb:ClearAllPoints()
+        sideThumb:SetPoint("TOP", sideTrack, "TOP", 0, -1 - frac * (trackH - th))
+    end
+    sideScroll:SetScript("OnVerticalScroll", function()
+        if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
+    end)
+    sideThumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local sc0 = sideScroll:GetVerticalScroll() or 0
+        self:SetScript("OnUpdate", function()
+            local cy = select(2, GetCursorPosition()) / scale
+            local trackH = (sideTrack:GetHeight() or 0) - 2
+            local span = trackH - sideThumb:GetHeight()
+            if span <= 0 then return end
+            local maxScroll = (side:GetHeight() or 0) - (sideScroll:GetHeight() or 0)
+            if maxScroll <= 0 then return end
+            sideScroll:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+            if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
+        end)
+    end)
+    sideThumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    sideThumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
     coroutine.yield()
 
     local track = CreateFrame("Frame", nil, page, "BackdropTemplate")
@@ -7158,7 +7301,7 @@ function PD.TabsFor(slug)
     if not p then return { "overview" } end
     local ds = getDS()
     local ra = getRA()
-    local out = { "overview" }
+    local out = (slug == "poisons") and {} or { "overview" }
     local ranks = ds and ds.Ranks and ds.Ranks(slug)
     if type(ranks) == "table" then
         for _, rk in ipairs(ranks) do
@@ -7242,7 +7385,7 @@ function PD.PickTabs()
     end
     PD.subTabEndX = shown * PD.SUB_STEP
     if PD.sub2Btns then
-        local wide = (PD.tab == "overview" and PD.avail.overview and not PD.setOpen and PD.cur ~= "__index") and true or false
+        local wide = (PD.tab == "overview" and PD.avail.overview and not PD.setOpen and PD.HasOverviewSubtabs(PD.cur)) and true or false
         local hasCD = wide and PD.HasCooldownRecipes(PD.cur)
         local xOff = 0
         for _, def in ipairs(PD.SUB2_DEF) do
@@ -8420,6 +8563,23 @@ function PD.Layout(toolH)
     else
         PD.divider:Hide()
     end
+    if PD.sideScroll then
+        if PD.sideFixed and splitW then
+            local gut = PD.lvSplit and PD.OV_GUT or PD.COL_GAP
+            local sideOffX = PD.GRID_X + splitW + math.floor(gut / 2)
+            PD.__sideOffX = sideOffX
+            PD.sideScroll:ClearAllPoints()
+            PD.sideScroll:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + sideOffX, -top)
+            PD.sideScroll:SetPoint("BOTTOMRIGHT", PD.page, "BOTTOMRIGHT", -PD.CARD_INSET, bot)
+            if PD.side then
+                PD.side:SetWidth(math.max(100, PD.RIGHT_W - sideOffX))
+            end
+        else
+            PD.__sideOffX = 0
+            PD.sideScroll:Hide()
+            if PD.sideTrack then PD.sideTrack:Hide() end
+        end
+    end
 end
 
 PD.SWEEP_AT = { 0.5, 1.5, 4, 9 }
@@ -8884,7 +9044,7 @@ end
 
 function PD.SyncSubTab(slug)
     PD.subTabSlug = slug
-    if not slug or slug == "__index" then
+    if not slug or not PD.HasOverviewSubtabs(slug) then
         PD.subTab = "doc"
         return
     end
@@ -10796,16 +10956,17 @@ function PD.LearningOriginCard(recipe,view)
 end
 
 function PD.RecipeLearningCard(recipe, frozen)
-    if recipe and (recipe.legacyPoisonGuide or recipe.profession=="poisons") then return end
     local view=PD.RecipeLearningView(recipe,frozen)
     if not view then return end
     if not view.frozen then
         local origin=PD.LearningOriginCard(recipe,view)
         if origin then
             if not view.allowed then
+                local E = getEco()
+                local diagText = E and E.DiagnosticText and view.reason and E.DiagnosticText(view.reason)
                 origin.lines[#origin.lines+1]={view.reason=="clientUnavailable" and L["未实装"]
                     or view.reason=="learningDataMissing" and L["资料待补"]
-                    or L["条件未满足"],0.95,0.75,0.4}
+                    or diagText or L["条件未满足"],0.95,0.75,0.4}
                 if view.reason=="learningDataMissing"then
                     origin.lines[#origin.lines+1]={PD.LearningGapText({spell=recipe.spell,
                         missingReasons=view.detail and view.detail.missingReasons}),0.95,0.75,0.4}
@@ -10824,11 +10985,13 @@ function PD.RecipeLearningCard(recipe, frozen)
             return {kind="unknown",text=L["未实装"],lines={{L["此记录仅供查阅，不参与自动路线。"],0.95,0.75,0.4}}}
         end
         local ra = raMod()
+        local E = getEco()
+        local info = recipe.learningInfo or (E and E.GetLearningInfo and E.GetLearningInfo(recipe.profession, recipe.spell))
+        local missingRoutes = not (type(info) == "table" and type(info.routes) == "table" and #info.routes > 0)
         local diagnostic=(ra and ra.LearningDiagnostic and ra.LearningDiagnostic(reason,recipe,detail))
             or {spell=recipe.spell,missingReasons=detail and detail.missingReasons}
-        local text=reason=="learningDataMissing" and L["资料待补"] or L["条件未满足"]
-        local E = getEco()
-        local why=reason=="learningDataMissing" and PD.LearningGapText(diagnostic)
+        local text=(reason=="learningDataMissing" or missingRoutes) and L["资料待补"] or L["条件未满足"]
+        local why=(reason=="learningDataMissing" or missingRoutes) and PD.LearningGapText(diagnostic)
             or (E and E.DiagnosticText and E.DiagnosticText(reason)) or reason
         return {kind="unknown",text=text,lines={{why,0.95,0.75,0.4},
             {L["保留供查阅；取得已确认学习路径后才用于自动路线。"],0.7,0.7,0.7}}}
@@ -10912,8 +11075,7 @@ function PD.CardOf(rec, ri, resolved, profession, frozen)
         return (ri and ri.trainer) and TRAINER_CARD or nil
     end
     local economy=getEco()
-    if (profession or PD.cur)=="poisons" then economy,resolved=nil,nil
-    else resolved=resolved or (rec.spell and rec) end
+    resolved=resolved or (rec.spell and rec)
     if not resolved and economy and economy.FindRecipe then
         resolved=economy.FindRecipe(profession or PD.cur,rec[1])
     end
@@ -11135,8 +11297,7 @@ end
 function PD.LevelSrc(rec, profession, resolved, frozen)
     if not rec then return nil, nil, nil end
     local E=getEco()
-    if (profession or PD.cur)=="poisons" then resolved=nil
-    else resolved=resolved or (rec.spell and rec) or (E and E.FindRecipe and E.FindRecipe(profession or PD.cur, rec[1] or rec.spellID)) end
+    resolved=resolved or (rec.spell and rec) or (E and E.FindRecipe and E.FindRecipe(profession or PD.cur, rec[1] or rec.spellID))
     local card=resolved and PD.RecipeLearningCard(resolved,frozen==true)
     if card then
         local text=card.kind=="trainer" and card.text==L["训练师"] and L["训练师"] or card.text
@@ -11857,36 +12018,6 @@ end
 
 function PD.RecipeData(row, kind, slug)
     local curSlug = slug or PD.cur
-    if curSlug == "poisons" then
-        if isV2Recipe(row) then
-            return {
-                profession = "poisons",
-                spell = row.spellID,
-                item = row.outputItemID,
-                count = row.outputCountMin or 1,
-                mats = reagentsToMats(row.reagents),
-                orange = row.orange,
-                learn = row.learnedAt,
-                yellow = row.yellow,
-                green = row.green,
-                grey = row.grey,
-                legacyPoisonGuide = true,
-            }
-        end
-        return {
-            profession = "poisons",
-            spell = row[1],
-            item = row[2],
-            count = row[3],
-            mats = row[12],
-            orange = row.orange,
-            learn = row[7],
-            yellow = row[8],
-            green = row[9],
-            grey = row[10],
-            legacyPoisonGuide = true,
-        }
-    end
     local E = getEco()
     if E and E.Normalize then
         local resolved = E.Normalize(row, curSlug, kind or "rows")
@@ -13124,7 +13255,7 @@ local function v2SrcInfo(rec)
         end
     end
     if #fids == 0 then
-        if hasAuto or hasTrainer or not routes then return "trainer", nil end
+        if hasAuto or hasTrainer then return "trainer", nil end
         if hasQuest then return "quest", nil end
         return nil, nil
     end
@@ -19883,7 +20014,7 @@ function PD.CrateColumns(writ)
     cols.nameR = right + 6
     local avail = PD.GRID_W - PD.OV_GUT
     PD.splitLW = math.max(math.floor(avail * PD.CRATE_SPLIT), math.min(avail - 180, cols.nameR + 132))
-    PD.splitRW = avail - PD.splitLW
+    PD.splitRW = avail - PD.splitLW - 8
     return cols
 end
 function PD.ShortItemName(name)
@@ -20954,7 +21085,7 @@ function PD.RowsCrates(rows)
     end
     PD.lvSplit = true
     PD.splitLW = math.floor((PD.GRID_W - PD.OV_GUT) * PD.CRATE_SPLIT)
-    PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW
+    PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW - 8
     if PD.tab == "writ" then
         PD.WritRows(rows)
     elseif PD.tab == "plunder" then
@@ -21100,7 +21231,7 @@ function PD.Render()
         if PD.autoPage == "shop" then
             PD.lvSplit = true
             PD.splitLW = math.floor((PD.GRID_W - PD.OV_GUT) * PD.SHOP_SPLIT)
-            PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW
+            PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW - 8
             PD.sideFixed = true
         else
             PD.lvSplit = false

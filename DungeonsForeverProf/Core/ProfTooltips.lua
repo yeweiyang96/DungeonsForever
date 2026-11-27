@@ -531,7 +531,6 @@ end
 
 function TT.RecipeSourceLines(lines, r)
     lines = lines or {}
-    if r and r.legacyPoisonGuide then return lines end
     if r and r.clientUnavailable then
         lines[#lines + 1] = { L["未实装"], 0.95, 0.75, 0.4 }
         lines[#lines + 1] = { L["此记录仅供查阅，不参与自动路线。"], 0.95, 0.75, 0.4 }
