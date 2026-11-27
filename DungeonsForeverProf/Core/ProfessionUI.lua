@@ -6403,6 +6403,7 @@ function PD.Build(page)
         SetButtonSelected(bt, false)
         bt:Hide()
         bt:SetScript("OnClick", function(self)
+            if self.__disabled then return end
             local k = self.__key
             if not k then return end
             if k == "route_history" then
@@ -7607,8 +7608,9 @@ function PD.PaintTool(list, handler, yoff)
                         .. tostring(def.on) .. "|" .. tostring(def.primary) .. "|"
                         .. tostring(def.tone) .. "|" .. text .. "|" .. tostring(def.right)
                         .. "|" .. tostring(def.icon) .. "|" .. tostring(def.glow)
-                        .. "|" .. tostring(def.subRow)
+                        .. "|" .. tostring(def.subRow) .. "|" .. tostring(def.disabled)
             bt.__tipLines = def.tip
+            bt.__disabled = def.disabled and true or nil
             if def.tip and not bt.__tipHooked then
                 bt.__tipHooked = true
                 bt:HookScript("OnEnter", function(self)
@@ -7633,19 +7635,26 @@ function PD.PaintTool(list, handler, yoff)
                 bt:SetText(text)
                 if def.icon then
                     bt:EnableMouse(true)
+                    bt:SetAlpha(1)
                     SetOutline(bt, false, 1, 0.82, 0)
                 elseif def.plain then
                     bt:EnableMouse(false)
+                    bt:SetAlpha(1)
                     SetOutline(bt, false, 1, 0.82, 0)
                     bt:GetFontString():SetTextColor(Unpack(def.color or C_WHITE))
                 else
                     bt:EnableMouse(true)
                     SetOutline(bt, false, 1, 0.82, 0)
-                    local hot = (def.on or def.primary) and true or false
+                    local isDis = def.disabled and true or false
+                    local hot = (not isDis) and ((def.on or def.primary) and true or false) or false
                     SetButtonSelected(bt, hot, "main")
+                    if bt.SetAlpha then bt:SetAlpha(isDis and 0.55 or 1) end
                     local bfs = bt:GetFontString()
                     local cr, cg, cb = Unpack(C_GREY)
-                    if hot then
+                    if isDis then
+                        cr, cg, cb = 0.48, 0.48, 0.48
+                        bfs:SetTextColor(0.48, 0.48, 0.48, 0.85)
+                    elseif hot then
                         cr, cg, cb = 1, 1, 1
                         bfs:SetTextColor(1, 1, 1, 1)
                     elseif def.tone == "blue" then
@@ -8397,7 +8406,7 @@ function PD.PaintLvTiles()
         costLines[#costLines+1]={L["单价按方案估算，未用逐档行情"],0.7,0.7,0.7}
     end
     if s.planVersion == 2 then
-        if s.completeCost == false then costLines[#costLines + 1] = { L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始执行。"], 0.95, 0.75, 0.4 } end
+        if s.completeCost == false then costLines[#costLines + 1] = { L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始追踪。"], 0.95, 0.75, 0.4 } end
     end
     tiles.target.label:SetText(L["目标等级"])
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
@@ -16683,7 +16692,7 @@ function PD.RowsCraftLog(rows)
         end
         PushText(rows, L["本角色还没有任何制作记录。"], 14, C_TEXT)
         PushGap(rows, 4)
-        PushText(rows, L["在「路线」页点「开始执行」或打开升级 HUD 后，这里会记录每一步实际做了几次、产出多少。"], 14, C_GREY)
+        PushText(rows, L["在「路线」页点「开始追踪」或打开升级 HUD 后，这里会记录每一步实际做了几次、产出多少。"], 14, C_GREY)
         return
     end
     local stText, stColor
@@ -19126,7 +19135,7 @@ function PD.RowsAutoShop(rows, data)
                             text = L["商人直售购入"],
                             right = ra and ra.MoneyStr and ra.MoneyStr(vendorTotal, "copper") or tostring(vendorTotal) }
         if completeCost == false then
-            note(L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始执行。"], 0.95, 0.75, 0.4)
+            note(L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始追踪。"], 0.95, 0.75, 0.4)
         end
         local np = CountUnpriced(data)
         if np > 0 then
@@ -19223,6 +19232,41 @@ function PD.RouteSupplyNeedsRescan(plan)
     return false
 end
 
+function PD.TrackingStartState(slug)
+    slug = slug or PD.cur
+    local T = getExec()
+    if not T or slug == "poisons" or PD.IsGatherRoute(slug) then
+        return false, nil, nil
+    end
+    if T.IsCombatPaused and T.IsCombatPaused() then
+        return false, L["战斗中暂停追踪，脱战后自动恢复。"], nil
+    end
+    local res = (PD.autoSnapshotSlug == slug) and PD.autoSnapshot or nil
+    if res and res.manualActivityPending then
+        return false, L["先完成指南中的手动步骤，再按当前技能重新查看路线。"], res
+    end
+    local computing = res and (res.status == "searching" or res.finalizing)
+    if computing then
+        return false, ((res and res.restoring) and L["正在恢复已保存路线…"] or L["正在计算升级路线…"]), res
+    end
+    local hasSteps = (res
+        and res.feasible ~= false
+        and res.status ~= "selection_required"
+        and res.status ~= "recalculate_required"
+        and #(res.steps or {}) > 0) and true or false
+    if not hasSteps then
+        local noRouteMsg = (PD.AutoRouteEnabled(slug) and not PD.HasExistingRoute(slug))
+            and L["尚未计算路线，点击「开始计算」"]
+            or L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
+        return false, noRouteMsg, res
+    end
+    local scanWarn, scanBlocked = PD.ReplicateScanWarning()
+    if scanBlocked and scanWarn then
+        return false, scanWarn, res
+    end
+    return true, nil, res
+end
+
 function PD.LevelTool()
     local routeSlug = PD.cur
     local fishRoute = PD.CookingFishingMode and PD.CookingFishingMode() or false
@@ -19298,7 +19342,7 @@ function PD.LevelTool()
         end
     end
     local xp = getExec()
-    if xp then
+    if xp and PD.cur ~= "poisons" and not PD.IsGatherRoute() then
         local trackRun, trackPlan = TrackRunOf(PD.cur)
         if trackRun then
             local total = trackPlan and #(trackPlan.steps or {}) or 0
@@ -19312,12 +19356,25 @@ function PD.LevelTool()
                                     { L["关闭 HUD 只隐藏窗口，不会结束追踪。"], 0.85, 0.85, 0.85 },
                                 } }
         else
-            list[#list + 1] = { key = "track", align = "right", tone = "blue", text = L["开始执行"], tip = {
-                { L["开始执行"], 1, 0.82, 0 },
+            local ready, reasonText = PD.TrackingStartState(PD.cur)
+            local tip = {
+                { L["开始追踪"], 1, 0.82, 0 },
                 { L["固定当前路线，记录制作与产出，更新步骤进度和材料缺口。"] },
-                { L["连续 48 小时无制作（含离线）自动结束；战斗中暂停，脱战后恢复。"], 0.85, 0.85, 0.85 },
-                { L["不再升级时，请再次点击此按钮结束追踪；制作记录保留。"], 0.85, 0.85, 0.85 },
-            } }
+            }
+            if not ready and reasonText then
+                tip[#tip + 1] = { reasonText, 0.98, 0.60, 0.46 }
+            else
+                tip[#tip + 1] = { L["连续 48 小时无制作（含离线）自动结束；战斗中暂停，脱战后恢复。"], 0.85, 0.85, 0.85 }
+                tip[#tip + 1] = { L["不再升级时，请再次点击此按钮结束追踪；制作记录保留。"], 0.85, 0.85, 0.85 }
+            end
+            list[#list + 1] = {
+                key = "track",
+                align = "right",
+                tone = "blue",
+                disabled = not ready,
+                text = L["开始追踪"],
+                tip = tip,
+            }
         end
     end
     if not PD.FixedOnly() then
@@ -19441,40 +19498,27 @@ function PD.LevelTool()
             local T = getExec()
             if T and T.GetActive and T.GetActive(PD.cur) then
                 local follow = getFollow()
-                if follow and follow.SuspendAutoTrack then
-                    follow.SuspendAutoTrack(PD.cur)
+                if follow and follow.RequestEndTracking then
+                    follow.RequestEndTracking(PD.cur)
+                else
+                    if follow and follow.SuspendAutoTrack then
+                        follow.SuspendAutoTrack(PD.cur)
+                    end
+                    local ra = raMod()
+                    if ra and ra.EndExecution then
+                        ra.EndExecution(PD.cur)
+                    elseif T.End then
+                        T.End(PD.cur, "cancel")
+                    end
+                    PD.autoSnapshotSlug = nil
                 end
-
-                local ra = raMod()
-                if ra and ra.EndExecution then
-                    ra.EndExecution(PD.cur)
-                elseif T.End then
-                    T.End(PD.cur, "cancel")
-                end
-
-                PD.autoSnapshotSlug = nil
             else
-                local res = PD.autoSnapshot
-                local computing = res and (res.status == "searching" or res.finalizing)
-
-                local ready = (T and res
-                    and not computing
-                    and res.feasible ~= false
-                    and res.status ~= "selection_required"
-                    and res.status ~= "recalculate_required"
-                    and PD.autoSnapshotSlug == PD.cur
-                    and #(res.steps or {}) > 0) and true or false
-
-                local bound,reason
-                if ready and T.StartNew then bound,reason=T.StartNew(PD.cur,res) end
-
+                local ready, reasonText, res = PD.TrackingStartState(PD.cur)
+                local bound, reason
+                if ready and T and T.StartNew then bound, reason = T.StartNew(PD.cur, res) end
                 if not bound then
-                    local msg = res and res.manualActivityPending
-                        and L["先完成指南中的手动步骤，再按当前技能重新查看路线。"]
-                        or PD.ReplicateScanMessage(reason) or PD.ReplicateScanWarning()
-                        or T and T.IsCombatPaused and T.IsCombatPaused()
-                        and L["战斗中暂停追踪，脱战后自动恢复。"] or computing
-                        and ((res and res.restoring) and L["正在恢复已保存路线…"] or L["正在计算升级路线…"])
+                    local msg = PD.ReplicateScanMessage(reason) or reasonText
+                        or PD.ReplicateScanWarning()
                         or L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
                     if UIErrorsFrame and UIErrorsFrame.AddMessage then
                         pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
@@ -21268,16 +21312,28 @@ function PD.Render()
         local stale
         local raStale = raMod()
         local busy = (PD.SolverText() ~= nil) or (raStale and raStale.HasWork and raStale.HasWork(PD.cur))
-        if tool and PD.tab == "leveling" and PD.AutoRouteEnabled() and not busy then
-            if not PD.HasExistingRoute(PD.cur) then
-                stale = L["尚未计算路线，点击「开始计算」"]
-            elseif PD.policyDirty and PD.policyDirty[PD.cur] then
-                stale = L["排除项已修改，点击「重新计算」生效"]
-            elseif PD.autoSnapshotSlug == PD.cur and PD.autoSnapshot and PD.autoSnapshot.stale then
-                stale = PD.PlanCacheText(PD.autoSnapshot)
-                if stale == PD.ReplicateScanWarning() then stale = nil end
-            elseif PD.RecalcNeeded() then
-                stale = L["设置或行情已变化，点击「重新计算」更新"]
+        if tool and PD.tab == "leveling" and not busy then
+            local trackRun, trackPlan = TrackRunOf(PD.cur)
+            if PD.AutoRouteEnabled() then
+                if not PD.HasExistingRoute(PD.cur) then
+                    stale = L["尚未计算路线，点击「开始计算」"]
+                elseif PD.policyDirty and PD.policyDirty[PD.cur] then
+                    stale = L["排除项已修改，点击「重新计算」生效"]
+                elseif PD.autoSnapshotSlug == PD.cur and PD.autoSnapshot and PD.autoSnapshot.stale then
+                    stale = PD.PlanCacheText(PD.autoSnapshot)
+                    if stale == PD.ReplicateScanWarning() then stale = nil end
+                elseif PD.RecalcNeeded() then
+                    stale = L["设置或行情已变化，点击「重新计算」更新"]
+                end
+            end
+            if trackRun and trackPlan then
+                local total = #(trackPlan.steps or {})
+                local cur = math.min(trackRun.currentIndex or 1, total)
+                if stale and stale ~= "" then
+                    stale = L["追踪中（已锁定）· 设置或行情已变，可重新计算更新"]
+                elseif total > 0 then
+                    stale = format(L["追踪中 · 已锁定当前方案（%d/%d）"], cur, total)
+                end
             end
         end
         PD.PaintToolStale(stale)

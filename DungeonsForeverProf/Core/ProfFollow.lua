@@ -166,6 +166,87 @@ local IMPORT_TRIES = 5
 
 -- Runtime cue state resets on file reload by design (muted preference persists in SavedVariables).
 local cueState = {}
+local paintQueued = false
+local syncHUDRuntime
+
+local function hasAnyActiveTracking()
+    local xp = getXP()
+    if xp and type(xp.HasActive) == "function" then
+        local ok, active = pcall(xp.HasActive)
+        if ok and active then return true end
+    end
+    local eng = getEngine()
+    local s = eng and eng.State and eng.State()
+    if s and s.slug and xp and type(xp.GetActive) == "function" then
+        local ok, run = pcall(xp.GetActive, s.slug)
+        if ok and run ~= nil then return true end
+    end
+    return false
+end
+
+local function setFrameEvent(f, event, want)
+    if not f then return end
+    local reg = f.__dfRegisteredEvents
+    if type(reg) ~= "table" then
+        reg = {}
+        f.__dfRegisteredEvents = reg
+    end
+    if want then
+        if not reg[event] and type(f.RegisterEvent) == "function" then
+            local ok = pcall(f.RegisterEvent, f, event)
+            if ok then reg[event] = true end
+        end
+    else
+        if reg[event] or type(f.UnregisterEvent) == "function" then
+            if type(f.UnregisterEvent) == "function" then
+                pcall(f.UnregisterEvent, f, event)
+            end
+            reg[event] = nil
+        end
+    end
+end
+
+local function cancelTicker(key)
+    local t = PF[key]
+    if t then
+        if type(t.Cancel) == "function" then pcall(t.Cancel, t) end
+        PF[key] = nil
+    end
+end
+
+syncHUDRuntime = function()
+    local f = PF.f
+    local hudShown = (f and f.IsShown and f:IsShown()) and true or false
+    local needBids = hudShown or hasAnyActiveTracking()
+    if f then
+        setFrameEvent(f, "BAG_UPDATE_DELAYED", hudShown)
+        setFrameEvent(f, "CHAT_MSG_SKILL", hudShown)
+        setFrameEvent(f, "CHAT_MSG_SYSTEM", needBids)
+    end
+    if hudShown then
+        if not PF.syncTicker and _G.C_Timer and _G.C_Timer.NewTicker then
+            PF.syncTicker = _G.C_Timer.NewTicker(1, function()
+                if PF.f and PF.f:IsShown() and PF.Sync() then PF.Paint() end
+            end)
+        end
+    else
+        cancelTicker("syncTicker")
+        paintQueued = false
+    end
+    if needBids then
+        if not PF.bidTicker and _G.C_Timer and _G.C_Timer.NewTicker then
+            local eng = getEngine()
+            if eng then eng.bidScanCount = nil end
+            PF.bidTicker = _G.C_Timer.NewTicker(2, function()
+                if PF.ScanChatBids then PF.ScanChatBids() end
+            end)
+        end
+    else
+        cancelTicker("bidTicker")
+    end
+end
+
+PF.SyncHUDRuntime = syncHUDRuntime
 
 local function cueFile(kind)
     if kind == "cap" then return Media("VoiceSkillCap") end
@@ -500,6 +581,69 @@ local function verifyOutputDialog()
         end,
     }
     _G.StaticPopup_Show("DF_PROF_VERIFY_OUTPUT", nil, nil, data)
+end
+
+function PF.EndTracking(slug, opts)
+    local eng = getEngine()
+    local s = eng and eng.State()
+    if not slug then slug = s and s.slug or nil end
+    if not slug then return false end
+    PF.SuspendAutoTrack(slug)
+    local ra = getRA()
+    local xp = getXP()
+    if ra and ra.EndExecution then
+        ra.EndExecution(slug)
+    elseif xp and xp.End then
+        xp.End(slug, (opts and opts.reason) or "cancel")
+    end
+    s = eng and eng.State()
+    if s and s.slug == slug then
+        s.hidden = true
+    end
+    if PF.f and PF.f.IsShown and PF.f:IsShown() and (not s or s.slug == slug) then
+        PF.f:Hide()
+    end
+    local pd = getPD()
+    if pd and pd.autoSnapshotSlug == slug then
+        pd.autoSnapshotSlug = nil
+    end
+    syncHUDRuntime()
+    PF.RefreshMainUI()
+    return true
+end
+
+function PF.RequestEndTracking(slug, opts)
+    local eng = getEngine()
+    local s = eng and eng.State()
+    if not slug then slug = s and s.slug or nil end
+    if not slug then return false end
+    local xp = getXP()
+    local run = xp and xp.GetActive and xp.GetActive(slug) or nil
+    local attempts = run and tonumber(run.attemptsDone) or 0
+    if not (opts and opts.force) and attempts > 0
+        and _G.StaticPopupDialogs and _G.StaticPopup_Show then
+        local profName = eng and eng.ProfName and eng.ProfName(slug) or slug
+        _G.StaticPopupDialogs.DF_PROF_END_TRACKING = {
+            text = format(L["确认结束「%s」的路线追踪？已记录 %d 次制作；结束后当前进度将归档，制作记录保留。"], profName, attempts),
+            button1 = L["结束追踪"],
+            button2 = L["取消"],
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+            preferredIndex = 3,
+            OnShow = function(self)
+                local b = getBridge()
+                if b and b.SkinPopupFont then b.SkinPopupFont(self) end
+            end,
+            OnAccept = function(self)
+                local d = self.data
+                PF.EndTracking(d and d.slug or slug, d and d.opts or opts)
+            end,
+        }
+        _G.StaticPopup_Show("DF_PROF_END_TRACKING", nil, nil, { slug = slug, opts = opts })
+        return true, "confirm"
+    end
+    return PF.EndTracking(slug, opts), "ended"
 end
 
 -- =========================================================================
@@ -837,7 +981,14 @@ end
 
 local function wireFrameScripts(f)
     local eng = getEngine()
-    f:SetScript("OnHide", function() cueState = {} end)
+    f:SetScript("OnShow", function()
+        syncHUDRuntime()
+    end)
+    f:SetScript("OnHide", function()
+        cueState = {}
+        paintQueued = false
+        syncHUDRuntime()
+    end)
     f:SetScript("OnDragStart", function(self) self:StartMoving() end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -856,7 +1007,7 @@ local function wireFrameScripts(f)
     f:SetScript("OnEvent", function(_, event, message)
         if event == "CHAT_MSG_SYSTEM" then
             if PF.NoteBid(message) then
-                PF.Paint()
+                if f:IsShown() then PF.Paint() end
                 if PF.RefreshMainUI then PF.RefreshMainUI() end
             end
             return
@@ -864,12 +1015,16 @@ local function wireFrameScripts(f)
         local e = getEngine()
         if f:IsShown() and not (e and e.TrackingPaused()) then
             if _G.C_Timer and _G.C_Timer.After then
-                _G.C_Timer.After(0, function()
-                    local e2 = getEngine()
-                    if e2 and e2.TrackingPaused() then return end
-                    PF.Sync()
-                    PF.Paint()
-                end)
+                if not paintQueued then
+                    paintQueued = true
+                    _G.C_Timer.After(0, function()
+                        paintQueued = false
+                        local e2 = getEngine()
+                        if not (f:IsShown()) or (e2 and e2.TrackingPaused()) then return end
+                        PF.Sync()
+                        PF.Paint()
+                    end)
+                end
             else
                 PF.Sync()
                 PF.Paint()
@@ -1015,7 +1170,31 @@ local function wireFrameScripts(f)
             if PF.RefreshMainUI then PF.RefreshMainUI() end
         end)
         TipOn(f.xBtn, L["隐藏 HUD"], L["关闭 HUD 只隐藏窗口，不会结束追踪。"] .. "\n"
-            .. L["不再升级时，请在升级页点击追踪进度按钮结束追踪。"])
+            .. L["不再升级时，请点击标题栏「结束」或在升级页点击追踪进度按钮结束追踪。"])
+    end
+
+    if not f.stopBtn and f.muteBtn then
+        local stopText = L["结束"]
+        local stopW = 40
+        local pd = getPD()
+        if pd and pd.TextW then
+            local okw, wv = pcall(pd.TextW, stopText, 12)
+            if okw and type(wv) == "number" then stopW = max(36, ceil(wv) + 12) end
+        end
+        f.stopBtn = NewButton(f, stopText, stopW, 22, 12)
+        f.stopBtn:SetPoint("TOPRIGHT", f.muteBtn, "TOPLEFT", -4, 0)
+        f.stopBtn:Hide()
+    end
+    if f.stopBtn then
+        f.stopBtn:SetScript("OnClick", function()
+            local e = getEngine()
+            local s = e and e.State()
+            if s and s.slug then
+                PF.RequestEndTracking(s.slug)
+                PlayClickSound(1)
+            end
+        end)
+        TipOn(f.stopBtn, L["结束追踪"], L["不再升级时，点击此按钮结束追踪；制作记录保留。"])
     end
 
     if f.muteBtn then
@@ -1046,19 +1225,7 @@ local function wireFrameScripts(f)
 end
 
 local function ensureTickers()
-    if not (_G.C_Timer and _G.C_Timer.NewTicker) then return end
-    if not PF.bidTicker then
-        local eng = getEngine()
-        if eng then eng.bidScanCount = nil end
-        PF.bidTicker = _G.C_Timer.NewTicker(2, function()
-            if PF.ScanChatBids then PF.ScanChatBids() end
-        end)
-    end
-    if not PF.syncTicker then
-        PF.syncTicker = _G.C_Timer.NewTicker(1, function()
-            if PF.f and PF.f:IsShown() and PF.Sync() then PF.Paint() end
-        end)
-    end
+    syncHUDRuntime()
 end
 
 local buildSec = 0
@@ -1115,9 +1282,6 @@ local function BuildBody()
     f:SetMovable(true)
     f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
-    f:RegisterEvent("BAG_UPDATE_DELAYED")
-    f:RegisterEvent("CHAT_MSG_SKILL")
-    f:RegisterEvent("CHAT_MSG_SYSTEM")
 
     f:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1432,6 +1596,19 @@ local function BuildBody()
     f.muteBtn.tex:SetSize(12, 12)
     f.muteBtn.tex:SetPoint("CENTER", f.muteBtn, "CENTER", 0, 0)
     f.muteBtn.tex:SetTexture(Media("ProfMute"))
+
+    do
+        local stopText = L["结束"]
+        local stopW = 40
+        local pd = getPD()
+        if pd and pd.TextW then
+            local okw, wv = pcall(pd.TextW, stopText, 12)
+            if okw and type(wv) == "number" then stopW = max(36, ceil(wv) + 12) end
+        end
+        f.stopBtn = NewButton(f, stopText, stopW, 22, 12)
+        f.stopBtn:SetPoint("TOPRIGHT", f.muteBtn, "TOPLEFT", -4, 0)
+        f.stopBtn:Hide()
+    end
     BuildStep(7)
 
     local pos = eng and eng.DbProf().followPos
@@ -1443,6 +1620,8 @@ local function BuildBody()
     end
 
     f.__dfBuilt = true
+    buildingFrame = nil
+    PF.f = f
     wireFrameScripts(f)
     ensureTickers()
     if _G.C_Timer and _G.C_Timer.After then
@@ -1450,8 +1629,6 @@ local function BuildBody()
     end
 
     BuildStep(8)
-    buildingFrame = nil
-    PF.f = f
 end
 
 function PF.Build()
@@ -1566,6 +1743,7 @@ function PF.Toggle(slug)
         if PF.ReplayBids then PF.ReplayBids(5) end
         PF.view = 0
         PF.f:Show()
+        syncHUDRuntime()
         PF.Paint()
         PF.RefreshMainUI()
         return
@@ -1577,6 +1755,7 @@ function PF.Toggle(slug)
         if PF.ReplayBids then PF.ReplayBids(5) end
         PF.view = 0
         PF.f:Show()
+        syncHUDRuntime()
         PF.Paint()
         PF.RefreshMainUI()
     end
@@ -2221,8 +2400,24 @@ local function paintImpl()
     local accent = Accent()
     local name = (p and p.name) or eng.ProfName(slug)
 
+    local xp = getXP()
+    local vRun = (slug ~= "poisons" and xp and xp.GetActive) and xp.GetActive(slug) or nil
+    if f.stopBtn then
+        f.stopBtn:SetShown(vRun ~= nil)
+    end
     f.icon:SetTexture(ProfIconTex(p and p.icon))
+    f.title:SetWidth(0)
     f.title:SetText(format(L["%s升级HUD"], name))
+    local titleMaxW, titleW
+    do
+        local rightBtnsW = 8 + 24 + 4 + 24 + 8
+        if f.stopBtn and f.stopBtn:IsShown() then
+            rightBtnsW = rightBtnsW + (f.stopBtn:GetWidth() or 40) + 4
+        end
+        titleMaxW = max(80, W - 42 - rightBtnsW)
+        titleW = min(titleMaxW, ceil(FSW(f.title, 100)) + 2)
+        f.title:SetWidth(titleW)
+    end
 
     local cur, mx = eng.SkillOf(slug)
     local rankTasks = PF.RankTasks(slug, eng.RouteTarget(slug), steps, state.step)
@@ -2260,8 +2455,10 @@ local function paintImpl()
         f.skill:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
     end
     if f.capWarn then
-        if atCap then
+        local capAvail = max(0, (titleMaxW or 180) - (titleW or 100) - 8)
+        if atCap and capAvail >= 48 then
             f.capWarn:SetText(L["找训练师提高技能上限"])
+            f.capWarn:SetWidth(capAvail)
             f.capWarn:Show()
         else
             f.capWarn:Hide()
@@ -2311,8 +2508,6 @@ local function paintImpl()
     f.card2:Hide()
     local viewing = (PF.view or 0) ~= 0 and not finished
     f.nowBtn:SetShown(viewing)
-    local xp = getXP()
-    local vRun = (slug ~= "poisons" and xp and xp.GetActive) and xp.GetActive(slug) or nil
     local vProg = (type(vRun) == "table" and xp.Progress) and xp.Progress(slug, nil, nil, vRun.planID) or nil
     f.verifyBtn:SetText(type(vProg) == "table" and vProg.manualConversion and L["确认转换"] or L["校正产出"])
     local verShown = not finished and type(vProg) == "table" and vProg.outputItem ~= nil and not vProg.finished
@@ -2416,10 +2611,10 @@ function PF.PaintButton(bt, slug)
         bt:SetWidth(math.max(pd.TOOL_MIN_W or 56, ceil(pd.TextW(text, 14)) + (pd.TOOL_PADX or 18)))
     end
     bt:SetScript("OnClick", function() PF.Toggle(slug) end)
-    TipOn(bt, text, L["打开 HUD 后，路线就绪时会自动开始执行并追踪制作进度。"] .. "\n"
+    TipOn(bt, text, L["打开 HUD 后，路线就绪时会自动开始追踪制作进度。"] .. "\n"
         .. L["连续 48 小时无制作（含离线）自动结束；战斗中暂停，脱战后恢复。"] .. "\n"
         .. L["关闭 HUD 只隐藏窗口，不会结束追踪。"] .. "\n"
-        .. L["不再升级时，请在升级页点击追踪进度按钮结束追踪。"])
+        .. L["不再升级时，请点击标题栏「结束」或在升级页点击追踪进度按钮结束追踪。"])
     local active = PF.IsActive(slug)
     SetButtonSelected(bt, active)
     local fs = bt.GetFontString and bt:GetFontString()
@@ -2477,6 +2672,7 @@ PF.__onAuctionChanged = function(_, reason)
 end
 
 PF.__onExecObsChanged = function()
+    syncHUDRuntime()
     if PF.f and PF.f:IsShown() then
         PF.Sync()
         PF.Paint()
@@ -2484,6 +2680,7 @@ PF.__onExecObsChanged = function()
 end
 
 PF.__onExecChanged = function(slug, run, reason)
+    syncHUDRuntime()
     if slug == "poisons" then return end
     local eng = getEngine()
     local state = eng and eng.State()
