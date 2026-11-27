@@ -20,11 +20,6 @@ ns.Data._loaders["entities"] = function()
       [576] = { factionID = 576, side = "N" },
       [609] = { factionID = 609, side = "N" },
       [749] = { factionID = 749, side = "N" },
-      [2586] = { factionID = 2586, side = "A" },
-      [2587] = { factionID = 2587, side = "H" },
-      [2740] = { factionID = 2740, side = "A" },
-      [2758] = { factionID = 2758, side = "N" },
-      [2787] = { factionID = 2787, side = "H" },
     },
     items = {
       [118] = { bindType = 0, icon = 134829, quality = 1, sellPriceCopper = 5 },
@@ -5380,20 +5375,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 10, uiMapID = 1431, x = 21, y = 72.2 },
         },
       },
-      [917] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 12, uiMapID = 1429, x = 43.8, y = 65.8 },
-        },
-      },
-      [918] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1519, uiMapID = 1453, x = 77.2, y = 65.2 },
-        },
-      },
       [937] = {
         faction = "N",
         roles = { drop = true },
@@ -5882,13 +5863,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 38, uiMapID = 1432, x = 36.8, y = 61.2 },
         },
       },
-      [1234] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1, uiMapID = 1426, x = 47.4, y = 52.4 },
-        },
-      },
       [1241] = {
         faction = "A",
         roles = { quest_giver = true, trainer = true },
@@ -6115,13 +6089,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 38, uiMapID = 1432, x = 68.8, y = 68.4 },
-        },
-      },
-      [1411] = {
-        faction = "N",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 33, uiMapID = 1434, x = 26.8, y = 77.2 },
         },
       },
       [1418] = {
@@ -6454,13 +6421,6 @@ ns.Data._loaders["entities"] = function()
         classification = 1,
         faction = "N",
         roles = { drop = true },
-      },
-      [1698] = {
-        faction = "A",
-        roles = { quest_giver = true, vendor = true },
-        spawns = {
-          { areaID = 1, uiMapID = 1426, x = 68.8, y = 55.8 },
-        },
       },
       [1699] = {
         faction = "A",
@@ -7040,13 +7000,6 @@ ns.Data._loaders["entities"] = function()
         roles = { vendor = true },
         spawns = {
           { areaID = 85, uiMapID = 1420, x = 61, y = 52.4 },
-        },
-      },
-      [2130] = {
-        faction = "H",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 85, uiMapID = 1420, x = 61.6, y = 52 },
         },
       },
       [2132] = {
@@ -8691,13 +8644,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 10, uiMapID = 1431, x = 81.4, y = 19.8 },
         },
       },
-      [3135] = {
-        faction = "A",
-        roles = { vendor = true },
-        spawns = {
-          { areaID = 10, uiMapID = 1431, x = 79.4, y = 44.4 },
-        },
-      },
       [3136] = {
         faction = "A",
         roles = { trainer = true },
@@ -8724,13 +8670,6 @@ ns.Data._loaders["entities"] = function()
         roles = { vendor = true },
         spawns = {
           { areaID = 14, uiMapID = 1411, x = 52.8, y = 42 },
-        },
-      },
-      [3170] = {
-        faction = "H",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 14, uiMapID = 1411, x = 52, y = 43.4 },
         },
       },
       [3174] = {
@@ -8904,20 +8843,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true, quest_giver = true },
         spawns = {
           { areaID = 1637, uiMapID = 1454, x = 45.2, y = 63.8 },
-        },
-      },
-      [3327] = {
-        faction = "H",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1637, uiMapID = 1454, x = 42.8, y = 51.4 },
-        },
-      },
-      [3328] = {
-        faction = "H",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1637, uiMapID = 1454, x = 44, y = 54.4 },
         },
       },
       [3332] = {
@@ -9388,13 +9313,6 @@ ns.Data._loaders["entities"] = function()
         classification = 2,
         faction = "N",
         roles = { drop = true },
-      },
-      [3599] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 141, uiMapID = 1438, x = 56.2, y = 60 },
-        },
       },
       [3603] = {
         faction = "A",
@@ -10255,13 +10173,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1657, uiMapID = 1457, x = 55, y = 23.4 },
         },
       },
-      [4163] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1657, uiMapID = 1457, x = 36.2, y = 21.4 },
-        },
-      },
       [4168] = {
         faction = "A",
         roles = { vendor = true },
@@ -10337,20 +10248,6 @@ ns.Data._loaders["entities"] = function()
         roles = { trainer = true },
         spawns = {
           { areaID = 1657, uiMapID = 1457, x = 58.4, y = 13.2 },
-        },
-      },
-      [4214] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1657, uiMapID = 1457, x = 34.4, y = 25.4 },
-        },
-      },
-      [4215] = {
-        faction = "A",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1657, uiMapID = 1457, x = 37.8, y = 19.6 },
         },
       },
       [4222] = {
@@ -10910,27 +10807,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1497, uiMapID = 1458, x = 77.2, y = 38.4 },
         },
       },
-      [4582] = {
-        faction = "H",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1497, uiMapID = 1458, x = 83, y = 72.8 },
-        },
-      },
-      [4583] = {
-        faction = "H",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1497, uiMapID = 1458, x = 84.2, y = 71 },
-        },
-      },
-      [4584] = {
-        faction = "H",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1497, uiMapID = 1458, x = 84.2, y = 72.4 },
-        },
-      },
       [4585] = {
         faction = "H",
         roles = { vendor = true },
@@ -11470,27 +11346,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1537, uiMapID = 1455, x = 49, y = 43.6 },
         },
       },
-      [5165] = {
-        faction = "A",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1537, uiMapID = 1455, x = 51.2, y = 16 },
-        },
-      },
-      [5166] = {
-        faction = "A",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1537, uiMapID = 1455, x = 52.2, y = 13.4 },
-        },
-      },
-      [5167] = {
-        faction = "A",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1537, uiMapID = 1455, x = 51.4, y = 15 },
-        },
-      },
       [5174] = {
         faction = "A",
         roles = { quest_giver = true, trainer = true },
@@ -11666,13 +11521,6 @@ ns.Data._loaders["entities"] = function()
         roles = { quest_giver = true, trainer = true },
         spawns = {
           { areaID = 1, uiMapID = 1426, x = 50, y = 50.2 },
-        },
-      },
-      [5398] = {
-        faction = "N",
-        roles = { quest_giver = true, vendor = true },
-        spawns = {
-          { areaID = 405, uiMapID = 1443, x = 74.8, y = 68 },
         },
       },
       [5399] = {
@@ -13088,13 +12936,6 @@ ns.Data._loaders["entities"] = function()
         roles = { quest_giver = true },
         spawns = {
           { areaID = 400, uiMapID = 1441, x = 79.4, y = 75.6 },
-        },
-      },
-      [6707] = {
-        faction = "N",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 36, uiMapID = 1416, x = 84.4, y = 80.2 },
         },
       },
       [6730] = {
@@ -15238,13 +15079,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 46, uiMapID = 1428, x = 57.9, y = 58 },
         },
       },
-      [9778] = {
-        faction = "N",
-        roles = { drop = true },
-        spawns = {
-          { areaID = 46, uiMapID = 1428, x = 28.8, y = 62.2 },
-        },
-      },
       [9816] = {
         areaIDs = { 1583 },
         classification = 3,
@@ -17205,11 +17039,9 @@ ns.Data._loaders["entities"] = function()
         },
       },
       [13019] = {
+        areaIDs = { 405 },
         faction = "N",
         roles = { drop = true },
-        spawns = {
-          { areaID = 405, uiMapID = 1443, x = 55.2, y = 30 },
-        },
       },
       [13036] = {
         areaIDs = { 2557 },
@@ -17263,13 +17095,6 @@ ns.Data._loaders["entities"] = function()
         classification = 1,
         faction = "N",
         roles = { drop = true },
-      },
-      [13283] = {
-        faction = "A",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 1519, uiMapID = 1453, x = 80.2, y = 68.8 },
-        },
       },
       [13285] = {
         areaIDs = { 2557 },
@@ -17581,7 +17406,7 @@ ns.Data._loaders["entities"] = function()
         areaIDs = { 2677 },
         classification = 1,
         faction = "N",
-        roles = { drop = true, trainer = true },
+        roles = { drop = true },
       },
       [14425] = {
         classification = 4,
@@ -18404,13 +18229,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 1377, uiMapID = 1451, x = 19.8, y = 32.4 },
         },
       },
-      [15909] = {
-        faction = "N",
-        roles = { quest_giver = true },
-        spawns = {
-          { areaID = 493, uiMapID = 1450, x = 53.4, y = 35.2 },
-        },
-      },
       [15936] = {
         areaIDs = { 3456 },
         classification = 3,
@@ -18587,13 +18405,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 130, uiMapID = 1421, x = 35, y = 16.6 },
         },
       },
-      [205729] = {
-        faction = "H",
-        roles = { quest_giver = true, trainer = true },
-        spawns = {
-          { areaID = 1638, uiMapID = 1456, x = 39.4, y = 64.4 },
-        },
-      },
       [210107] = {
         classification = 4,
         faction = "N",
@@ -18711,13 +18522,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 16, uiMapID = 1447, x = 52, y = 49.2 },
-        },
-      },
-      [244511] = {
-        faction = "H",
-        roles = { quest_giver = true },
-        spawns = {
-          { areaID = 616, uiMapID = 2482, x = 13.8, y = 54.4 },
         },
       },
       [244512] = {
@@ -19160,13 +18964,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 16593, uiMapID = 2521, x = 63.8, y = 80.4 },
         },
       },
-      [252379] = {
-        faction = "N",
-        roles = { trainer = true },
-        spawns = {
-          { areaID = 16593, uiMapID = 2521, x = 59.8, y = 72.4 },
-        },
-      },
       [252380] = {
         faction = "N",
         roles = { trainer = true, vendor = true },
@@ -19238,13 +19035,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 405, uiMapID = 1443, x = 69.8, y = 77.8 },
         },
       },
-      [253166] = {
-        faction = "N",
-        roles = { quest_giver = true },
-        spawns = {
-          { areaID = 405, uiMapID = 1443, x = 34.4, y = 87 },
-        },
-      },
       [253214] = {
         areaIDs = { 16667 },
         classification = 1,
@@ -19275,13 +19065,6 @@ ns.Data._loaders["entities"] = function()
         roles = { drop = true },
         spawns = {
           { areaID = 16651, uiMapID = 2652, x = 44.1, y = 86.1 },
-        },
-      },
-      [253395] = {
-        faction = "A",
-        roles = { quest_giver = true },
-        spawns = {
-          { areaID = 40, uiMapID = 1436, x = 51.4, y = 32.2 },
         },
       },
       [254089] = {
@@ -20390,13 +20173,6 @@ ns.Data._loaders["entities"] = function()
           { areaID = 616, uiMapID = 2482, x = 32.2, y = 60.8 },
         },
       },
-      [265788] = {
-        faction = "H",
-        roles = { quest_giver = true },
-        spawns = {
-          { areaID = 616, uiMapID = 2482, x = 13.6, y = 53 },
-        },
-      },
       [265809] = {
         faction = "H",
         roles = { quest_giver = true },
@@ -20430,13 +20206,6 @@ ns.Data._loaders["entities"] = function()
         roles = { quest_giver = true },
         spawns = {
           { areaID = 1, uiMapID = 1426, x = 46.6, y = 53.8 },
-        },
-      },
-      [265866] = {
-        faction = "A",
-        roles = { quest_giver = true },
-        spawns = {
-          { areaID = 616, uiMapID = 2482, x = 15.4, y = 50.8 },
         },
       },
       [265944] = {
@@ -22084,14 +21853,6 @@ ns.Data._loaders["entities"] = function()
         questID = 862,
         startNpcIDs = { 3443 },
       },
-      [1371] = {
-        endNpcIDs = { 5398 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 30,
-        questID = 1371,
-        startNpcIDs = { 5398 },
-      },
       [1487] = {
         endNpcIDs = { 5768 },
         faction = "N",
@@ -22635,27 +22396,6 @@ ns.Data._loaders["entities"] = function()
         startNpcIDs = { 10305 },
       },
       [8869] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 50, questID = 8869, startNpcIDs = _E },
-      [8877] = {
-        endNpcIDs = { 15909 },
-        faction = "N",
-        isRepeatable = false,
-        questID = 8877,
-        startNpcIDs = { 15909 },
-      },
-      [8878] = {
-        endNpcIDs = { 15909 },
-        faction = "N",
-        isRepeatable = false,
-        questID = 8878,
-        startNpcIDs = { 15909 },
-      },
-      [8882] = {
-        endNpcIDs = { 15909 },
-        faction = "N",
-        isRepeatable = false,
-        questID = 8882,
-        startNpcIDs = { 15909 },
-      },
       [9178] = {
         endNpcIDs = { 16283 },
         faction = "N",
@@ -22861,7 +22601,6 @@ ns.Data._loaders["entities"] = function()
       [9244] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 60, questID = 9244, startNpcIDs = _E },
       [9245] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 60, questID = 9245, startNpcIDs = _E },
       [9246] = { endNpcIDs = _E, faction = "N", isRepeatable = false, minLevel = 60, questID = 9246, startNpcIDs = _E },
-      [9249] = { endNpcIDs = _E, faction = "N", isRepeatable = false, questID = 9249, startNpcIDs = _E },
       [82656] = {
         endNpcIDs = { 7854 },
         faction = "N",
@@ -22878,14 +22617,6 @@ ns.Data._loaders["entities"] = function()
         questID = 82657,
         startNpcIDs = { 7852 },
       },
-      [86812] = {
-        endNpcIDs = { 235906 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 47,
-        questID = 86812,
-        startNpcIDs = { 235906 },
-      },
       [86927] = {
         endNpcIDs = { 235906 },
         faction = "N",
@@ -22901,22 +22632,6 @@ ns.Data._loaders["entities"] = function()
         minLevel = 45,
         questID = 89013,
         startNpcIDs = { 240482 },
-      },
-      [90854] = {
-        endNpcIDs = { 244511 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 54,
-        questID = 90854,
-        startNpcIDs = { 244511 },
-      },
-      [91564] = {
-        endNpcIDs = { 249968 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 54,
-        questID = 91564,
-        startNpcIDs = { 249968 },
       },
       [91608] = {
         endNpcIDs = { 3621 },
@@ -22942,14 +22657,6 @@ ns.Data._loaders["entities"] = function()
         questID = 92110,
         startNpcIDs = { 249713 },
       },
-      [92189] = {
-        endNpcIDs = { 265866 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 54,
-        questID = 92189,
-        startNpcIDs = { 265866 },
-      },
       [92433] = {
         endNpcIDs = { 249968 },
         faction = "N",
@@ -22957,14 +22664,6 @@ ns.Data._loaders["entities"] = function()
         minLevel = 54,
         questID = 92433,
         startNpcIDs = { 249968 },
-      },
-      [92553] = {
-        endNpcIDs = { 251905 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 4,
-        questID = 92553,
-        startNpcIDs = { 251905 },
       },
       [92754] = {
         endNpcIDs = { 253097 },
@@ -22982,22 +22681,6 @@ ns.Data._loaders["entities"] = function()
         questID = 92755,
         startNpcIDs = { 253096 },
       },
-      [92814] = {
-        endNpcIDs = { 253140 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 30,
-        questID = 92814,
-        startNpcIDs = { 253140 },
-      },
-      [92817] = {
-        endNpcIDs = { 253166 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 30,
-        questID = 92817,
-        startNpcIDs = { 253166 },
-      },
       [92818] = {
         endNpcIDs = { 253163 },
         faction = "N",
@@ -23005,22 +22688,6 @@ ns.Data._loaders["entities"] = function()
         minLevel = 30,
         questID = 92818,
         startNpcIDs = { 253163 },
-      },
-      [92911] = {
-        endNpcIDs = { 253395 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 8,
-        questID = 92911,
-        startNpcIDs = { 253395 },
-      },
-      [93317] = {
-        endNpcIDs = { 257006 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 4,
-        questID = 93317,
-        startNpcIDs = { 257006 },
       },
       [94004] = {
         endNpcIDs = { 257281 },
@@ -24096,30 +23763,6 @@ ns.Data._loaders["entities"] = function()
         questID = 94360,
         startNpcIDs = _E,
       },
-      [95121] = {
-        endNpcIDs = { 259962 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 36,
-        questID = 95121,
-        startNpcIDs = { 259962 },
-      },
-      [95162] = {
-        endNpcIDs = { 256728 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 38,
-        questID = 95162,
-        startNpcIDs = { 256728 },
-      },
-      [95217] = {
-        endNpcIDs = { 1698 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 7,
-        questID = 95217,
-        startNpcIDs = { 1698 },
-      },
       [95697] = {
         endNpcIDs = { 3368 },
         faction = "N",
@@ -24127,22 +23770,6 @@ ns.Data._loaders["entities"] = function()
         minLevel = 24,
         questID = 95697,
         startNpcIDs = { 3368 },
-      },
-      [95769] = {
-        endNpcIDs = { 265788 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 54,
-        questID = 95769,
-        startNpcIDs = { 265788 },
-      },
-      [96026] = {
-        endNpcIDs = { 263440 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 38,
-        questID = 96026,
-        startNpcIDs = { 263440 },
       },
       [96031] = {
         endNpcIDs = { 1466 },
@@ -24215,30 +23842,6 @@ ns.Data._loaders["entities"] = function()
         minLevel = 4,
         questID = 96102,
         startNpcIDs = { 265809 },
-      },
-      [96622] = {
-        endNpcIDs = { 244512 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 54,
-        questID = 96622,
-        startNpcIDs = { 244512 },
-      },
-      [96874] = {
-        endNpcIDs = { 10266 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 6,
-        questID = 96874,
-        startNpcIDs = { 10266 },
-      },
-      [96875] = {
-        endNpcIDs = { 5811 },
-        faction = "N",
-        isRepeatable = false,
-        minLevel = 6,
-        questID = 96875,
-        startNpcIDs = { 5811 },
       },
       [97119] = {
         endNpcIDs = { 244512 },
