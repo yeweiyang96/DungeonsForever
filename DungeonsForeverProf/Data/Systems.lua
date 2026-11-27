@@ -197,7 +197,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262975 = {
         campKey = "camp_spell_1262975",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273097 },
         icon = 134385,
         itemID = 279948,
         profession = "mining",
@@ -215,7 +215,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262978 = {
         campKey = "camp_spell_1262978",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273102 },
         icon = 2066011,
         itemID = 279957,
         profession = "cooking",
@@ -283,7 +283,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262990 = {
         campKey = "camp_spell_1262990",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273141 },
         icon = 1053359,
         itemID = 279965,
         profession = "fishing",
@@ -301,7 +301,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262996 = {
         campKey = "camp_spell_1262996",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273105 },
         icon = 463860,
         itemID = 279940,
         profession = "first-aid",
@@ -319,7 +319,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1262998 = {
         campKey = "camp_spell_1262998",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273119 },
         icon = 132930,
         itemID = 279966,
         profession = "fishing",
@@ -337,7 +337,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263001 = {
         campKey = "camp_spell_1263001",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273118 },
         icon = 4626285,
         itemID = 279951,
         profession = "first-aid",
@@ -355,7 +355,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263005 = {
         campKey = "camp_spell_1263005",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273085 },
         icon = 3566827,
         itemID = 279970,
         profession = "alchemy",
@@ -374,7 +374,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263031 = {
         campKey = "camp_spell_1263031",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273096 },
         icon = 4559256,
         itemID = 279941,
         profession = "leatherworking",
@@ -393,7 +393,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263032 = {
         campKey = "camp_spell_1263032",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273099 },
         icon = 4777839,
         itemID = 279943,
         profession = "tailoring",
@@ -412,7 +412,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263034 = {
         campKey = "camp_spell_1263034",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273092 },
         icon = 1336885,
         itemID = 279949,
         profession = "engineering",
@@ -430,7 +430,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263041 = {
         campKey = "camp_spell_1263041",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273086 },
         icon = 1020356,
         itemID = 279988,
         profession = "blacksmithing",
@@ -449,7 +449,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263056 = {
         campKey = "camp_spell_1263056",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273103 },
         icon = 986482,
         itemID = 279985,
         profession = "enchanting",
@@ -466,7 +466,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263067 = {
         campKey = "camp_spell_1263067",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273115 },
         icon = 629055,
         itemID = 279982,
         profession = "cooking",
@@ -501,7 +501,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263071 = {
         campKey = "camp_spell_1263071",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273122 },
         icon = 5931157,
         itemID = 279952,
         profession = "mining",
@@ -520,7 +520,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263073 = {
         campKey = "camp_spell_1263073",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273113 },
         icon = 4374708,
         itemID = 279955,
         profession = "blacksmithing",
@@ -539,7 +539,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263078 = {
         campKey = "camp_spell_1263078",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273112 },
         icon = 4777830,
         itemID = 279990,
         profession = "alchemy",
@@ -558,7 +558,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263079 = {
         campKey = "camp_spell_1263079",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273121 },
         icon = 3622223,
         itemID = 279945,
         profession = "leatherworking",
@@ -577,7 +577,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263080 = {
         campKey = "camp_spell_1263080",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273124 },
         icon = 2067081,
         itemID = 279959,
         profession = "tailoring",
@@ -596,7 +596,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263082 = {
         campKey = "camp_spell_1263082",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273116 },
         icon = 3622205,
         itemID = 279987,
         profession = "enchanting",
@@ -615,7 +615,7 @@ ns.Data._loaders["systems"] = function()
       },
       camp_spell_1263083 = {
         campKey = "camp_spell_1263083",
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273117 },
         icon = 4624728,
         itemID = 279989,
         profession = "engineering",
@@ -652,7 +652,7 @@ ns.Data._loaders["systems"] = function()
       camp_spell_1283400 = {
         campKey = "camp_spell_1283400",
         campfireCapacity = 5,
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273087 },
         icon = 7808148,
         itemID = 279961,
         profession = "cooking",
@@ -669,7 +669,7 @@ ns.Data._loaders["systems"] = function()
       camp_spell_1291341 = {
         campKey = "camp_spell_1291341",
         campfireCapacity = 10,
-        formulaItemIDs = _E,
+        formulaItemIDs = { 273101 },
         icon = 7808148,
         itemID = 279974,
         profession = "cooking",

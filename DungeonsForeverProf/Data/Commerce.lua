@@ -1448,7 +1448,6 @@ ns.Data._loaders["commerce"] = function()
         [252462] = { avgDailySold = 1654.2, grade = "S", score = 95.4, status = "watching" },
         [252463] = { avgDailySold = 1110.2, grade = "S", score = 93.8, status = "watching" },
         [252467] = { avgDailySold = 134, grade = "A", score = 79.1, status = "watching" },
-        [252479] = { avgDailySold = 100.9, grade = "A", score = 78.5, status = "watching" },
         [252482] = { avgDailySold = 207.2, grade = "S", score = 85.6, status = "watching" },
         [252487] = { avgDailySold = 772.6, grade = "S", score = 95.5, status = "watching" },
         [252488] = { avgDailySold = 667.8, grade = "S", score = 92.6, status = "watching" },

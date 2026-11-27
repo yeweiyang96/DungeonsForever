@@ -2596,8 +2596,8 @@ ns.Data._recipeLoaders["cooking"] = function()
         outputKind = "item",
         profession = "cooking",
         reagents = {
-          { count = 2, itemID = 6889 },
-          { count = 1, itemID = 10284 },
+          { count = 1, itemID = 2678 },
+          { count = 1, itemID = 6889 },
         },
         skillLineID = 185,
         spellID = 1270633,
@@ -2619,7 +2619,7 @@ ns.Data._recipeLoaders["cooking"] = function()
         profession = "cooking",
         reagents = {
           { count = 1, itemID = 2675 },
-          { count = 1, itemID = 10284 },
+          { count = 1, itemID = 2678 },
         },
         skillLineID = 185,
         spellID = 1270635,

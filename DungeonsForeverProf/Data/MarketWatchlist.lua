@@ -1080,7 +1080,6 @@ ns.Data._loaders["marketWatchlist"] = function()
         [252462] = { avgDailySold = 1654.2, grade = "S", status = "watching" },
         [252463] = { avgDailySold = 1110.2, grade = "S", status = "watching" },
         [252467] = { avgDailySold = 134, grade = "A", status = "watching" },
-        [252479] = { avgDailySold = 100.9, grade = "A", status = "watching" },
         [252482] = { avgDailySold = 207.2, grade = "S", status = "watching" },
         [252487] = { avgDailySold = 772.6, grade = "S", status = "watching" },
         [252488] = { avgDailySold = 667.8, grade = "S", status = "watching" },

@@ -4221,7 +4221,7 @@ ns.Data._recipeLoaders["engineering"] = function()
         outputKind = "item",
         profession = "engineering",
         reagents = {
-          { count = 1, itemID = 2570 },
+          { count = 1, itemID = 2589 },
           { count = 1, itemID = 249409 },
         },
         skillLineID = 202,
@@ -4263,7 +4263,7 @@ ns.Data._recipeLoaders["engineering"] = function()
         outputKind = "item",
         profession = "engineering",
         reagents = {
-          { count = 1, itemID = 2570 },
+          { count = 1, itemID = 2589 },
           { count = 1, itemID = 2840 },
           { count = 2, itemID = 4357 },
           { count = 1, itemID = 4359 },
