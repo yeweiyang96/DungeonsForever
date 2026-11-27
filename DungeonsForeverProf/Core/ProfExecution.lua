@@ -2947,9 +2947,9 @@ end
 XP.RegisterDelegate = registerDelegate
 registerDelegate()
 
-local initFn = ns.Init or (type(gns) == "table" and gns.Init) or nil
-if type(initFn) == "function" then
-    initFn(XP.Initialize)
+local b = ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+if b and type(b.OnInit) == "function" then
+    b.OnInit(XP.Initialize)
 else
     XP.Initialize()
 end

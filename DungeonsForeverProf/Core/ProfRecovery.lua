@@ -2,10 +2,23 @@ local _, ns = ...
 if type(ns) ~= "table" then ns = _G.DF_NS or {} end
 local gns = _G.DF_NS
 
-local R = { REVISION = 1 }
+local R = { REVISION = 2 }
 ns.ProfRecovery = R
 if type(gns) == "table" and gns ~= ns then
     gns.ProfRecovery = R
+end
+
+local whitelistProvider = nil
+
+function R.RegisterWhitelistProvider(fn)
+    if fn == nil or type(fn) == "function" then
+        whitelistProvider = fn
+        if type(R.Invalidate) == "function" then R.Invalidate() end
+    end
+end
+
+function R.GetWhitelistProvider()
+    return whitelistProvider
 end
 
 local floor, min, max, ceil = math.floor, math.min, math.max, math.ceil
@@ -26,8 +39,8 @@ local function getPricingCfg()
     return ns.PricingConfig or (type(gns) == "table" and gns.PricingConfig) or nil
 end
 
-local function getHost()
-    return ns.ProfHost or (type(gns) == "table" and gns.ProfHost) or nil
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
 end
 
 local function getRouteAuto()
@@ -35,11 +48,11 @@ local function getRouteAuto()
 end
 
 local function getAuctionBridge()
-    return ns.AuctionBridge or (type(gns) == "table" and gns.AuctionBridge) or nil
+    return ns.ProfAuctionScanner or ns.AuctionBridge or (type(gns) == "table" and (gns.ProfAuctionScanner or gns.AuctionBridge)) or nil
 end
 
-local function getEasyBridge()
-    return ns.EasyBridge or (type(gns) == "table" and gns.EasyBridge) or nil
+local function getPE()
+    return ns.ProfPricingEngine or (type(gns) == "table" and gns.ProfPricingEngine) or nil
 end
 
 local function cfgNum(key, fallback)
@@ -57,8 +70,6 @@ local function cfgTbl(key)
     end
     return nil
 end
-
-R.PROFIT_CAP = cfgNum("PROFIT_CAP", 20)
 
 local function copy(t, tick)
     if type(t) ~= "table" then return t end
@@ -93,11 +104,10 @@ end
 
 local requestedItems = {}
 local function requestMissingItem(id)
-    local host = getHost()
-    local dg = type(host) == "table" and host.DG or nil
-    if not requestedItems[id] and type(dg) == "table" and type(dg.RequestItem) == "function" then
+    local b = getBridge()
+    if not requestedItems[id] and b and type(b.RequestItem) == "function" then
         requestedItems[id] = true
-        pcall(dg.RequestItem, id)
+        b.RequestItem(id)
     end
 end
 
@@ -148,61 +158,15 @@ local function bound(id, s)
 end
 
 function R.RobustFloorPrice(levels)
-    if type(levels) ~= "table" or #levels == 0 then return nil end
-    local rows = {}
-    local total = 0
-    for i = 1, #levels do
-        local row = levels[i]
-        local p = type(row) == "table" and (row[1] or row.price) or nil
-        local q = type(row) == "table" and (row[2] or row.quantity or row.qty) or nil
-        if amount(p) and p > 0 and amount(q) and q > 0 then
-            local qi = floor(q)
-            if qi > 0 then
-                rows[#rows + 1] = { p, qi }
-                total = total + qi
-            end
-        end
+    local pe = getPE()
+    if pe and type(pe.RobustReferencePrice) == "function" then
+        return pe.RobustReferencePrice(levels)
     end
-    if #rows == 0 or total <= 0 then return nil end
-    table.sort(rows, function(a, b) return a[1] < b[1] end)
-
-    local rf = cfgTbl("ROBUST_FLOOR") or {}
-    local minSupply = type(rf.minConfidenceSupply) == "number" and rf.minConfidenceSupply or 1
-    if total < minSupply then return nil end
-
-    local ff = cfgTbl("FISHING_FILTER") or {}
-    local startIdx = 1
-    local remTotal = total
-    if ff.enabled ~= false and total >= (ff.minTotalSupplyForTrim or 5) then
-        local maxLots = ff.headMaxLotCount or 3
-        local maxShare = ff.headMaxQtyShare or 0.05
-        local cliffRatio = ff.cliffPriceRatio or 0.60
-        local trimmed = 0
-        while startIdx < #rows and trimmed < maxLots do
-            local lot = rows[startIdx]
-            local nextLot = rows[startIdx + 1]
-            if (lot[2] / total) <= maxShare and (lot[1] / nextLot[1]) <= cliffRatio then
-                remTotal = remTotal - lot[2]
-                startIdx = startIdx + 1
-                trimmed = trimmed + 1
-            else
-                break
-            end
-        end
+    local b = getAuctionBridge()
+    if b and type(b.RobustReferencePrice) == "function" then
+        return b.RobustReferencePrice(levels)
     end
-
-    local pct = type(rf.defaultPercentile) == "number" and rf.defaultPercentile or 0.125
-    local targetQty = max(1, ceil(remTotal * pct))
-    local cum = 0
-    local chosen = rows[startIdx][1]
-    for i = startIdx, #rows do
-        cum = cum + rows[i][2]
-        if cum >= targetQty then
-            chosen = rows[i][1]
-            break
-        end
-    end
-    return floor(chosen)
+    return nil
 end
 
 function R.Fee(snapshot, opts)
@@ -212,14 +176,11 @@ function R.Fee(snapshot, opts)
     if type(client) == "table" and client.reliable == true and percent(client.percent) then
         return client.percent, client.source or "client", false
     end
-    local auct = _G.Auctionator
-    local constants = type(auct) == "table" and auct.Constants
-    local factor = type(constants) == "table" and constants.AfterAHCut
-    if amount(factor) and factor <= 1 then return (1 - factor) * 100, "auctionator-reference", true end
-    local eb = getEasyBridge()
-    local cut = eb and eb.AuctionCut and eb.AuctionCut()
-    if amount(cut) and cut >= 0 and cut < 100 then return cut, "easyauction-reference", true end
-    return nil, "unknown", false
+    local defFee = cfgNum("DEFAULT_RECOVERY_FEE_PCT", 5)
+    if percent(defFee) then
+        return defFee, "default", true
+    end
+    return 5, "default", true
 end
 
 local function livePrice(id)
@@ -234,23 +195,312 @@ local function livePrice(id)
     return nil
 end
 
-local function rerate(q, fee, residualMass)
-    local residMass = cfgNum("RESIDUAL_MASS", 0.7)
+function R.ResolveMarketCode(snapshot, opts)
+    opts = opts or {}
+    local DS = getDS()
+    local norm = DS and type(DS.NormalizeMarketCode) == "function" and DS.NormalizeMarketCode or nil
+    for _, cand in ipairs({
+        opts.marketCode,
+        opts.marketKey,
+        snapshot and snapshot.marketCode,
+        snapshot and snapshot.marketKey,
+    }) do
+        if type(cand) == "string" and cand ~= "" then
+            return (norm and norm(cand)) or cand
+        end
+    end
+    local b = getAuctionBridge()
+    if b and type(b.MarketKey) == "function" then
+        local ok, mk = pcall(b.MarketKey)
+        if ok and type(mk) == "string" and mk ~= "" then
+            local code = norm and norm(mk) or nil
+            if code then return code end
+        end
+    end
+    local side = snapshot and snapshot.faction
+    if not side and type(_G.UnitFactionGroup) == "function" then
+        local ok, f = pcall(_G.UnitFactionGroup, "player")
+        if ok then side = f end
+    end
+    local fSlug = (side == "H" or side == "Horde" or side == "部落") and "horde"
+        or ((side == "A" or side == "Alliance" or side == "联盟") and "alliance")
+        or nil
+    if fSlug then
+        local isPvp = true
+        local gr = _G.C_GameRules
+        local ids = type(_G.Enum) == "table" and _G.Enum.GameRule or nil
+        if type(gr) == "table" and type(gr.IsGameRuleActive) == "function" and type(ids) == "table" and ids.PvPRuleset ~= nil then
+            local ok, v = pcall(gr.IsGameRuleActive, ids.PvPRuleset)
+            if ok and type(v) == "boolean" then isPvp = v end
+        end
+        return "cn/" .. (isPvp and "pvp-" or "pve-") .. fSlug
+    end
+    return nil
+end
+
+local MARKET_LABELS = {
+    ["cn/pvp-horde"] = "国服 PVP 部落",
+    ["cn/pvp-alliance"] = "国服 PVP 联盟",
+    ["cn/pve-horde"] = "国服 PVE 部落",
+    ["cn/pve-alliance"] = "国服 PVE 联盟",
+}
+
+function R.MarketCodeLabel(code)
+    if type(code) ~= "string" or code == "" then return "当前市场" end
+    return MARKET_LABELS[code] or code
+end
+
+function R.WeeklyEntry(itemID, snapshot, opts, marketCode)
+    if type(itemID) ~= "number" or itemID <= 0 then return nil end
+    local mkt = marketCode or R.ResolveMarketCode(snapshot, opts)
+    local DS = getDS()
+    if mkt and DS and type(DS.MarketEasySellEntry) == "function" then
+        return DS.MarketEasySellEntry(itemID, mkt)
+    end
+    if mkt and DS and type(DS.IsMarketEasySell) == "function" and DS.IsMarketEasySell(itemID, mkt) then
+        return { status = "recommended" }
+    end
+    return nil
+end
+
+function R.GetCustomRecipes(slug)
+    local DB = getDB()
+    if type(DB) == "table" and type(DB.GetCustomRecoveryRecipes) == "function" then
+        return DB.GetCustomRecoveryRecipes(slug)
+    end
+    return {}
+end
+
+function R.IsCustomRecipe(slug, spellID)
+    local DB = getDB()
+    if type(DB) == "table" and type(DB.IsCustomRecoveryRecipe) == "function" then
+        return DB.IsCustomRecoveryRecipe(slug, spellID)
+    end
+    return false
+end
+
+function R.SetCustomRecipe(slug, spellID, enabled)
+    local DB = getDB()
+    local res = false
+    if type(DB) == "table" and type(DB.SetCustomRecoveryRecipe) == "function" then
+        res = DB.SetCustomRecoveryRecipe(slug, spellID, enabled)
+    end
+    R.Invalidate()
+    local ra = getRouteAuto()
+    if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate) end
+    return res
+end
+
+function R.ToggleCustomRecipe(slug, spellID)
+    return R.SetCustomRecipe(slug, spellID, not R.IsCustomRecipe(slug, spellID))
+end
+
+function R.GetExcludedItems(slug)
+    local DB = getDB()
+    if type(DB) == "table" and type(DB.GetExcludedRecoveryItems) == "function" then
+        return DB.GetExcludedRecoveryItems(slug)
+    end
+    return {}
+end
+
+function R.IsExcludedItem(slug, itemID)
+    local DB = getDB()
+    if type(DB) == "table" and type(DB.IsExcludedRecoveryItem) == "function" then
+        return DB.IsExcludedRecoveryItem(slug, itemID)
+    end
+    return false
+end
+
+function R.SetExcludedItem(slug, itemID, excluded)
+    local DB = getDB()
+    local res = false
+    if type(DB) == "table" and type(DB.SetExcludedRecoveryItem) == "function" then
+        res = DB.SetExcludedRecoveryItem(slug, itemID, excluded)
+    end
+    R.Invalidate()
+    local ra = getRouteAuto()
+    if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate) end
+    return res
+end
+
+function R.ToggleExcludedItem(slug, itemID)
+    return R.SetExcludedItem(slug, itemID, not R.IsExcludedItem(slug, itemID))
+end
+
+function R.ResetOverrides(slug)
+    local DB = getDB()
+    local res = false
+    if type(DB) == "table" and type(DB.ResetRecoveryOverrides) == "function" then
+        res = DB.ResetRecoveryOverrides(slug)
+    end
+    R.Invalidate()
+    local ra = getRouteAuto()
+    if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate) end
+    return res
+end
+
+function R.CustomRecipeItems(slug, snapshot, opts)
+    opts = opts or {}
+    local spellSet = {}
+    if type(opts.customRecoveryRecipes) == "table" then
+        for k, v in pairs(opts.customRecoveryRecipes) do
+            local sid = tonumber(k)
+            if sid and sid > 0 and v then spellSet[floor(sid)] = true end
+        end
+    else
+        for sid, v in pairs(R.GetCustomRecipes(slug)) do
+            if v then spellSet[sid] = true end
+        end
+    end
+    local items = {}
+    if type(opts.customRecoveryItems) == "table" then
+        for k, v in pairs(opts.customRecoveryItems) do
+            local iid = tonumber(k)
+            if iid and iid > 0 and v then items[floor(iid)] = true end
+        end
+    end
+    if next(spellSet) ~= nil then
+        for _, r in ipairs((snapshot and snapshot.recipes) or {}) do
+            local sid = r.spell or r.spellID
+            local iid = r.item or r.outputItemID
+            if sid and spellSet[sid] and type(iid) == "number" and iid > 0 then
+                items[iid] = sid
+            end
+        end
+        local DS = getDS()
+        if DS and type(slug) == "string" and slug ~= "" then
+            local bucket = (type(DS.EnsureRecipes) == "function" and DS.EnsureRecipes(slug))
+                or (type(DS.Recipes) == "function" and DS.Recipes(slug))
+                or nil
+            local rmap = type(bucket) == "table" and bucket.recipes or nil
+            if type(rmap) == "table" then
+                for sid in pairs(spellSet) do
+                    local r = rmap[sid]
+                    local iid = type(r) == "table" and (r.outputItemID or r.item or r.makes or r[2]) or nil
+                    if type(iid) == "number" and iid > 0 and not items[iid] then
+                        items[iid] = sid
+                    end
+                end
+            end
+        end
+    end
+    return items
+end
+
+function R.IsAuctionRecoveryEligible(id, snapshot, opts, customItems, marketCode, excludedItems)
+    if type(id) ~= "number" or id <= 0 then return false, nil end
+    opts = opts or {}
+    if opts.auctionRecoveryEnabled ~= true then
+        return false, nil
+    end
+    local slug = opts.profession or (snapshot and (snapshot.targetProfession or snapshot.slug))
+    if customItems == nil then
+        customItems = R.CustomRecipeItems(slug, snapshot, opts)
+    end
+    if customItems and customItems[id] then
+        return true, "custom"
+    end
+    if excludedItems == nil then
+        if type(opts.excludedRecoveryItems) == "table" then
+            excludedItems = opts.excludedRecoveryItems
+        else
+            excludedItems = R.GetExcludedItems(slug)
+        end
+    end
+    if type(excludedItems) == "table" and (excludedItems[id] or excludedItems[tostring(id)]) then
+        return false, "excluded"
+    end
+    local explicit = opts.auctionRecoveryWhitelist or (snapshot and snapshot.auctionRecoveryWhitelist)
+    if type(explicit) == "table" then
+        if explicit[id] or explicit[tostring(id)] then
+            return true, "watchlist"
+        end
+    end
+    local mkt = marketCode or R.ResolveMarketCode(snapshot, opts)
+    if type(whitelistProvider) == "function" then
+        local ok, res = pcall(whitelistProvider, id, mkt, snapshot, opts)
+        if ok and res then
+            return true, "provider"
+        end
+    end
+    local DS = getDS()
+    if mkt and DS and type(DS.IsMarketEasySell) == "function" and DS.IsMarketEasySell(id, mkt) then
+        return true, "watchlist"
+    end
+    return false, nil
+end
+
+function R.WhitelistSignature(slug, snapshot, opts)
+    opts = opts or {}
+    if opts.auctionRecoveryEnabled ~= true then
+        return "ah-rec:off"
+    end
+    local mkt = R.ResolveMarketCode(snapshot, opts) or "unknown"
+    local DB = getDB()
+    local DS = getDS()
+    local customFp = ""
+    if type(opts.customRecoveryRecipes) == "table" then
+        local ks = {}
+        for k, v in pairs(opts.customRecoveryRecipes) do
+            if v then ks[#ks + 1] = tonumber(k) or 0 end
+        end
+        table.sort(ks)
+        local ps = {}
+        for i = 1, #ks do ps[i] = tostring(ks[i]) end
+        customFp = table.concat(ps, ",")
+    elseif type(DB) == "table" and type(DB.CustomRecoveryFingerprint) == "function" then
+        customFp = DB.CustomRecoveryFingerprint(slug)
+    end
+    local exOptFp = ""
+    if type(opts.excludedRecoveryItems) == "table" then
+        local ks = {}
+        for k, v in pairs(opts.excludedRecoveryItems) do
+            if v then ks[#ks + 1] = tonumber(k) or 0 end
+        end
+        table.sort(ks)
+        local ps = {}
+        for i = 1, #ks do ps[i] = tostring(ks[i]) end
+        exOptFp = table.concat(ps, ",")
+    end
+    local expFp = ""
+    local explicit = opts.auctionRecoveryWhitelist or (snapshot and snapshot.auctionRecoveryWhitelist)
+    if type(explicit) == "table" then
+        local ks = {}
+        for k, v in pairs(explicit) do
+            if v then ks[#ks + 1] = tonumber(k) or tostring(k) end
+        end
+        table.sort(ks, function(a, b) return tostring(a) < tostring(b) end)
+        local ps = {}
+        for i = 1, #ks do ps[i] = tostring(ks[i]) end
+        expFp = table.concat(ps, ",")
+    end
+    local updatedAt = (DS and type(DS.MarketWatchlistUpdatedAt) == "function" and DS.MarketWatchlistUpdatedAt()) or ""
+    return table.concat({ "ah-rec:on", mkt, updatedAt, customFp, exOptFp, expFp }, ":")
+end
+
+local function rerate(q, fee, _unused, auctionAllowed, eligibilitySource)
     local minGain = cfgNum("RERATE_MIN_AH_GAIN_COPPER", 100)
-    local minSupply = cfgNum("RERATE_MIN_SUPPLY", 40)
-    q.auctionNet = q.auctionGross and fee and floor(q.auctionGross * (residualMass and residMass or 1) * (100 - fee) / 100 + 1e-9) or nil
+    q.auctionNet = q.auctionGross and fee and floor(q.auctionGross * (100 - fee) / 100 + 1e-9) or nil
     q.assumedAllSold = nil
     q.missing = nil
     q.unsellable = q.bound and true or nil
+    q.auctionEligible = (auctionAllowed == true and not q.bound) or nil
+    q.eligibilitySource = q.auctionEligible and eligibilitySource or nil
     if q.npcUnit ~= nil then
         q.unit = q.npcUnit
         q.source = "npc"
-        if not q.bound and q.auctionNet and q.auctionNet - q.npcUnit > minGain
-            and (q.supplyReliable or q.supplyEstimated) and (q.quantity or 0) >= minSupply then
-            q.unit = q.auctionNet
-            q.source = "ah"
-            q.assumedAllSold = true
+        if q.auctionEligible and q.auctionNet then
+            local threshold = (eligibilitySource == "custom") and 0 or minGain
+            if q.auctionNet - q.npcUnit > threshold then
+                q.unit = q.auctionNet
+                q.source = "ah"
+                q.assumedAllSold = true
+            end
         end
+    elseif q.auctionEligible and q.auctionNet and q.auctionNet > 0 then
+        q.unit = q.auctionNet
+        q.source = "ah"
+        q.assumedAllSold = true
     else
         q.unit = 0
         q.source = "unknown"
@@ -260,7 +510,7 @@ local function rerate(q, fee, residualMass)
 end
 R.Rerate = rerate
 
-local function quote(id, s, fee, stamp, live, residualMass)
+local function quote(id, s, fee, stamp, live, auctionAllowed, eligibilitySource)
     local npc
     if not live and type(s.sellPrices) == "table" and s.sellPrices[id] ~= nil then
         npc = s.sellPrices[id]
@@ -295,20 +545,6 @@ local function quote(id, s, fee, stamp, live, residualMass)
         and ((b and type(b.ForceExpiredActive) == "function" and b.ForceExpiredActive())
             or (age and age >= 0 and age <= maxAge)) or false
     local estimated = false
-    if not reliable then
-        local history
-        if live then
-            history = b and type(b.GetAuctionSupplyHistory) == "function" and b.GetAuctionSupplyHistory(id)
-        else
-            history = s.auctionSupplyHistory and s.auctionSupplyHistory[id]
-        end
-        if type(history) == "table" and history.source == "auctionator-history"
-            and amount(history.quantity) and history.quantity == floor(history.quantity)
-            and amount(history.observedAt) and history.observedAt > 0 and history.observedAt <= stamp then
-            supply = history
-            estimated = true
-        end
-    end
     local blocked = bound(id, live and {} or s)
     local net = auction and fee and floor(auction * (100 - fee) / 100 + 1e-9) or nil
     local q = {
@@ -327,13 +563,13 @@ local function quote(id, s, fee, stamp, live, residualMass)
         market = supply and supply.market,
         batch = supply and supply.batch,
     }
-    return rerate(q, fee, residualMass)
+    return rerate(q, fee, nil, auctionAllowed, eligibilitySource)
 end
 
 local identityFields = {
     "npcUnit", "auctionGross", "auctionNet", "bound", "quantity", "observedAt",
     "complete", "ownerExcluded", "supplySource", "supplyReliable", "supplyEstimated",
-    "market", "batch", "source", "unit", "missing",
+    "market", "batch", "source", "unit", "missing", "auctionEligible", "eligibilitySource",
 }
 local function identity(q)
     local p = {}
@@ -359,21 +595,28 @@ function R.Options(opts, slug)
     local ps = prof and type(slug) == "string" and type(prof.professionSettings) == "table" and prof.professionSettings[slug] or nil
 
     local function readOverride(k)
+        if type(DB) == "table" and type(DB.SettingRaw) == "function" then
+            local ok, v = pcall(DB.SettingRaw, k, slug)
+            if ok and v ~= nil then return v end
+        end
         if type(ps) == "table" and ps[k] ~= nil then return ps[k] end
         if type(prof) == "table" and prof[k] ~= nil then return prof[k] end
-        if type(DB) == "table" and type(DB.Get) ~= "function" and type(DB.SettingRaw) == "function" then
-            return DB.SettingRaw(k, slug)
-        end
         return nil
     end
 
     if opts.recoveryEnabled == nil then
-        local v = readOverride("recoveryEnabled")
-        if v ~= nil then opts.recoveryEnabled = v end
+        if opts.scheme == "net" then
+            opts.recoveryEnabled = true
+        elseif opts.scheme == "cost" or opts.scheme == "fixed" or opts.scheme == "fishing" then
+            opts.recoveryEnabled = false
+        else
+            local v = readOverride("recoveryEnabled")
+            if v ~= nil then opts.recoveryEnabled = v == true else opts.recoveryEnabled = false end
+        end
     end
-    if opts.residualMass == nil then
-        local v = readOverride("autoResidualMass")
-        if v ~= nil then opts.residualMass = v end
+    if opts.auctionRecoveryEnabled == nil then
+        local v = readOverride("auctionRecoveryEnabled")
+        if v ~= nil then opts.auctionRecoveryEnabled = v == true else opts.auctionRecoveryEnabled = false end
     end
     if opts.recoveryFeePercent == nil then
         local v = readOverride("recoveryFeePercent")
@@ -386,22 +629,31 @@ function R.Capture(snapshot, opts, tick)
     snapshot = snapshot or {}
     local slug = (opts and (opts.profession or opts.slug)) or snapshot.slug or snapshot.targetProfession
     opts = R.Options(opts, slug)
+    local wlSig = R.WhitelistSignature(slug, snapshot, opts)
+    local marketCode = R.ResolveMarketCode(snapshot, opts)
+    local customItems = R.CustomRecipeItems(slug, snapshot, opts)
+    local excludedItems = (type(opts.excludedRecoveryItems) == "table" and opts.excludedRecoveryItems)
+        or R.GetExcludedItems(slug)
     if snapshot.recovery and snapshot.recovery.revision == R.REVISION and snapshot.recovery.quotes then
         local old = snapshot.recovery
         if opts.recoveryEnabled ~= nil and opts.recoveryEnabled ~= old.enabled
-            or percent(opts.recoveryFeePercent) and opts.recoveryFeePercent ~= old.feePercent
-            or opts.residualMass ~= nil and opts.residualMass ~= old.residualMass then
+            or (opts.auctionRecoveryEnabled == true) ~= (old.auctionRecoveryEnabled == true)
+            or wlSig ~= old.whitelistSignature
+            or percent(opts.recoveryFeePercent) and opts.recoveryFeePercent ~= old.feePercent then
             local r = copy(old, tick)
             if opts.recoveryEnabled ~= nil then r.enabled = opts.recoveryEnabled ~= false end
-            if opts.residualMass ~= nil then r.residualMass = opts.residualMass == true end
+            r.auctionRecoveryEnabled = opts.auctionRecoveryEnabled == true
+            r.whitelistSignature = wlSig
+            r.marketCode = marketCode
             if percent(opts.recoveryFeePercent) then
                 r.feePercent = opts.recoveryFeePercent
                 r.feeSource = "manual"
                 r.feeReference = false
                 r.feeOverride = opts.recoveryFeePercent
             end
-            for _, q in pairs(r.quotes) do
-                rerate(q, r.feePercent, r.residualMass)
+            for id, q in pairs(r.quotes) do
+                local okAH, eligSrc = R.IsAuctionRecoveryEligible(id, snapshot, opts, customItems, marketCode, excludedItems)
+                rerate(q, r.feePercent, nil, okAH, eligSrc)
                 if tick then tick() end
             end
             snapshot.recovery = r
@@ -412,7 +664,9 @@ function R.Capture(snapshot, opts, tick)
     local r = {
         revision = R.REVISION,
         enabled = opts.recoveryEnabled ~= false,
-        residualMass = opts.residualMass == true,
+        auctionRecoveryEnabled = opts.auctionRecoveryEnabled == true,
+        whitelistSignature = wlSig,
+        marketCode = marketCode,
         feePercent = fee,
         feeSource = source,
         feeReference = reference,
@@ -424,7 +678,8 @@ function R.Capture(snapshot, opts, tick)
     for _, recipe in ipairs(snapshot.recipes or {}) do
         local itemID = recipe.item or recipe.outputItemID
         if type(itemID) == "number" and itemID > 0 and (recipe.count or 1) > 0 then
-            r.quotes[itemID] = quote(itemID, snapshot, fee, r.capturedAt, false, r.residualMass)
+            local okAH, eligSrc = R.IsAuctionRecoveryEligible(itemID, snapshot, opts, customItems, marketCode, excludedItems)
+            r.quotes[itemID] = quote(itemID, snapshot, fee, r.capturedAt, false, okAH, eligSrc)
             if r.quotes[itemID].missing then requestMissingItem(itemID) end
         end
         if tick then tick() end
@@ -450,7 +705,7 @@ function R.StateRevenue(state, snapshot)
 end
 
 function R.PriorityRevenue(state, snapshot)
-    return revenue(state, snapshot, state and state.priorityProduced)
+    return revenue(state, snapshot, state and (state.priorityProduced or state.produced))
 end
 
 function R.Objective(state, snapshot)
@@ -461,15 +716,30 @@ end
 local function changed(result, opts)
     local old = result and result.recoverySnapshot
     if not old or result.recoveryRevision ~= R.REVISION then return true end
-    opts = opts or { recoveryEnabled = old.enabled, recoveryFeePercent = old.feeOverride, residualMass = old.residualMass }
-    if (opts.recoveryEnabled ~= false) ~= old.enabled or (opts.residualMass == true) ~= (old.residualMass == true) then
+    local slug = (opts and (opts.profession or opts.slug)) or (result and (result.profession or result.slug))
+    opts = opts or {
+        profession = slug,
+        recoveryEnabled = old.enabled,
+        auctionRecoveryEnabled = old.auctionRecoveryEnabled,
+        recoveryFeePercent = old.feeOverride,
+    }
+    opts = R.Options(copy(opts), slug)
+    if (opts.recoveryEnabled ~= false) ~= old.enabled
+        or (opts.auctionRecoveryEnabled == true) ~= (old.auctionRecoveryEnabled == true) then
         return true
     end
     local supplied = opts.snapshot
+    local wlSig = R.WhitelistSignature(slug, supplied, opts)
+    if wlSig ~= (old.whitelistSignature or "ah-rec:off") then
+        return true
+    end
     if supplied and supplied.recovery and supplied.recovery.revision == R.REVISION then
         local current = supplied.recovery
-        if current.enabled ~= old.enabled or current.feePercent ~= old.feePercent
-            or current.feeSource ~= old.feeSource or current.residualMass ~= old.residualMass then
+        if current.enabled ~= old.enabled
+            or (current.auctionRecoveryEnabled == true) ~= (old.auctionRecoveryEnabled == true)
+            or current.whitelistSignature ~= old.whitelistSignature
+            or current.feePercent ~= old.feePercent
+            or current.feeSource ~= old.feeSource then
             return true
         end
         for id, q in pairs(old.quotes or {}) do
@@ -479,8 +749,11 @@ local function changed(result, opts)
     end
     local fee, source, reference = R.Fee(supplied or { auctionFee = old.clientFee }, opts)
     if fee ~= old.feePercent or source ~= old.feeSource or reference ~= old.feeReference then return true end
+    local mkt = R.ResolveMarketCode(supplied, opts)
+    local customItems = R.CustomRecipeItems(slug, supplied, opts)
     for id, q in pairs(old.quotes or {}) do
-        if identity(quote(id, supplied or {}, fee, now(), not supplied, opts.residualMass)) ~= identity(q) then
+        local okAH, eligSrc = R.IsAuctionRecoveryEligible(id, supplied, opts, customItems, mkt)
+        if identity(quote(id, supplied or {}, fee, now(), not supplied, okAH, eligSrc)) ~= identity(q) then
             return true
         end
     end
@@ -499,8 +772,11 @@ function R.Changed(result, opts)
     local stamp = _G.GetTime()
     local bridge = getAuctionBridge()
     local revision = bridge and type(bridge.SupplyRevision) == "function" and bridge.SupplyRevision() or 0
-    local signature = tostring(opts and opts.recoveryEnabled) .. ":" .. tostring(opts and opts.recoveryFeePercent)
-        .. ":" .. tostring(opts and opts.residualMass) .. ":" .. tostring(revision)
+    local slug = (opts and (opts.profession or opts.slug)) or result.profession or result.slug
+    local wlSig = R.WhitelistSignature(slug, nil, R.Options(copy(opts or {}), slug))
+    local signature = tostring(opts and opts.recoveryEnabled) .. ":" .. tostring(opts and opts.auctionRecoveryEnabled)
+        .. ":" .. tostring(opts and opts.recoveryFeePercent)
+        .. ":" .. wlSig .. ":" .. tostring(revision)
     local previous = changedMemo[result]
     if previous and previous.signature == signature and stamp >= previous.at and (stamp - previous.at) < 1 then
         return previous.value
@@ -640,18 +916,19 @@ end
 function R.Apply(result, snapshot, tick)
     if not result then return end
     snapshot = snapshot or {}
-    local profitCap = cfgNum("PROFIT_CAP", 20)
-    R.PROFIT_CAP = profitCap
     local frozen = R.Capture(snapshot, {
         profession = result.profession or snapshot.slug or snapshot.targetProfession,
+        scheme = result.scheme,
         recoveryEnabled = result.recoveryEnabled,
-        residualMass = snapshot.recovery and snapshot.recovery.residualMass,
+        auctionRecoveryEnabled = result.auctionRecoveryEnabled ~= nil and result.auctionRecoveryEnabled
+            or (snapshot.recovery and snapshot.recovery.auctionRecoveryEnabled),
     }, tick)
     result.recoveryRevision = R.REVISION
     result.recoveryEnabled = frozen.enabled
-    result.residualMass = frozen.residualMass
-    result.profitPriorityLimit = profitCap
-    result.recoveryOptimized = frozen.enabled and result.scheme == "cheapest" and not result.procurement or false
+    result.auctionRecoveryEnabled = frozen.auctionRecoveryEnabled == true
+    result.recoveryMarketCode = frozen.marketCode
+    result.recoveryWhitelistSignature = frozen.whitelistSignature
+    result.recoveryOptimized = frozen.enabled and (result.scheme == "net" or result.scheme == "cheapest") and not result.procurement or false
     result.recoverySnapshot = copy(frozen, tick)
     result.recoveryQuoteMissing = 0
     for _, q in pairs(frozen.quotes or {}) do

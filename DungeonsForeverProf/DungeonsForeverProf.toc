@@ -24,6 +24,7 @@ Data\Locales\zhTW.lua
 Data\Entities.lua
 Data\Systems.lua
 Data\Commerce.lua
+Data\MarketWatchlist.lua
 Data\Sources.lua
 Data\Guides.lua
 Data\Recipes\alchemy.lua
@@ -42,6 +43,8 @@ Config\ProfessionsConfig.lua
 Config\PricingConfig.lua
 Config\SolverConfig.lua
 Config\UIConfig.lua
+Core\ProfHostBridge.lua
+Core\ProfPricingEngine.lua
 Core\ProfDB.lua
 Core\ProfPaint.lua
 Core\ProfDataStore.lua
@@ -50,6 +53,8 @@ Core\ProfAPI.lua
 Core\ProfPolicies.lua
 Core\ProfRouteAuto.lua
 Core\ProfCDWatch.lua
+Core\ProfTooltips.lua
+Core\ProfMainExports.lua
 Core\ProfessionUI.lua
 Core\ProfFollow.lua
 Core\ProfSupply.lua
@@ -67,5 +72,5 @@ Core\ProfGathering.lua
 Core\ProfExecution.lua
 Core\ProfSolverRun.lua
 Core\ProfRoutePlans.lua
-Core\EasyAuctionBridge.lua
-Core\AuctionatorBridge.lua
+Core\ProfAuctionScanner.lua
+Core\ProfShoppingExport.lua

@@ -48,6 +48,134 @@ local function getRecovery()
     return ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery) or nil
 end
 
+local AREA_TO_FACTION_BY_SIDE = {
+    A = {
+        [1519] = 72,
+        [12]   = 72,
+        [40]   = 72,
+        [44]   = 72,
+        [10]   = 72,
+        [1537] = 47,
+        [1]    = 47,
+        [38]   = 47,
+        [1657] = 69,
+        [141]  = 69,
+        [148]  = 69,
+    },
+    H = {
+        [1637] = 76,
+        [14]   = 76,
+        [17]   = 76,
+        [1638] = 81,
+        [215]  = 81,
+        [1497] = 68,
+        [85]   = 68,
+        [130]  = 68,
+    },
+    N = {
+        [33]   = 21,
+        [440]  = 369,
+        [618]  = 577,
+        [17]   = 470,
+        [139]  = 529,
+        [1377] = 609,
+    },
+}
+
+local TRACKED_DISCOUNT_FACTIONS = {
+    21, 47, 59, 68, 69, 72, 76, 81, 369, 470, 529, 576, 577, 609, 2586, 2587, 2740, 2758, 2787,
+}
+
+local function discountCfg()
+    local cfg = getPricingCfg()
+    return type(cfg) == "table" and type(cfg.VENDOR_DISCOUNT) == "table" and cfg.VENDOR_DISCOUNT or {}
+end
+
+function M.LegacyBarterRank(ctx)
+    local dcfg = discountCfg()
+    local maxRank = tonumber(dcfg.barterMaxRank) or 2
+    if type(ctx) == "table" and ctx.barterRank ~= nil then
+        local r = tonumber(ctx.barterRank)
+        if r and r == r then
+            return math.max(0, math.min(maxRank, math.floor(r)))
+        end
+    end
+    local ct = _G.C_Traits
+    if type(ct) == "table" and type(ct.GetConfigIDByTreeID) == "function" and type(ct.GetNodeInfo) == "function" then
+        local treeID = tonumber(dcfg.legacyTreeID) or 1187
+        local nodeID = tonumber(dcfg.barterNodeID) or 110286
+        local okCfg, configID = pcall(ct.GetConfigIDByTreeID, treeID)
+        if okCfg and type(configID) == "number" and configID > 0 then
+            local okNode, info = pcall(ct.GetNodeInfo, configID, nodeID)
+            if okNode and type(info) == "table" then
+                local rank = tonumber(info.activeRank or info.currentRank or info.ranksPurchased) or 0
+                return math.max(0, math.min(maxRank, math.floor(rank)))
+            end
+        end
+    end
+    return 0
+end
+
+function M.LegacyBarterMultiplier(ctx)
+    local dcfg = discountCfg()
+    local perRank = tonumber(dcfg.barterPerRank) or 0.05
+    local rank = M.LegacyBarterRank(ctx)
+    local mult = 1 - rank * perRank
+    if mult < 0 then mult = 0 end
+    if mult > 1 then mult = 1 end
+    return mult
+end
+
+function M.FactionStanding(factionID, ctx)
+    if type(factionID) ~= "number" or factionID <= 0 then return nil end
+    if type(ctx) == "table" and type(ctx.reputations) == "table" then
+        local entry = ctx.reputations[factionID]
+        if type(entry) == "table" then
+            return tonumber(entry.reaction or entry.standingID or entry.rank)
+        elseif type(entry) == "number" then
+            return entry
+        end
+        if ctx.strict == true then return nil end
+    end
+    local cr = _G.C_Reputation
+    if type(cr) == "table" and type(cr.GetFactionDataByID) == "function" then
+        local ok, data = pcall(cr.GetFactionDataByID, factionID)
+        if ok and type(data) == "table" and type(data.reaction) == "number" then
+            return data.reaction
+        end
+    end
+    if type(_G.GetFactionInfoByID) == "function" then
+        local ok, _, _, standing = pcall(_G.GetFactionInfoByID, factionID)
+        if ok and type(standing) == "number" then
+            return standing
+        end
+    end
+    return nil
+end
+
+function M.FactionDiscountMultiplier(factionID, ctx)
+    if type(factionID) ~= "number" or factionID <= 0 then return 1.0 end
+    local standing = M.FactionStanding(factionID, ctx)
+    local dcfg = discountCfg()
+    local minStanding = tonumber(dcfg.honoredStanding) or 6
+    local discount = tonumber(dcfg.honoredDiscount) or 0.10
+    if type(standing) == "number" and standing >= minStanding then
+        return math.max(0, 1 - discount)
+    end
+    return 1.0
+end
+
+local function firstReputationFaction(conds)
+    if type(conds) ~= "table" then return nil end
+    for i = 1, #conds do
+        local c = conds[i]
+        if type(c) == "table" and c.kind == "reputation" and type(c.factionID) == "number" and c.factionID > 0 then
+            return c.factionID
+        end
+    end
+    return nil
+end
+
 local function Int(v, minVal)
     return type(v) == "number" and v == v and v >= minVal and v < math.huge and v == math.floor(v)
 end
@@ -200,6 +328,190 @@ local function compareOffers(a, b)
     return (a.sourceOrder or 0) < (b.sourceOrder or 0)
 end
 
+local function resolveNpcFactionID(npc, offer, npcFaction)
+    if type(offer) == "table" and type(offer.npcFactionID) == "number" and offer.npcFactionID > 0 then
+        return offer.npcFactionID
+    end
+    if type(npc) == "table" and type(npc.npcFactionID) == "number" and npc.npcFactionID > 0 then
+        return npc.npcFactionID
+    end
+    local condFid = firstReputationFaction(type(offer) == "table" and offer.conditions or nil)
+        or firstReputationFaction(type(npc) == "table" and npc.accessConditions or nil)
+    if condFid then return condFid end
+
+    local side = npcFaction or normalizeFaction(type(npc) == "table" and npc.faction or nil) or "N"
+    local areaMap = AREA_TO_FACTION_BY_SIDE[side]
+    if type(areaMap) == "table" and type(npc) == "table" then
+        if type(npc.spawns) == "table" then
+            for i = 1, #npc.spawns do
+                local sp = npc.spawns[i]
+                local aid = type(sp) == "table" and sp.areaID or nil
+                if type(aid) == "number" and areaMap[aid] then
+                    return areaMap[aid]
+                end
+            end
+        end
+        if type(npc.areaIDs) == "table" then
+            for i = 1, #npc.areaIDs do
+                local aid = npc.areaIDs[i]
+                if type(aid) == "number" and areaMap[aid] then
+                    return areaMap[aid]
+                end
+            end
+        end
+    end
+    return nil
+end
+
+M.ResolveNpcFactionID = resolveNpcFactionID
+
+function M.DiscountSignature(ctx)
+    local dcfg = discountCfg()
+    local minStanding = tonumber(dcfg.honoredStanding) or 6
+    local parts = { "b=" .. tostring(M.LegacyBarterRank(ctx)) }
+    for i = 1, #TRACKED_DISCOUNT_FACTIONS do
+        local fid = TRACKED_DISCOUNT_FACTIONS[i]
+        local st = M.FactionStanding(fid, ctx)
+        if type(st) == "number" and st >= minStanding then
+            parts[#parts + 1] = tostring(fid) .. "=1"
+        end
+    end
+    return table.concat(parts, ";")
+end
+
+local accessTracked
+local function collectAccessTracked()
+    if accessTracked then return accessTracked end
+    local DS = getDS()
+    if not DS or type(DS.Ensure) ~= "function" then return nil end
+    local qMap, iMap, fMap = {}, {}, {}
+    local function scanConds(conds)
+        if type(conds) ~= "table" then return end
+        for i = 1, #conds do
+            local c = conds[i]
+            if type(c) == "table" then
+                if c.kind == "quest" and type(c.questID) == "number" and c.questID > 0 then
+                    qMap[c.questID] = true
+                elseif c.kind == "questGroup" and type(c.groups) == "table" then
+                    for _, g in ipairs(c.groups) do
+                        for _, qid in ipairs(g or {}) do
+                            if type(qid) == "number" and qid > 0 then qMap[qid] = true end
+                        end
+                    end
+                elseif (c.kind == "hasItem" or c.kind == "sourceItem") then
+                    local iid = c.itemID or c.value
+                    if type(iid) == "number" and iid > 0 then iMap[iid] = true end
+                elseif c.kind == "reputation" and type(c.factionID) == "number" and c.factionID > 0 then
+                    fMap[c.factionID] = true
+                end
+            end
+        end
+    end
+    local ent = DS.Ensure("entities")
+    if type(ent) == "table" and type(ent.npcs) == "table" then
+        for _, npc in pairs(ent.npcs) do
+            if type(npc) == "table" then scanConds(npc.accessConditions) end
+        end
+    end
+    local src = DS.Ensure("sources")
+    if type(src) == "table" and type(src.vendorOffers) == "table" then
+        for _, vo in pairs(src.vendorOffers) do
+            if type(vo) == "table" and type(vo.offers) == "table" then
+                for _, off in ipairs(vo.offers) do
+                    if type(off) == "table" then scanConds(off.conditions) end
+                end
+            end
+        end
+    end
+    local function sortedKeys(t)
+        local out = {}
+        for k in pairs(t) do out[#out + 1] = k end
+        table.sort(out)
+        return out
+    end
+    accessTracked = {
+        quests = sortedKeys(qMap),
+        items = sortedKeys(iMap),
+        factions = sortedKeys(fMap),
+    }
+    return accessTracked
+end
+
+local function questFlagState(id, ctx)
+    local Cond = getCond()
+    if Cond and type(Cond.EvaluateQuestGroups) == "function" then
+        return Cond.EvaluateQuestGroups({ { id } }, ctx)
+    end
+    if type(ctx) == "table" and (ctx.completedQuests ~= nil or ctx.quests ~= nil) then
+        local q = ctx.completedQuests or ctx.quests
+        return q and q[id]
+    end
+    local cq = _G.C_QuestLog
+    if type(cq) == "table" and type(cq.IsQuestFlaggedCompleted) == "function" then
+        local ok, v = pcall(cq.IsQuestFlaggedCompleted, id)
+        if ok then return v end
+    end
+    return nil
+end
+
+local function itemPresentState(id, ctx)
+    if type(ctx) == "table" and (ctx.ownedSourceItems ~= nil or ctx.ownedItems ~= nil) then
+        local map = ctx.ownedSourceItems or ctx.ownedItems
+        local n = map and map[id]
+        if type(n) == "number" then return n >= 1 end
+        return nil
+    end
+    local ci = _G.C_Item
+    if type(ci) == "table" and type(ci.GetItemCount) == "function" then
+        local ok, n = pcall(ci.GetItemCount, id, false, false)
+        if ok and type(n) == "number" then return n >= 1 end
+    end
+    return nil
+end
+
+function M.AccessSignature(ctx)
+    local tracked = collectAccessTracked()
+    if not tracked then return "" end
+    local parts = {}
+    for i = 1, #tracked.quests do
+        local id = tracked.quests[i]
+        parts[#parts + 1] = "q:" .. tostring(id) .. "=" .. tostring(questFlagState(id, ctx))
+    end
+    for i = 1, #tracked.items do
+        local id = tracked.items[i]
+        parts[#parts + 1] = "i:" .. tostring(id) .. "=" .. tostring(itemPresentState(id, ctx))
+    end
+    for i = 1, #tracked.factions do
+        local fid = tracked.factions[i]
+        parts[#parts + 1] = "f:" .. tostring(fid) .. "=" .. tostring(M.FactionStanding(fid, ctx))
+    end
+    return table.concat(parts, ";")
+end
+
+function M.ApplyVendorDiscounts(itemID, rawPrice, bundleSize, npc, offer, ctx, npcFaction)
+    local DS = getDS()
+    local item = DS and type(DS.Item) == "function" and DS.Item(itemID) or nil
+    local db2Buy = type(item) == "table" and type(item.buyPriceCopper) == "number" and item.buyPriceCopper > 0 and item.buyPriceCopper or nil
+    local npcFactionID = resolveNpcFactionID(npc, offer, npcFaction)
+    local barterMult = M.LegacyBarterMultiplier(ctx)
+    local repMult = 1.0
+    local basePrice = db2Buy or rawPrice
+    if db2Buy then
+        repMult = M.FactionDiscountMultiplier(npcFactionID, ctx)
+    end
+    if type(basePrice) ~= "number" or basePrice ~= basePrice or basePrice < 0 or basePrice >= math.huge then
+        return nil, nil, nil, 1.0, barterMult, npcFactionID
+    end
+    local discounted
+    if basePrice == 0 then
+        discounted = 0
+    else
+        discounted = math.max(1, math.floor(basePrice * repMult * barterMult + 0.5))
+    end
+    local unit = discounted / (bundleSize or 1)
+    return discounted, unit, basePrice, repMult, barterMult, npcFactionID
+end
+
 local function normalizeOffer(itemID, offer, index, DS, Cond, ctx, playerFaction, checkAccess, commonVendorCount)
     if type(offer) ~= "table" then return nil end
     local rawNpc = offer.npcID ~= nil and offer.npcID or offer.id
@@ -244,8 +556,20 @@ local function normalizeOffer(itemID, offer, index, DS, Cond, ctx, playerFaction
 
     local isMixed = (#currencies > 0 or #costItems > 0 or offer.hasExtendedCost == true)
     local rawPrice = offer.priceCopper ~= nil and offer.priceCopper or offer.price
-    local hasPrice = type(rawPrice) == "number" and rawPrice == rawPrice and rawPrice >= 0 and rawPrice < math.huge
-    local unitCopper = hasPrice and (rawPrice / bundleSize) or nil
+    local hasRawPrice = type(rawPrice) == "number" and rawPrice == rawPrice and rawPrice >= 0 and rawPrice < math.huge
+
+    local finalPrice, unitCopper, basePriceCopper, repMult, barterMult, npcFactionID
+    if not isMixed then
+        finalPrice, unitCopper, basePriceCopper, repMult, barterMult, npcFactionID =
+            M.ApplyVendorDiscounts(itemID, hasRawPrice and rawPrice or nil, bundleSize, npc, offer, ctx, npcFaction)
+    elseif hasRawPrice then
+        finalPrice = rawPrice
+        unitCopper = rawPrice / bundleSize
+        basePriceCopper = rawPrice
+        repMult = 1.0
+        barterMult = 1.0
+    end
+    local hasPrice = type(finalPrice) == "number" and finalPrice == finalPrice and finalPrice >= 0 and finalPrice < math.huge
 
     local areaID
     if npc and type(npc.spawns) == "table" and type(npc.spawns[1]) == "table" then
@@ -260,8 +584,12 @@ local function normalizeOffer(itemID, offer, index, DS, Cond, ctx, playerFaction
         itemID = itemID,
         optionIndex = offer.optionIndex,
         sourceOrder = index,
-        priceCopper = hasPrice and rawPrice or nil,
-        price = hasPrice and rawPrice or nil,
+        priceCopper = hasPrice and finalPrice or nil,
+        price = hasPrice and finalPrice or nil,
+        basePriceCopper = basePriceCopper,
+        repMultiplier = repMult,
+        barterMultiplier = barterMult,
+        npcFactionID = npcFactionID,
         unitCopper = unitCopper,
         bundleSize = bundleSize,
         quantity = bundleSize,
@@ -366,6 +694,10 @@ function M.VendorPrice(itemID, ctx)
             local cand = {
                 priceCopper = e.priceCopper,
                 unitCopper = e.unitCopper,
+                basePriceCopper = e.basePriceCopper,
+                repMultiplier = e.repMultiplier,
+                barterMultiplier = e.barterMultiplier,
+                npcFactionID = e.npcFactionID,
                 bundleSize = e.bundleSize,
                 npcID = e.npcID,
                 optionIndex = e.optionIndex,
@@ -513,6 +845,15 @@ local function attachVendorOffersProxy()
     end
 end
 
+local lastDiscountSig = nil
+local lastAccessSig = nil
+
+local function syncAccessBaseline()
+    if M.built and lastAccessSig == nil then
+        lastAccessSig = M.AccessSignature()
+    end
+end
+
 function M.Ensure()
     attachVendorOffersProxy()
     if M.built then return end
@@ -532,6 +873,7 @@ function M.Ensure()
     end
     M.itemCount = items
     M.offerCount = offers
+    syncAccessBaseline()
 end
 
 function M.Flush()
@@ -601,3 +943,66 @@ M.RegisterDelegate = registerDelegate
 
 attachVendorOffersProxy()
 registerDelegate()
+
+if type(_G.CreateFrame) == "function" then
+    local DISCOUNT_EVENTS = {
+        PLAYER_ENTERING_WORLD = true,
+        UPDATE_FACTION = true,
+        TRAIT_CONFIG_UPDATED = true,
+        TRAIT_CONFIG_LIST_UPDATED = true,
+    }
+    local ACCESS_EVENTS = {
+        UPDATE_FACTION = true,
+        QUEST_TURNED_IN = true,
+        QUEST_LOG_UPDATE = true,
+        QUEST_ACCEPTED = true,
+        BAG_UPDATE_DELAYED = true,
+        PLAYER_EQUIPMENT_CHANGED = true,
+    }
+    local okF, frame = pcall(_G.CreateFrame, "Frame")
+    if okF and type(frame) == "table" then
+        for _, ev in ipairs({
+            "PLAYER_ENTERING_WORLD",
+            "UPDATE_FACTION",
+            "TRAIT_CONFIG_UPDATED",
+            "TRAIT_CONFIG_LIST_UPDATED",
+            "QUEST_TURNED_IN",
+            "QUEST_LOG_UPDATE",
+            "QUEST_ACCEPTED",
+            "BAG_UPDATE_DELAYED",
+            "PLAYER_EQUIPMENT_CHANGED",
+            "MERCHANT_CLOSED",
+        }) do
+            pcall(frame.RegisterEvent, frame, ev)
+        end
+        frame:SetScript("OnEvent", function(_, event)
+            local dirty = false
+            if not event or DISCOUNT_EVENTS[event] then
+                local sig = M.DiscountSignature()
+                if sig ~= lastDiscountSig then
+                    lastDiscountSig = sig
+                    dirty = true
+                end
+            end
+            if M.built then
+                if event == "MERCHANT_CLOSED" then
+                    dirty = true
+                elseif ACCESS_EVENTS[event] then
+                    local asig = M.AccessSignature()
+                    if lastAccessSig ~= nil and asig ~= lastAccessSig then
+                        dirty = true
+                    end
+                    lastAccessSig = asig
+                end
+            end
+            if dirty then
+                M.Invalidate()
+                local ra = getRouteAuto()
+                if ra and type(ra.NotifyPricesChanged) == "function" then
+                    pcall(ra.NotifyPricesChanged)
+                end
+            end
+        end)
+        M.EventFrame = frame
+    end
+end

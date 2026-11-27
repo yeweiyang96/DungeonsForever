@@ -82,7 +82,6 @@ Core\MapOpenMap.lua
 Core\MapWindow.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
-Core\VendorPriceDB.lua
 Core\AboutSupport.lua
 Core\MainFrame.lua
 Core\UpdatePopup.lua

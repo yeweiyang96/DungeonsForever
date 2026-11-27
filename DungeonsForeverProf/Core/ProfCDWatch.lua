@@ -34,8 +34,13 @@ local function getRouteAuto()
     return ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
 end
 
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+end
+
 local function getZoneHint()
-    return ns.ZoneHint or (type(gns) == "table" and gns.ZoneHint) or nil
+    local b = getBridge()
+    return b and type(b.ZoneHint) == "function" and b.ZoneHint() or nil
 end
 
 local function getProfModule()
@@ -43,8 +48,8 @@ local function getProfModule()
 end
 
 local function tr(key)
-    local L = ns.L or (type(gns) == "table" and gns.L)
-    if type(L) == "table" and L[key] ~= nil then return L[key] end
+    local b = getBridge()
+    if b and type(b.L) == "function" then return b.L(key) end
     return key
 end
 

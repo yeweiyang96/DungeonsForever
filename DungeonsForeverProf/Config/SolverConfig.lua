@@ -4,36 +4,42 @@ if type(ns) ~= "table" then ns = _G.DF_NS or {} end
 local C = {
   CAP = 300,
   DEFAULT_TARGET = 300,
-  MAX_PER_RECIPE = 3,
-  DIFFICULTY_RATES = {
-    G_YELLOW = 0.5,
-    G_GREEN = 0.05,
+  MAX_PER_RECIPE = 1,
+  ROUTE_RISK_MODES = {
+    ORDER = { "expected", "quantile" },
+    DEFAULT = "expected",
+    CONFIDENCE = 0.90,
+    LABELS = {
+      expected = "期望最优",
+      quantile = "保守选路",
+    },
   },
-  GREEN_BUDGET_MODES = {
-    optimistic = {
-      mode = "optimistic",
-      greenRateFactor = 1.0,
-      missLog = nil,
-      expectedCraftsOnly = true,
+  RESERVE_MODES = {
+    ORDER = { "safe", "expected" },
+    DEFAULT = "safe",
+    CONFIDENCE = 0.90,
+    LABELS = {
+      safe = "一次备足(90%)",
+      expected = "按期望采购",
     },
-    balanced = {
-      mode = "balanced",
-      greenRateFactor = 1.0,
-      missLog = math.log(0.20),
-    },
-    pessimistic = {
-      mode = "pessimistic",
-      greenRateFactor = 0.5,
-      missLog = math.log(0.05),
-    },
+  },
+  REGULARIZATION = {
+    switchPenaltyCopper = 300,
+    switchCostRatio = 0.35,
+    minSegmentPoints = 5,
+    minIntermediatePoints = 3,
+    forbidRecipeRepeat = true,
+    highCostFailAversion = 0.55,
+    highCostGreenThresholdCopper = 10000,
+    maxSubgradientIters = 28,
+    maxBnbNodes = 250,
   },
   OBJECTIVES = {
-    ORDER = { "cheapest", "matcost", "crafts", "optim" },
+    ORDER = { "cost", "net" },
+    DEFAULT = "cost",
     LABELS = {
-      cheapest = "最省钱",
-      matcost = "材料成本",
-      crafts = "次数最少",
-      optim = "乐观计数",
+      cost = "最低成本",
+      net = "回血净花费",
     },
   },
   COROUTINE_BUDGET = {
@@ -41,18 +47,7 @@ local C = {
     maxFrontier = 20000,
     rebatchCpuLimitMs = 2000,
     rebatchWorkLimit = 400000,
-    speedPresets = {
-      fast = { budgetMs = 8 },
-      turbo = { budgetMs = 60, tickClockStride = 16 },
-    },
-    adaptiveSlice = {
-      lowFpsThreshold = 25,
-      lowFpsMs = 0.6,
-      frameFraction = 0.09,
-      minMs = 0.8,
-      maxMs = 2.25,
-      defaultFps = 60,
-    },
+    frameBudgetMs = 8,
     paintCapMs = 4,
     routeTickMs = 1,
     yieldThresholdMs = 3,

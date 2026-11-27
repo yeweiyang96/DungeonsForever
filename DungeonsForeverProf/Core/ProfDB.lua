@@ -39,12 +39,11 @@ DB.SETTING_DEF = {
     autoExcludeQuestVendors = true,
     autoExcludeInstanceVendors = true,
     autoExcludeInstanceTrainers = true,
-    autoScheme = "cheapest",
+    autoScheme = "cost",
     autoSecondaryLeveling = false,
-    autoResidualMass = false,
-    autoSkillBudget = "balanced",
-    computationSpeed = "fast",
-    recoveryEnabled = false,
+    autoRouteRiskMode = "expected",
+    autoReserveMode = "safe",
+    auctionRecoveryEnabled = false,
     recoveryFeePercent = (type(pricingCfg) == "table" and type(pricingCfg.DEFAULT_RECOVERY_FEE_PCT) == "number" and pricingCfg.DEFAULT_RECOVERY_FEE_PCT) or 5,
     autoCraftTools = true,
     autoFromCurrent = true,
@@ -77,10 +76,10 @@ DB.PROF_SETTING_KEYS = {
     autoFromCurrent = true,
     autoStartSkill = true,
     autoCraftTools = true,
-    recoveryEnabled = true,
+    auctionRecoveryEnabled = true,
     recoveryFeePercent = true,
-    autoResidualMass = true,
-    autoSkillBudget = true,
+    autoRouteRiskMode = true,
+    autoReserveMode = true,
 }
 
 local RETIRED_SETTINGS = {
@@ -88,9 +87,19 @@ local RETIRED_SETTINGS = {
     autoAllowUnknownLearning = true,
     autoSkipUnpricedFormulas = true,
     autoNoFormula = true,
-    autoReserveMode = true,
+    autoSkillBudget = true,
     autoAllowBindOnPickupFormulas = true,
+    autoResidualMass = true,
+    computationSpeed = true,
 }
+
+local function normalizeScheme(scheme, recoveryOn)
+    if scheme == "net" then return "net" end
+    if recoveryOn == true and (scheme == nil or scheme == "cheapest" or scheme == "cost") then
+        return "net"
+    end
+    return "cost"
+end
 
 local function ensureTable(parent, key)
     if type(parent[key]) ~= "table" then
@@ -109,6 +118,21 @@ local function migrateLegacyFormulaBucket(bucket)
         end
         bucket.autoAllowBindOnPickupFormulas = nil
     end
+    if bucket.autoSkillBudget ~= nil then
+        if bucket.autoRouteRiskMode == nil and bucket.autoSkillBudget == "pessimistic" then
+            bucket.autoRouteRiskMode = "quantile"
+        end
+        if bucket.autoReserveMode == nil then
+            bucket.autoReserveMode = (bucket.autoSkillBudget == "optimistic") and "expected" or "safe"
+        end
+        bucket.autoSkillBudget = nil
+    end
+    bucket.autoResidualMass = nil
+    bucket.computationSpeed = nil
+    if bucket.autoScheme ~= nil or bucket.recoveryEnabled ~= nil then
+        bucket.autoScheme = normalizeScheme(bucket.autoScheme, bucket.recoveryEnabled)
+        bucket.recoveryEnabled = nil
+    end
 end
 
 local function seedProfDefaults(prof)
@@ -123,6 +147,8 @@ local function seedProfDefaults(prof)
     ensureTable(prof, "routePartners")
     ensureTable(prof, "specChoices")
     ensureTable(prof, "matBan")
+    ensureTable(prof, "customRecoveryRecipes")
+    ensureTable(prof, "excludedRecoveryItems")
     migrateLegacyFormulaBucket(prof)
     for _, bucket in pairs(ps) do
         migrateLegacyFormulaBucket(bucket)
@@ -148,6 +174,8 @@ local function initFresh(tbl)
         routePartners = {},
         specChoices = {},
         matBan = {},
+        customRecoveryRecipes = {},
+        excludedRecoveryItems = {},
         cookingRoute = "fishing",
         gatherMode = "gather",
     }
@@ -296,6 +324,10 @@ end
 
 function DB.SettingRaw(k, slug)
     if RETIRED_SETTINGS[k] then return nil end
+    if k == "recoveryEnabled" then
+        if isFixedOnly(slug) then return false end
+        return DB.SettingRaw("autoScheme", slug) == "net"
+    end
     if isFixedOnly(slug) then
         if k == "autoRoute" then return false end
         if k == "autoScheme" then return "fixed" end
@@ -311,7 +343,12 @@ function DB.SettingRaw(k, slug)
     local v
     if type(values) == "table" then v = values[k] end
     if v == nil then v = prof[k] end
-    if k == "autoScheme" and v == "stable" then return "cheapest" end
+    if k == "autoScheme" then
+        local recVal = type(values) == "table" and values.recoveryEnabled
+        if recVal == nil then recVal = prof.recoveryEnabled end
+        if v == nil then return normalizeScheme(DB.SETTING_DEF.autoScheme, recVal) end
+        return normalizeScheme(v, recVal)
+    end
     if v == nil and type(slug) == "string" and type(DB.PROF_SETTING_DEF) == "table" then
         local pdef = DB.PROF_SETTING_DEF[slug]
         if type(pdef) == "table" and pdef[k] ~= nil then
@@ -328,15 +365,26 @@ end
 
 function DB.SetSettingRaw(k, value, slug)
     if RETIRED_SETTINGS[k] then return nil end
+    if k == "recoveryEnabled" then
+        if isFixedOnly(slug) then return nil end
+        local on = value and true or false
+        DB.SetSettingRaw("autoScheme", on and "net" or "cost", slug)
+        return on
+    end
     if isFixedOnly(slug) and (k == "autoRoute" or k == "autoScheme") then return nil end
     if k == "target" then return DB.SetTargetSkill(slug, value) end
+    if k == "autoScheme" then
+        value = (value == "net") and "net" or "cost"
+    end
     local prof = DB.Get().prof
     if DB.PROF_SETTING_KEYS[k] and type(slug) == "string" and slug ~= "" and slug ~= "__index" then
         local ps = ensureTable(prof, "professionSettings")
         local bucket = ensureTable(ps, slug)
         bucket[k] = value
+        if k == "autoScheme" then bucket.recoveryEnabled = nil end
     else
         prof[k] = value
+        if k == "autoScheme" then prof.recoveryEnabled = nil end
     end
     return value
 end
@@ -357,6 +405,126 @@ function DB.AutoStartSkillOf(slug, current)
         n = DB.LV_CAP
     end
     return math.floor(n)
+end
+
+function DB.GetCustomRecoveryRecipes(slug)
+    if type(slug) ~= "string" or slug == "" then return {} end
+    local prof = DB.Get().prof
+    local all = ensureTable(prof, "customRecoveryRecipes")
+    local bucket = all[slug]
+    if type(bucket) ~= "table" then return {} end
+    local out = {}
+    for k, v in pairs(bucket) do
+        local sid = tonumber(k)
+        if sid and sid > 0 and v == true then
+            out[math.floor(sid)] = true
+        end
+    end
+    return out
+end
+
+function DB.IsCustomRecoveryRecipe(slug, spellID)
+    local sid = tonumber(spellID)
+    if type(slug) ~= "string" or slug == "" or not sid or sid <= 0 then return false end
+    local prof = DB.Get().prof
+    local all = type(prof.customRecoveryRecipes) == "table" and prof.customRecoveryRecipes or nil
+    local bucket = all and all[slug] or nil
+    return type(bucket) == "table" and (bucket[math.floor(sid)] == true or bucket[tostring(math.floor(sid))] == true) or false
+end
+
+function DB.SetCustomRecoveryRecipe(slug, spellID, enabled)
+    local sid = tonumber(spellID)
+    if type(slug) ~= "string" or slug == "" or not sid or sid <= 0 then return false end
+    sid = math.floor(sid)
+    local prof = DB.Get().prof
+    local all = ensureTable(prof, "customRecoveryRecipes")
+    local bucket = ensureTable(all, slug)
+    bucket[tostring(sid)] = nil
+    if enabled then
+        bucket[sid] = true
+        return true
+    else
+        bucket[sid] = nil
+        return false
+    end
+end
+
+function DB.GetExcludedRecoveryItems(slug)
+    if type(slug) ~= "string" or slug == "" then return {} end
+    local prof = DB.Get().prof
+    local all = ensureTable(prof, "excludedRecoveryItems")
+    local bucket = all[slug]
+    if type(bucket) ~= "table" then return {} end
+    local out = {}
+    for k, v in pairs(bucket) do
+        local iid = tonumber(k)
+        if iid and iid > 0 and v == true then
+            out[math.floor(iid)] = true
+        end
+    end
+    return out
+end
+
+function DB.IsExcludedRecoveryItem(slug, itemID)
+    local iid = tonumber(itemID)
+    if type(slug) ~= "string" or slug == "" or not iid or iid <= 0 then return false end
+    local prof = DB.Get().prof
+    local all = type(prof.excludedRecoveryItems) == "table" and prof.excludedRecoveryItems or nil
+    local bucket = all and all[slug] or nil
+    return type(bucket) == "table" and (bucket[math.floor(iid)] == true or bucket[tostring(math.floor(iid))] == true) or false
+end
+
+function DB.SetExcludedRecoveryItem(slug, itemID, excluded)
+    local iid = tonumber(itemID)
+    if type(slug) ~= "string" or slug == "" or not iid or iid <= 0 then return false end
+    iid = math.floor(iid)
+    local prof = DB.Get().prof
+    local all = ensureTable(prof, "excludedRecoveryItems")
+    local bucket = ensureTable(all, slug)
+    bucket[tostring(iid)] = nil
+    if excluded then
+        bucket[iid] = true
+        return true
+    else
+        bucket[iid] = nil
+        return false
+    end
+end
+
+function DB.ResetRecoveryOverrides(slug)
+    if type(slug) ~= "string" or slug == "" then return false end
+    local prof = DB.Get().prof
+    local changed = false
+    if type(prof.customRecoveryRecipes) == "table" and type(prof.customRecoveryRecipes[slug]) == "table" and next(prof.customRecoveryRecipes[slug]) ~= nil then
+        prof.customRecoveryRecipes[slug] = {}
+        changed = true
+    end
+    if type(prof.excludedRecoveryItems) == "table" and type(prof.excludedRecoveryItems[slug]) == "table" and next(prof.excludedRecoveryItems[slug]) ~= nil then
+        prof.excludedRecoveryItems[slug] = {}
+        changed = true
+    end
+    return changed
+end
+
+function DB.CustomRecoveryFingerprint(slug)
+    local map = DB.GetCustomRecoveryRecipes(slug)
+    local ids = {}
+    for sid in pairs(map) do ids[#ids + 1] = sid end
+    table.sort(ids)
+    local parts = {}
+    for i = 1, #ids do parts[i] = tostring(ids[i]) end
+    local addFp = table.concat(parts, ",")
+
+    local exMap = DB.GetExcludedRecoveryItems(slug)
+    local exIds = {}
+    for iid in pairs(exMap) do exIds[#exIds + 1] = iid end
+    if #exIds == 0 then
+        return addFp
+    end
+    table.sort(exIds)
+    local exParts = {}
+    for i = 1, #exIds do exParts[i] = tostring(exIds[i]) end
+    return addFp .. "|ex:" .. table.concat(exParts, ",")
 end
 
 setmetatable(DB, {

@@ -40,6 +40,10 @@ local function getEconomy()
     return ns.ProfEconomy or (type(gns) == "table" and gns.ProfEconomy) or nil
 end
 
+local function getRecovery()
+    return ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery) or nil
+end
+
 local function getSolver()
     return ns.ProfRouteSolver or (type(gns) == "table" and gns.ProfRouteSolver) or nil
 end
@@ -116,22 +120,6 @@ local function isFixedOnly(slug)
     local entry = type(cfg) == "table" and type(cfg.BY_SLUG) == "table" and cfg.BY_SLUG[slug]
     if type(entry) == "table" then return entry.fixedOnly == true end
     return slug == "first-aid" or slug == "poisons"
-end
-
-local function adaptiveSliceMs()
-    local cfg = getSolverCfg()
-    local b = type(cfg) == "table" and type(cfg.COROUTINE_BUDGET) == "table" and cfg.COROUTINE_BUDGET or nil
-    local a = b and type(b.adaptiveSlice) == "table" and b.adaptiveSlice or nil
-    local defFps = (a and type(a.defaultFps) == "number" and a.defaultFps) or 60
-    local lowThr = (a and type(a.lowFpsThreshold) == "number" and a.lowFpsThreshold) or 25
-    local lowMs = (a and type(a.lowFpsMs) == "number" and a.lowFpsMs) or 0.6
-    local frac = (a and type(a.frameFraction) == "number" and a.frameFraction) or 0.09
-    local minMs = (a and type(a.minMs) == "number" and a.minMs) or 0.8
-    local maxMs = (a and type(a.maxMs) == "number" and a.maxMs) or 2.25
-    local fps = type(_G.GetFramerate) == "function" and _G.GetFramerate() or defFps
-    if type(fps) ~= "number" or fps <= 0 then fps = defFps end
-    if fps < lowThr then return lowMs end
-    return math.min(maxMs, math.max(minMs, (1000 / fps) * frac))
 end
 
 local function learningPolicy()
@@ -324,27 +312,11 @@ local function runSlice(job)
     if not (S and type(S.Run) == "function") then return true end
     local cfg = getSolverCfg()
     local b = type(cfg) == "table" and type(cfg.COROUTINE_BUDGET) == "table" and cfg.COROUTINE_BUDGET or nil
-    local presets = b and type(b.speedPresets) == "table" and b.speedPresets or nil
-    local fastMs = (presets and type(presets.fast) == "table" and type(presets.fast.budgetMs) == "number" and presets.fast.budgetMs) or 8
-    local turboMs = (presets and type(presets.turbo) == "table" and type(presets.turbo.budgetMs) == "number" and presets.turbo.budgetMs) or 60
-    local turboStride = (presets and type(presets.turbo) == "table" and type(presets.turbo.tickClockStride) == "number" and presets.turbo.tickClockStride) or 16
-    local speed = setting("computationSpeed", "fast")
-    local turbo = speed == "turbo"
-    local budget = (speed == "fast" and fastMs) or (turbo and turboMs) or nil
-    job.tickClockStride = turbo and turboStride or nil
-    if not budget then
-        local ok, done = pcall(S.Run, job, adaptiveSliceMs())
-        if not ok then
-            job.status = "error"
-            job.finished = true
-            return true
-        end
-        return done
-    end
+    local budget = (b and type(b.frameBudgetMs) == "number" and b.frameBudgetMs) or 8
     local started = computationClock()
     local remaining = budget
     for _ = 1, 64 do
-        local ok, done = pcall(S.Run, job, remaining, turbo)
+        local ok, done = pcall(S.Run, job, remaining)
         if not ok then
             job.status = "error"
             job.finished = true
@@ -355,8 +327,16 @@ local function runSlice(job)
         if elapsed < 0 or elapsed >= budget then break end
         remaining = budget - elapsed
     end
-    if turbo and type(S.RefreshStatus) == "function" then pcall(S.RefreshStatus, job) end
     return false
+end
+
+local function normalizePlanScheme(rawScheme, rawRecovery)
+    if rawScheme == "fixed" or rawScheme == "fishing" then return rawScheme end
+    if rawScheme == "net" then return "net" end
+    if rawRecovery == true and (rawScheme == nil or rawScheme == "cheapest" or rawScheme == "cost") then
+        return "net"
+    end
+    return "cost"
 end
 
 function RA.OptionsFor(slug, current)
@@ -371,16 +351,23 @@ function RA.OptionsFor(slug, current)
     opts.fromCurrent = setting("autoFromCurrent", true, slug)
     opts.cpuLimitMs = cfgCpuLimitMs()
     opts.autoCraftTools = setting("autoCraftTools", true, slug)
-    opts.residualMass = setting("autoResidualMass", false, slug)
-    opts.skillBudgetAll = true
-    local rawBudget = setting("autoSkillBudget", "balanced", slug)
-    if E and type(E.GreenBudgetMode) == "function" then
-        local ok, v = pcall(E.GreenBudgetMode, rawBudget)
-        opts.greenBudget = (ok and v ~= nil) and v or rawBudget
+    local rawRisk = setting("autoRouteRiskMode", "expected", slug)
+    if E and type(E.RouteRiskMode) == "function" then
+        local ok, v = pcall(E.RouteRiskMode, rawRisk)
+        opts.routeRiskMode = (ok and v ~= nil) and v or rawRisk
     else
-        opts.greenBudget = rawBudget
+        opts.routeRiskMode = (rawRisk == "quantile" or rawRisk == "route_quantile") and "quantile" or "expected"
     end
-    opts.recoveryEnabled = setting("recoveryEnabled", false, slug)
+    local rawRes = setting("autoReserveMode", "safe", slug)
+    if E and type(E.ReserveMode) == "function" then
+        local ok, v = pcall(E.ReserveMode, rawRes)
+        opts.reserveMode = (ok and v ~= nil) and v or rawRes
+    else
+        opts.reserveMode = (rawRes == "expected" or rawRes == "none") and "expected" or "safe"
+    end
+    opts.scheme = normalizePlanScheme(opts.scheme or setting("autoScheme", "cost", slug), nil)
+    opts.recoveryEnabled = (opts.scheme == "net")
+    opts.auctionRecoveryEnabled = setting("auctionRecoveryEnabled", false, slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", cfgDefaultFee(), slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false, slug)
     opts.allowDropFormulas = setting("autoAllowDropFormulas", false, slug)
@@ -394,6 +381,7 @@ function RA.OptionsFor(slug, current)
     opts.useBagMaterials = setting("autoUseBagMaterials", false, slug)
     if isFixedOnly(slug) then
         opts.scheme = "fixed"
+        opts.recoveryEnabled = false
         opts.autoCraftTools = false
     end
     local pol
@@ -416,8 +404,14 @@ local function options(slug, supplied)
     local defTarget = cfgDefaultTarget()
     local opts = copy(supplied or RA.OptionsFor(slug), nil, true)
     if supplied and supplied.snapshot then opts.snapshot = supplied.snapshot end
-    opts.scheme = opts.scheme or "cheapest"
-    if opts.scheme == "stable" then opts.scheme = "cheapest" end
+    opts.scheme = normalizePlanScheme(opts.scheme or setting("autoScheme", "cost", slug), supplied and supplied.recoveryEnabled)
+    if opts.scheme == "net" then
+        opts.recoveryEnabled = true
+    elseif supplied and supplied.recoveryEnabled ~= nil then
+        opts.recoveryEnabled = supplied.recoveryEnabled == true
+    else
+        opts.recoveryEnabled = false
+    end
     if opts.useBagMaterials == nil then opts.useBagMaterials = setting("autoUseBagMaterials", false, slug) end
     opts.useBagMaterials = opts.useBagMaterials == true
         and not isFixedOnly(slug)
@@ -434,16 +428,21 @@ local function options(slug, supplied)
     opts.considerAuctionSupply = consider
     opts.start = math.max(1, math.min(cap, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(cap, math.floor(tonumber(opts.target) or defTarget)))
-    if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false, slug) end
-    if opts.skillBudgetAll == nil then opts.skillBudgetAll = true end
-    local rawBudget = opts.greenBudget or setting("autoSkillBudget", "balanced", slug)
-    if E and type(E.GreenBudgetMode) == "function" then
-        local ok, v = pcall(E.GreenBudgetMode, rawBudget)
-        opts.greenBudget = (ok and v ~= nil) and v or rawBudget
+    local rawRisk = opts.routeRiskMode or opts.riskMode or setting("autoRouteRiskMode", "expected", slug)
+    if E and type(E.RouteRiskMode) == "function" then
+        local ok, v = pcall(E.RouteRiskMode, rawRisk)
+        opts.routeRiskMode = (ok and v ~= nil) and v or "expected"
     else
-        opts.greenBudget = rawBudget
+        opts.routeRiskMode = (rawRisk == "quantile" or rawRisk == "route_quantile") and "quantile" or "expected"
     end
-    if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false, slug) end
+    local rawRes = opts.reserveMode or opts.autoReserveMode or setting("autoReserveMode", "safe", slug)
+    if E and type(E.ReserveMode) == "function" then
+        local ok, v = pcall(E.ReserveMode, rawRes)
+        opts.reserveMode = (ok and v ~= nil) and v or "safe"
+    else
+        opts.reserveMode = (rawRes == "expected" or rawRes == "none") and "expected" or "safe"
+    end
+    if opts.auctionRecoveryEnabled == nil then opts.auctionRecoveryEnabled = setting("auctionRecoveryEnabled", false, slug) end
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", cfgDefaultFee(), slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true, slug) end
     if opts.allowLimitedFormulas == nil then opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false, slug) end
@@ -497,6 +496,12 @@ local function signature(slug, opts)
         local ok, v = pcall(E.LearningObservationFingerprint)
         if ok and v ~= nil then learnObs = v end
     end
+    local R = getRecovery()
+    local wlSig = ""
+    if R and type(R.WhitelistSignature) == "function" then
+        local okW, vW = pcall(R.WhitelistSignature, slug, opts.snapshot, opts)
+        if okW and vW ~= nil then wlSig = tostring(vW) end
+    end
     local sig = table.concat({
         "profession:" .. tostring(slug),
         opts.scheme,
@@ -512,11 +517,11 @@ local function signature(slug, opts)
         tostring(opts.allowLimitedFormulas),
         tostring(opts.useBagMaterials == true),
         "formula-channels:2",
-        "profit-priority:20",
-        "recipe-batches:12:risk:1",
+        "v3-lagrangian-dag:2",
         "auction-depth:1",
-        tostring(opts.residualMass),
         tostring(opts.recoveryEnabled),
+        tostring(opts.auctionRecoveryEnabled == true),
+        wlSig,
         tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned),
         specSig,
@@ -525,12 +530,7 @@ local function signature(slug, opts)
         learnObs,
     }, "|")
     if opts.scheme ~= "fixed" and opts.scheme ~= "fishing" then
-        local gb = tostring(opts.greenBudget)
-        if E and type(E.GreenBudgetMode) == "function" then
-            local ok, v = pcall(E.GreenBudgetMode, opts.greenBudget)
-            if ok and v ~= nil then gb = v end
-        end
-        sig = sig .. (opts.skillBudgetAll and "|skill-budget:2:" or "|green-budget:1:") .. gb
+        sig = sig .. "|route-risk:3:" .. tostring(opts.routeRiskMode or "expected")
     end
     return sig
 end
@@ -572,9 +572,22 @@ local function scopeConflict(plan, slug, opts)
     return false
 end
 
+local function syncReserveMode(result, slug, opts)
+    if type(result) ~= "table" then return result end
+    local rm = (opts and opts.reserveMode) or setting("autoReserveMode", "safe", slug)
+    rm = (rm == "expected" or rm == "none") and "expected" or "safe"
+    result.reserveMode = rm
+    if type(result.reserve) == "table" then
+        result.reserve.enabled = (rm == "safe")
+        result.reserve.mode = rm
+    end
+    return result
+end
+
 local function refreshFreshness(result, slug, opts)
     local E = getEconomy()
     local S = getSolver()
+    syncReserveMode(result, slug, opts)
     if scopeConflict(result, slug, opts) then return gate(slug, opts, "secondaryDisabled") end
     if result.learningPolicyFingerprint and result.learningPolicyFingerprint ~= learningPolicy() then
         return learningStale(result)
@@ -836,15 +849,15 @@ function RA.FixedPlan(slug, supplied)
 end
 
 local skeletonStepFields = {
-    "profession", "kind", "reason", "checkpoint", "segmentID",
+    "profession", "kind", "reason", "checkpoint", "segmentID", "safeCrafts", "extraReserveCrafts",
     "tool", "toolItem", "toolSpell", "toolBop", "fromProgress", "toProgress", "displayFrom", "displayTo",
     "goalID", "questID", "abilityID", "sourceItem", "targetItem",
 }
 local skeletonOptionFields = {
     "fromCurrent", "onlyAH", "allowSecondaryLeveling", "secondaryProfession",
     "autoCraftTools", "allowLimitedFormulas", "allowBindOnPickupFormulas", "allowCurrencyFormulas",
-    "considerAuctionSupply", "greenBudget", "skillBudgetAll", "residualMass", "recoveryEnabled",
-    "recoveryFeePercent", "engineeringSpecialization", "useBagMaterials",
+    "considerAuctionSupply", "routeRiskMode", "reserveMode", "recoveryEnabled",
+    "auctionRecoveryEnabled", "recoveryFeePercent", "engineeringSpecialization", "choicesByGroup", "useBagMaterials",
 }
 
 local function planSkeleton(result, opts, status)
@@ -870,8 +883,9 @@ local function planSkeleton(result, opts, status)
     end
     local settings = {}
     for _, key in ipairs(skeletonOptionFields) do settings[key] = opts[key] end
-    settings.skillBudgetAll = result.skillBudgetAll == true
-    settings.greenBudget = result.greenBudget or settings.greenBudget or "optimistic"
+    settings.routeRiskMode = result.routeRiskMode or settings.routeRiskMode or "expected"
+    settings.reserveMode = result.reserveMode or settings.reserveMode or "safe"
+    settings.auctionRecoveryEnabled = result.auctionRecoveryEnabled == true or settings.auctionRecoveryEnabled == true
     settings.useBagMaterials = result.useBagMaterials == true
     settings.exclusions = copy(opts.exclusions or {})
     if result.useBagMaterials then
@@ -881,6 +895,11 @@ local function planSkeleton(result, opts, status)
         settings.bagInventoryVersion = result.bagInventoryVersion
     end
     settings.engineeringSpecialization = result.specializationPolicy and result.specializationPolicy.choice or settings.engineeringSpecialization
+    if type(result.specializationPolicy) == "table" and type(result.specializationPolicy.choicesByGroup) == "table" then
+        settings.choicesByGroup = copy(result.specializationPolicy.choicesByGroup)
+    elseif type(opts.choicesByGroup) == "table" then
+        settings.choicesByGroup = copy(opts.choicesByGroup)
+    end
     return {
         v = 1,
         slug = result.slug,
@@ -1303,7 +1322,34 @@ function RA.Get(slug, supplied)
         end
         return RA.RebuildFromSkel(slug, skel, opts)
     end
-    return start(slug, opts)
+    return nil
+end
+
+function RA.HasSavedRoute(slug)
+    if type(slug) ~= "string" or slug == "" then return false end
+    local scope = character() .. "|" .. slug
+    local mem = active[scope] and results[active[scope]]
+    if type(mem) == "table" and type(mem.steps) == "table" and #mem.steps > 0 then
+        return true
+    end
+    local xp = getExecution()
+    if xp and type(xp.GetPlan) == "function" then
+        local ok, frozen = pcall(xp.GetPlan, slug)
+        if ok and type(frozen) == "table" and type(frozen.steps) == "table" and #frozen.steps > 0 then
+            return true
+        end
+    end
+    local db = saved()
+    if type(db) == "table" and type(db.active) == "table" and type(db.routes) == "table" then
+        local sig = db.active[slug]
+        local rec = sig and db.routes[sig]
+        local skel = type(rec) == "table" and rec.skeleton or nil
+        if type(rec) == "table" and rec.model == MODEL and rec.slug == slug
+            and type(skel) == "table" and type(skel.steps) == "table" and #skel.steps > 0 then
+            return true
+        end
+    end
+    return false
 end
 
 function RA.RebuildFromSkel(slug, skel, supplied, regroup)
@@ -1311,8 +1357,9 @@ function RA.RebuildFromSkel(slug, skel, supplied, regroup)
     if skel.pricingPolicyStale then return gate(slug, request, "pricingPolicyChanged") end
     if scopeConflict(skel, slug, request) then return gate(slug, request, "secondaryDisabled") end
     local restored = copy(skel.options)
-    restored.skillBudgetAll = restored.skillBudgetAll == true
-    restored.greenBudget = restored.greenBudget or "optimistic"
+    restored.routeRiskMode = restored.routeRiskMode or (restored.greenBudget == "pessimistic" and "quantile" or "expected")
+    restored.reserveMode = request.reserveMode or restored.reserveMode or "safe"
+    restored.auctionRecoveryEnabled = restored.auctionRecoveryEnabled == true
     restored.useBagMaterials = restored.useBagMaterials == true
     if restored.useBagMaterials and (restored.bagInventoryVersion ~= 1 or type(restored.bagInventory) ~= "table") then
         return gate(slug, request, "historyUnreadable")
@@ -1772,9 +1819,9 @@ local function initialize()
     end
 end
 
-local initFn = ns.Init or (type(gns) == "table" and gns.Init) or nil
-if type(initFn) == "function" then
-    initFn(initialize)
+local b = ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+if b and type(b.OnInit) == "function" then
+    b.OnInit(initialize)
 else
     initialize()
 end

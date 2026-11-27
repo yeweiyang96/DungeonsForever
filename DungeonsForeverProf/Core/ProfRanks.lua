@@ -27,10 +27,8 @@ end
 local function getLocale()
     local DS = getDS()
     if DS and type(DS.GetLocale) == "function" then return DS.GetLocale() end
-    if type(_G.DF_Locale) == "function" then
-        local ok, loc = pcall(_G.DF_Locale)
-        if ok and type(loc) == "string" and loc ~= "" then return loc end
-    end
+    local b = ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+    if b and type(b.Locale) == "function" then return b.Locale() end
     if type(_G.GetLocale) == "function" then
         local ok, loc = pcall(_G.GetLocale)
         if ok and type(loc) == "string" and loc ~= "" then return loc end

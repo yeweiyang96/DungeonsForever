@@ -48,8 +48,13 @@ local function getIdle()
     return ns.ProfIdle or (type(gns) == "table" and gns.ProfIdle) or nil
 end
 
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+end
+
 local function getTracking()
-    return ns.ProfessionTracking or (type(gns) == "table" and gns.ProfessionTracking) or nil
+    local b = getBridge()
+    return b and type(b.ProfessionTracking) == "function" and b.ProfessionTracking() or nil
 end
 
 local function getModule()

@@ -1,14 +1,22 @@
-local ns = _G.DF_NS or {}
+local _, addonNS = ...
+local gns = _G.DF_NS
+local ns = type(gns) == "table" and gns or (type(addonNS) == "table" and addonNS) or {}
 
-if not ns.LoadForeverPages then return end
+local Bridge = (type(addonNS) == "table" and addonNS.ProfHostBridge) or ns.ProfHostBridge
+if not (Bridge and Bridge.IsForeverPagesEnabled() and Bridge.Host()) then return end
 
-local Host = ns.ProfHost
-if not Host then return end
+local function getTT()
+    return (type(addonNS) == "table" and addonNS.ProfTooltips) or ns.ProfTooltips
+end
 
-local L = ns.L
-local DG = Host.DG
-local MakeFS, NewButton = Host.MakeFS, Host.NewButton
-local SetButtonSelected = Host.SetButtonSelected
+local function getHui()
+    return Bridge.Hui()
+end
+
+local L = Bridge.LocaleTable()
+local MakeFS, NewButton = Bridge.MakeFS, Bridge.NewButton
+local SetButtonSelected = Bridge.SetButtonSelected
+local FALLBACK_ICON = Bridge.Const("FALLBACK_ICON")
 
 local function FSW(fs, dflt)
     if not (fs and fs.GetStringWidth) then return dflt or 0 end
@@ -20,7 +28,7 @@ local function FSW(fs, dflt)
 end
 
 local function ProfIconTex(name)
-    if not name then return Host.FALLBACK_ICON end
+    if not name then return FALLBACK_ICON end
     if type(name) == "string" and not name:find("\\", 1, true) then
         return "Interface\\Icons\\" .. name
     end
@@ -28,23 +36,25 @@ local function ProfIconTex(name)
 end
 
 local function RoundFrame(fr, radius, col)
-    if not (ns.hui and ns.hui.BuildRoundBorder) then return nil end
-    local pieces = ns.hui.BuildRoundBorder(fr, radius, col, fr, "OVERLAY", "both", 1) or {}
+    local hui = getHui()
+    if not (hui and hui.BuildRoundBorder) then return nil end
+    local pieces = hui.BuildRoundBorder(fr, radius, col, fr, "OVERLAY", "both", 1) or {}
     for _, tex in ipairs(pieces) do tex:SetShown(true) end
     return pieces
 end
 local function RoundBG(fr, radius, col)
-    if not (ns.hui and ns.hui.BuildRoundedBG) then
+    local hui = getHui()
+    if not (hui and hui.BuildRoundedBG) then
         fr:SetBackdropColor(col[1], col[2], col[3], col[4])
         return nil
     end
     fr:SetBackdropColor(0, 0, 0, 0)
-    fr.__rbg = ns.hui.BuildRoundedBG(fr, radius, col, "both", false)
+    fr.__rbg = hui.BuildRoundedBG(fr, radius, col, "both", false)
     return fr.__rbg
 end
-local Unpack = Host.Unpack
-local C_GOLD, C_GREY, C_DIM, C_TEXT = Host.C_GOLD, Host.C_GREY, Host.C_DIM, Host.C_TEXT
-local C_WHITE = Host.C_WHITE
+local Unpack = Bridge.Unpack
+local C_GOLD, C_GREY, C_DIM, C_TEXT = Bridge.Color("C_GOLD"), Bridge.Color("C_GREY"), Bridge.Color("C_DIM"), Bridge.Color("C_TEXT")
+local C_WHITE = Bridge.Color("C_WHITE")
 
 local function getDS()
     return ns.ProfDataStore or (_G.DF_NS and _G.DF_NS.ProfDataStore) or nil
@@ -127,10 +137,10 @@ local C_BAD  = { 0.85, 0.30, 0.30 }
 local C_HEAD = { 0.95, 0.78, 0.35 }
 
 local CUE_FILES = {
-    cap = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_skill_cap.ogg",
-    item = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_next_item.ogg",
-    on = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_voice_on.ogg",
-    nol = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_not_learned.ogg",
+    cap = Bridge.Media("VoiceSkillCap"),
+    item = Bridge.Media("VoiceNextItem"),
+    on = Bridge.Media("VoiceOn"),
+    nol = Bridge.Media("VoiceNotLearned"),
 }
 
 local function cueMuted()
@@ -185,7 +195,7 @@ end
 local function Accent()
     local PD = ns.ProfModule
     if PD and PD.NavAccent then return { PD.NavAccent() } end
-    if ns.hui and ns.hui.ACCENT then return { ns.hui.ACCENT[1], ns.hui.ACCENT[2], ns.hui.ACCENT[3] } end
+    if getHui() and getHui().ACCENT then return { getHui().ACCENT[1], getHui().ACCENT[2], getHui().ACCENT[3] } end
     return { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
 end
 
@@ -333,7 +343,7 @@ function PF.SpecializationQuestInfo(seg)
     local goal=xp.SpecializationQuest(seg)
     local function label(value)
         if type(value)~="table" then return value end
-        local locale=DF_Locale and DF_Locale() or "zhCN"
+        local locale=Bridge.Locale() or "zhCN"
         return value[locale] or value.zhCN or value.enUS
     end
     local name=label(goal.questName or goal.name) or L["专业专精任务"]
@@ -352,13 +362,11 @@ function PF.SpecializationQuestInfo(seg)
             local quantity = tonumber(pair[2])
 
             if itemID and quantity and quantity > 0 then
-                local name = DG.ItemName(itemID)
+                local name = Bridge.ItemName(itemID)
 
                 if not name or name == "" then
                     name = "#" .. itemID
-                    if DG.RequestItem then
-                        DG.RequestItem(itemID)
-                    end
+                    Bridge.RequestItem(itemID)
                 end
 
                 materials[#materials + 1] =
@@ -486,7 +494,7 @@ local function routeForCalc(slug, skill)
     if frozen then return frozen.mode == "fixed" and "fixed" or "auto", frozen.executionSteps or frozen.steps,frozen end
     local ended = PF.endedPlan and PF.endedPlan[slug]
     if ended and PF.Following and PF.Following(slug) then return ended.mode == "fixed" and "fixed" or "auto", ended.executionSteps or ended.steps,ended end
-    local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme",slug) or "cheapest"
+    local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme",slug) or "cost"
     local fish = PD and PD.CookingFishingMode and PD.CookingFishingMode(slug)
     local auto = not fixedOnly and PD and (PD.AutoRouteEnabled and PD.AutoRouteEnabled(slug) or not PD.AutoRouteEnabled and PD.Setting and (PD.Setting("autoRoute",slug) or fish)) and RA
     PF.pendingPlans = PF.pendingPlans or {}
@@ -522,7 +530,7 @@ local function routeForCalc(slug, skill)
             end
             return "auto", list,res
         end
-        PF.pendingPlans[slug] = res or {status="searching"}
+        PF.pendingPlans[slug] = res or { status = "not_calculated" }
         return "auto", {}
     end
     PF.pendingPlans[slug] = nil
@@ -536,8 +544,8 @@ local function routeForCalc(slug, skill)
     end
     if summary and summary.steps then steps=summary.steps end
     if RA and RA.FilterFixedSpecializations then
-        local filtered,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
-        if goalRequired or blocked and #blocked>0 then
+        local filtered,blocked=RA.FilterFixedSpecializations(slug,steps,opts)
+        if blocked and #blocked>0 then
             PF.pendingPlans[slug]={status="recalculate_required",specializationBlocked=true,
                 diagnostics=blocked or {},steps={},feasible=false}
             return "fixed",{}
@@ -728,6 +736,7 @@ local function allocatePurchases(row)
         end
     end
     local offers,auction,ahLimit={},nil,0
+    local ahCostSum,ahCountSum=0,0
     local hasMaterials=false;local quotesComplete=true
     for _,entry in ipairs(row.planPurchases or {}) do
         if not entry.formula then
@@ -735,9 +744,13 @@ local function allocatePurchases(row)
             local source=entry.source
             if source=="ah" or source=="auction" then
                 ahLimit=ahLimit+entry.count
-                local unit=entry.unit or (type(entry.cost)=="number" and entry.count>0 and entry.cost/entry.count)
-                if type(entry.cost)=="number" and type(unit)=="number" and unit>0 and (not auction or auction==unit) and not entry.unpriced then auction=unit
-                else quotesComplete=false end
+                if type(entry.cost)=="number" and entry.count>0 and entry.cost>0 and not entry.unpriced then
+                    ahCostSum=ahCostSum+entry.cost
+                    ahCountSum=ahCountSum+entry.count
+                    auction=ahCostSum/ahCountSum
+                else
+                    quotesComplete=false
+                end
             elseif source=="vendor" or source=="npc" then
                 local offer=copyPurchase(entry)
                 local size=entry.bundleSize or 1
@@ -749,32 +762,6 @@ local function allocatePurchases(row)
         end
     end
     local bagQuotes=row.bagMaterialQuotes
-    local vdb=ns.VendorPriceDB
-    local cached=(row.materialNeed or 0)>0 and (row.formulaNeed or 0)==0
-        and vdb and vdb.GetCachedOffer and vdb.GetCachedOffer(row.id)
-    if cached then
-        local depth=bridge and bridge.GetAuctionDepth and bridge.GetAuctionDepth(row.id)
-        local previous
-        for _,offer in ipairs(offers) do
-            local unit=offer.price/offer.quantity
-            if not previous or unit<previous then previous=unit end
-        end
-        if not previous and bagQuotes then for _,offer in ipairs(bagQuotes.offers and bagQuotes.offers[row.id] or {}) do
-            local unit=offer.unit or offer.price and offer.price/(offer.quantity or offer.bundleSize or 1)
-            if type(unit)=="number" and (not previous or unit<previous) then previous=unit end
-        end end
-        local changed=previous and previous~=cached.unit or not previous and auction and cached.unit<auction
-        if depth or changed then
-            local book=depth and ns.ProfAuctionDepth.Build(depth.levels)
-                or bagQuotes and bagQuotes.auctionDepth and bagQuotes.auctionDepth[row.id]
-            local supply=(useSupply or depth) and bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(row.id)
-            local price=book and book.prices[1] or bagQuotes and bagQuotes.prices and bagQuotes.prices[row.id] or auction
-            available=supply and supply.quantity or depth and depth.quantity or available
-            bagQuotes={prices={[row.id]=price},offers={[row.id]={cached}},auctionDepth={[row.id]=book},
-                auctionSupply={[row.id]=supply},faction=bagQuotes and bagQuotes.faction,
-                nonAuctionable=bagQuotes and bagQuotes.nonAuctionable or {}}
-        end
-    end
     if bagQuotes then
         hasMaterials=true
         local book=bagQuotes.auctionDepth and bagQuotes.auctionDepth[row.id]
@@ -782,7 +769,11 @@ local function allocatePurchases(row)
         available=available or supply and supply.quantity or book and book.total
         ahLimit=available and math.max(0,available-formulaAH) or math.huge
         row.availableCount=available
-    elseif available~=nil then ahLimit=math.min(ahLimit,math.max(0,available-formulaAH)) end
+    elseif useSupply and available~=nil then
+        ahLimit=math.max(0,available-formulaAH)
+    elseif not useSupply and auction~=nil then
+        ahLimit=math.max(ahLimit,left)
+    end
     if left>0 and hasMaterials then
         local entries,complete
         if bagQuotes then
@@ -1059,7 +1050,7 @@ local function verifyOutputDialog()
                 edit:SetFocus()
                 edit:HighlightText()
             end
-            ns.SkinPopupFont(self)
+            Bridge.SkinPopupFont(self)
         end,
         OnAccept = function(self)
             local d = self.data
@@ -1074,8 +1065,10 @@ end
 
 local function expPerPoint(sk, o, y, g, gr)
     if sk < y then return 1 end
-    if sk < g then return 1 / (1 - 0.5 * (sk - y) / (g - y)) end
-    if sk < gr then return 1 / (0.5 - 0.45 * (sk - g) / (gr - g)) end
+    if gr and gr > y and sk < gr then
+        local p = (gr - sk) / (gr - y)
+        if p > 0 then return 1 / p end
+    end
     return nil
 end
 
@@ -1116,7 +1109,7 @@ local function craftsLeft(seg, skill, rec,routeSlug,future,readProgress)
         end
     end
     if XP and XP.IsSpecializationQuest(seg) then return 1 end
-    if seg.segmentID and (future or (skill or 0)<=(seg[1] or 0)) then
+    if future or (skill or 0)<=(seg[1] or 0) then
         return seg.expectedCrafts or seg[4] or 0
     end
     local from = math.max(skill or 0, seg[1])
@@ -1207,6 +1200,10 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         end
     end end
     local curStep = s.step or 1
+    local reserveMode = (ns.ProfDB and ns.ProfDB.SettingRaw and ns.ProfDB.SettingRaw("autoReserveMode", s.slug))
+        or (plan and plan.reserveMode) or "safe"
+    local reserveSafe = reserveMode ~= "expected" and not (plan and (plan.scheme == "fixed" or plan.scheme == "fishing"))
+    local reserveRemainingIn, reserveRemainingOut = {}, {}
     for i = curStep, #steps do
         if onlyStep and i > curStep then break end
         local seg = steps[i]
@@ -1221,12 +1218,20 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         elseif not onlyStep and matching then
             crafts=math.min(crafts,baseRemaining[seg.segmentID] or 0)
         end
+        local extraCrafts = 0
+        if reserveSafe and crafts > 0 and (seg.extraReserveCrafts or 0) > 0 then
+            local denom = math.max(1, seg.expectedCrafts or seg[4] or 1)
+            extraCrafts = crafts >= denom and seg.extraReserveCrafts or math.ceil(seg.extraReserveCrafts * math.min(1, crafts / denom))
+        end
         if crafts>0 then
             futureSpells[(seg.profession or s.slug)..":"..tostring(seg[3])]=true
             local item=recItem(rec)
             local output=seg.outputMin or rec and (rec.outputMin or rec.outputCountMin or rec[3] or rec.count)
             if item and type(output)=="number" and output>0 then
                 futureOutputs[item]=(futureOutputs[item] or 0)+crafts*output
+                if extraCrafts > 0 then
+                    reserveRemainingOut[item] = (reserveRemainingOut[item] or 0) + extraCrafts * output
+                end
             end
         end
         if mats and crafts > 0 then
@@ -1238,8 +1243,18 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
                     order[#order + 1] = m[1]
                 end
                 local qty = (m[2] or 1) * crafts
-                e.need = e.need + qty
-                if i == curStep then e.atStep = (e.atStep or 0) + qty end
+                local rQty = (m[2] or 1) * extraCrafts
+                if onlyStep and rQty > 0 then
+                    e.baseNeed = (e.baseNeed or e.need) + qty
+                    e.reserveNeed = (e.reserveNeed or 0) + rQty
+                    e.need = e.baseNeed + e.reserveNeed
+                else
+                    e.need = e.need + qty
+                    if rQty > 0 then
+                        reserveRemainingIn[m[1]] = (reserveRemainingIn[m[1]] or 0) + rQty
+                    end
+                end
+                if i == curStep then e.atStep = (e.atStep or 0) + qty + (onlyStep and rQty or 0) end
             end
         end
     end
@@ -1297,7 +1312,8 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             end
             if formula then leaf.formulaCost=(leaf.formulaCost or 0)+(entry.cost or 0) end
         end
-        for _,entry in ipairs(plan.mats or {}) do purchase(entry) end
+        local useReserveMats = reserveSafe and type(plan.reserve) == "table" and type(plan.reserve.mats) == "table" and #plan.reserve.mats > 0
+        for _,entry in ipairs(useReserveMats and plan.reserve.mats or plan.mats or {}) do purchase(entry) end
         if plan.useBagMaterials then
             for id,count in pairs(plan.seedInventory or {}) do
                 local amount=type(count)=="table" and count.count or count
@@ -1322,6 +1338,25 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             local row=totals[id]
             row.need=math.max(0,row.need-(futureOutputs[id] or 0))
             if type(plan.mats)=="table" and not leaves[id] then row.need=0 end
+            row.baseNeed=row.need
+        end
+        if useReserveMats then
+            local grossCap = plan.reserve.grossExtraByItem or plan.reserve.extraByItem or {}
+            for id, capExtra in pairs(grossCap) do
+                if (capExtra or 0) > 0 and leaves[id] then
+                    local row = totals[id]
+                    if not row then
+                        row = { id = id, need = 0, baseNeed = 0, at = math.huge }
+                        totals[id] = row
+                        order[#order + 1] = id
+                    end
+                    local remExtra = curStep <= 1 and capExtra or math.min(capExtra, math.max(0, (reserveRemainingIn[id] or 0) - (reserveRemainingOut[id] or 0)))
+                    if remExtra > 0 then
+                        row.reserveNeed = remExtra
+                        row.need = (row.baseNeed or 0) + remExtra
+                    end
+                end
+            end
         end
         local economy=ns.ProfEconomy
         for _,entry in ipairs(plan.formulas or {}) do
@@ -1331,11 +1366,13 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             local id=entry.id or entry[1]
             if id and needed and not known and entry.usable~=false then
                 local row=totals[id]
-                if not row then row={id=id,need=0,at=math.huge};totals[id]=row;order[#order+1]=id end
+                if not row then row={id=id,need=0,baseNeed=0,at=math.huge};totals[id]=row;order[#order+1]=id end
                 local count=tonumber(entry.count or entry[2]) or 1
                 if count>(row.formulaNeed or 0) then
                     purchase(entry,true)
-                    row.need=row.need+count-(row.formulaNeed or 0)
+                    local addF=count-(row.formulaNeed or 0)
+                    row.need=row.need+addF
+                    row.baseNeed=(row.baseNeed or 0)+addF
                 end
                 row.formulaNeed=math.max(row.formulaNeed or 0,count)
                 row.formula=true
@@ -1348,7 +1385,8 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
                 if plan.useBagMaterials then row.bagMaterialQuotes=plan.bagMaterialQuotes;row.useBagMaterials=true end
                 local tools=tonumber((plan.retainedToolItems or {})[id]) or 0
                 if tools==0 then for _,tool in ipairs(plan.toolItems or {}) do if tool==id then tools=1;break end end end
-                row.planDemand=math.max(0,(originalNeeds[id] or 0)-(originalOutputs[id] or 0))+tools+(row.formulaNeed or 0)
+                local rExtra=useReserveMats and (row.reserveNeed or 0) or 0
+                row.planDemand=math.max(0,(originalNeeds[id] or 0)-(originalOutputs[id] or 0))+tools+(row.formulaNeed or 0)+rExtra
                 row.craftedIntermediate=leaf.planPurchaseCount==0 and (originalOutputs[id] or 0)>0 or nil
             end
         end
@@ -1507,9 +1545,15 @@ end
 
 TipOn = function(bt, title, body)
     bt:SetScript("OnEnter", function(self)
-        ns.ProfModule.TipShow(self, { { title, 1, 0.82, 0 }, { body } }, "ANCHOR_TOP")
+        local tt = getTT()
+        if tt and tt.ShowFollowButtonTip then
+            tt.ShowFollowButtonTip(self, title, body)
+        end
     end)
-    bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    bt:SetScript("OnLeave", function()
+        local tt = getTT()
+        if tt and tt.Hide then tt.Hide() end
+    end)
 end
 
 local function craftNotify(msg)
@@ -1791,10 +1835,10 @@ local function DoImport(slug, profName)
         local auction=slug=="poisons" or e.source=="ah" or e.source=="auction" or e.source=="mixed"
         if auction and e.haveKnown==false then inventoryUnknown=true
         elseif auction then
-            local nm, got = DG.ItemName(e.id)
+            local nm, got = Bridge.ItemName(e.id)
             if not got then
                 missing = missing + 1
-                DG.RequestItem(e.id)
+                Bridge.RequestItem(e.id)
             else
                 local lack = e.planPurchases and not e.purchaseUnknown and (e.ahCount or 0) or math.max(0,e.need-e.have)
                 if e.purchaseUnknown then lack=0 end
@@ -1858,7 +1902,7 @@ local function bidNameMap(force)
     local map = {}
     local function add(id)
         if type(id) ~= "number" then return end
-        local nm = DG.ItemName(id)
+        local nm = Bridge.ItemName(id)
         if type(nm) == "string" and nm ~= "" then map[nm] = id end
     end
     local ds = getDS()
@@ -2081,17 +2125,17 @@ local function BuildBody()
         edgeSize = 1,
     })
     local bgCol = { 0, 0, 0, 0.35 }
-    if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L0 then
-        local l0 = ns.hui.layer.L0
+    if Bridge.HuiTheme() == "hui" and getHui() and getHui().layer and getHui().layer.L0 then
+        local l0 = getHui().layer.L0
         bgCol = { l0[1], l0[2], l0[3], 0.95 }
         f:SetBackdropBorderColor(1, 1, 1, 0.10)
     else
         f:SetBackdropBorderColor(0.30, 0.30, 0.30, 1)
     end
     RoundBG(f, 6, bgCol)
-    if ns.hui and ns.hui.SkinShadow then
+    if getHui() and getHui().SkinShadow then
         f:SetHeight(200)
-        ns.hui.SkinShadow(f, 16, 0.55, 6)
+        getHui().SkinShadow(f, 16, 0.55, 6)
         f:SetHeight(10)
     end
     f.__round = RoundFrame(f, 6, { 1, 1, 1, 0.25 })
@@ -2100,7 +2144,7 @@ local function BuildBody()
 
     f.icon = f:CreateTexture(nil, "ARTWORK")
     f.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(f.icon) end
+    if getHui() and getHui().RoundIcon then getHui().RoundIcon(f.icon) end
     f.icon:SetSize(24, 24)
     f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -10)
 
@@ -2144,20 +2188,15 @@ local function BuildBody()
     f.rankHint:SetSize(196, 24)
     f.rankHint:EnableMouse(true)
     f.rankHint:SetScript("OnEnter", function(self)
-        if self.statusTitle and GameTooltip then
-            ns.ProfModule.TipShow(self, { { self.statusTitle, 1, 0.82, 0 }, { self.statusDetail } }, "ANCHOR_TOP")
-            return
+        local tt = getTT()
+        if tt and tt.ShowFollowRankHintTip then
+            tt.ShowFollowRankHintTip(self, self.statusTitle, self.statusDetail, self.tasks)
         end
-        local ranks = ns.ProfRanks
-        if not (ranks and GameTooltip and self.tasks and #self.tasks > 0) then return end
-        local lines = { { L["专业晋级"], 1, 0.82, 0 } }
-        for _, step in ipairs(self.tasks) do
-            lines[#lines + 1] = { ranks.Title(step), 0.95, 0.78, 0.35 }
-            for _, text in ipairs(ranks.Lines(step)) do lines[#lines + 1] = { text } end
-        end
-        ns.ProfModule.TipShow(self, lines, "ANCHOR_TOP")
     end)
-    f.rankHint:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    f.rankHint:SetScript("OnLeave", function()
+        local tt = getTT()
+        if tt and tt.Hide then tt.Hide() end
+    end)
     f.rankHint:Hide()
 
     f.seg = MakeFS(f, 16, C_GREY, "RIGHT")
@@ -2189,8 +2228,8 @@ local function BuildBody()
             edgeSize = 1,
         })
         local cardCol = { 1, 1, 1, 0.06 }
-        if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L1 then
-            local l1 = ns.hui.layer.L1
+        if Bridge.HuiTheme() == "hui" and getHui() and getHui().layer and getHui().layer.L1 then
+            local l1 = getHui().layer.L1
             cardCol = { l1[1], l1[2], l1[3], 0.95 }
         end
         RoundBG(card, 6, cardCol)
@@ -2199,39 +2238,28 @@ local function BuildBody()
 
         card:EnableMouse(true)
         card:SetScript("OnEnter", function(self)
-            if self.__guide and GameTooltip then
-                GameTooltip:SetOwner(self,"ANCHOR_TOP")
-                GameTooltip:ClearLines()
-                GameTooltip:AddLine(self.__guide.name,1,0.82,0,true)
-                for _,line in ipairs(self.__guide.lines or {}) do GameTooltip:AddLine(line,1,1,1,true) end
-                GameTooltip:Show()
-                return
-            end
-            if not self.__it then return end
-            local PD = ns.ProfModule
-            local extra
-            if PD and PD.PriceTipLines then
-                extra = PD.PriceTipLines(self.__it[1], self.__mats)
-            end
-            DG.ShowItemTip(self, self.__it, extra)
-            if self.__spell and DG.TipAppendLines then
-                DG.TipAppendLines({ { L["点击卡片：打开专业面板、定位本步配方并填好制作次数"], 0.62, 0.86, 1 } })
+            local tt = getTT()
+            if tt and tt.ShowFollowCardTip then
+                tt.ShowFollowCardTip(self, self.__guide, self.__it, self.__mats, self.__spell ~= nil)
             end
         end)
-        card:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        card:SetScript("OnLeave", function()
+            local tt = getTT()
+            if tt and tt.Hide then tt.Hide() end
+        end)
         card:SetScript("OnMouseUp", function(self, button)
             if button == "LeftButton" then
                 jumpPending = nil
                 if self.__spell then
                     jumpCraft(self.__step)
-                    ns.PlaySound(1)
+                    Bridge.PlaySound(1)
                 end
             end
         end)
 
         card.icon = card:CreateTexture(nil, "ARTWORK")
         card.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(card.icon) end
+        if getHui() and getHui().RoundIcon then getHui().RoundIcon(card.icon) end
         card.icon:SetSize(26, 26)
         card.icon:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -8)
 
@@ -2247,12 +2275,13 @@ local function BuildBody()
         card.crafts:SetWordWrap(false)
         card.crafts:SetPoint("TOPLEFT", card, "TOPLEFT", 42, -33)
 
-        card.chipLearn = DG.MakeBadge(card, DG.Q_BADGE_SHARE_BG)
-        card.chipSrc = DG.MakeBadge(card,
+        card.chipLearn = Bridge.MakeBadge(card, Bridge.Const("Q_BADGE_SHARE_BG"))
+        card.chipSrc = Bridge.MakeBadge(card,
             (ns.ProfModule and ns.ProfModule.CARD_COL and ns.ProfModule.CARD_COL.trainer) or { 0.29, 0.33, 0.40 })
         for _, ch in ipairs({ card.chipLearn, card.chipSrc }) do
-            ch.lab:SetFont(ns.FONT, DG.Q_BADGE_FS,
-                (ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE")) or "OUTLINE")
+            local hui = getHui()
+            ch.lab:SetFont(Bridge.Font(), Bridge.Const("Q_BADGE_FS"),
+                (hui and hui.FontFlags and hui.FontFlags("OUTLINE")) or "OUTLINE")
             ch:Hide()
         end
 
@@ -2267,12 +2296,12 @@ local function BuildBody()
             rowsMat[i] = MakeLine(card, 14, C_TEXT)
             local ic = card:CreateTexture(nil, "ARTWORK")
             ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-            if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
+            if getHui() and getHui().RoundIcon then getHui().RoundIcon(ic) end
             ic:SetSize(22, 22)
             ic:Hide()
             rowsMatIcon[i] = ic
             local bd = MakeFS(card, 14, C_GOLD, "RIGHT")
-            bd:SetFont(ns.FONT or "Fonts\\FRIZQT__.TTF", 14, "THICKOUTLINE")
+            bd:SetFont(Bridge.Font() or "Fonts\\FRIZQT__.TTF", 14, "THICKOUTLINE")
             bd:SetShadowColor(0, 0, 0, 1)
             bd:SetShadowOffset(1, -1)
             bd:SetWordWrap(false)
@@ -2293,8 +2322,8 @@ local function BuildBody()
         edgeSize = 1,
     })
     local shopCol = { 1, 1, 1, 0.04 }
-    if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L1 then
-        local l1s = ns.hui.layer.L1
+    if Bridge.HuiTheme() == "hui" and getHui() and getHui().layer and getHui().layer.L1 then
+        local l1s = getHui().layer.L1
         shopCol = { l1s[1], l1s[2], l1s[3], 0.95 }
     end
     RoundBG(f.shop, 6, shopCol)
@@ -2312,7 +2341,7 @@ local function BuildBody()
     f.shop.missTog = CreateFrame("CheckButton", nil, f.shop)
     f.shop.missTog:SetSize(36, 20)
     f.shop.missTog:EnableMouse(true)
-    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(f.shop.missTog) end
+    if getHui() and getHui().ReskinToggle then getHui().ReskinToggle(f.shop.missTog) end
     f.shop.missTog:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -6, -4)
     f.shop.missLab = MakeFS(f.shop, 14, C_TEXT, "RIGHT")
     f.shop.missLab:SetWordWrap(false)
@@ -2322,7 +2351,7 @@ local function BuildBody()
         dbProf().shopOnlyMiss = not onlyMissView()
         self:SetChecked(onlyMissView())
         PF.Paint()
-        ns.PlaySound(1)
+        Bridge.PlaySound(1)
     end)
     f.shop.missTog:SetChecked(onlyMissView())
     TipOn(f.shop.missTog, L["仅显示缺失"],
@@ -2350,17 +2379,17 @@ local function BuildBody()
         rowsShopNum[i] = MakeLine(f.shop, 14, C_GOLD)
         local function MakePill(color)
             local p = CreateFrame("Frame", nil, f.shop, "BackdropTemplate")
-            local solid = ns.hui and ns.hui.BuildSolidFill and true
+            local solid = getHui() and getHui().BuildSolidFill and true
             if solid then
-                p:SetHeight((ns.hui.ChipH and ns.hui.ChipH(14)) or 13.7)
-                p.__chipFill = ns.hui.BuildSolidFill(p, ns.hui.CHIP_S_R, ns.hui.layer.L2)
-                p.__border = ns.hui.BuildRoundBorder(p, ns.hui.CHIP_S_R, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
-                p.fs = MakeFS(p, ns.hui.CHIP_S_FS, C_WHITE, "CENTER")
+                p:SetHeight((getHui().ChipH and getHui().ChipH(14)) or 13.7)
+                p.__chipFill = getHui().BuildSolidFill(p, getHui().CHIP_S_R, getHui().layer.L2)
+                p.__border = getHui().BuildRoundBorder(p, getHui().CHIP_S_R, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
+                p.fs = MakeFS(p, getHui().CHIP_S_FS, C_WHITE, "CENTER")
             else
                 p:SetHeight(17)
                 local cols
-                if ns.hui and ns.hui.BuildCapsule then
-                    cols = ns.hui.BuildCapsule(p, 8, ns.hui.layer.L2)
+                if getHui() and getHui().BuildCapsule then
+                    cols = getHui().BuildCapsule(p, 8, getHui().layer.L2)
                 else
                     local tx = p:CreateTexture(nil, "BACKGROUND")
                     tx:SetAllPoints()
@@ -2371,7 +2400,7 @@ local function BuildBody()
                 p.fs = MakeFS(p, 14, color, "CENTER")
             end
             if solid then
-                p.fs:SetPoint("CENTER", p, "CENTER", 0, (ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)) or 0.5)
+                p.fs:SetPoint("CENTER", p, "CENTER", 0, (getHui().ChipLabelDY and getHui().ChipLabelDY(getHui().CHIP_S_FS)) or 0.5)
             else
                 p.fs:SetAllPoints(p)
             end
@@ -2388,21 +2417,15 @@ local function BuildBody()
         src0:SetScript("OnEnter", function(self)
             local r = self.__row
             if not r or not r.srcText then return end
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:ClearLines()
-            if r.srcKind == 1 then
-                GameTooltip:AddLine(r.srcFull or r.srcText, 1, 0.82, 0, true)
-                local loc = vendorLocOf(r.npcID)
-                GameTooltip:AddLine(loc and L["点击在地图上标出该商人"] or L["该商人的位置暂未收录"],
-                                    0.75, 0.75, 0.75, true)
-            else
-                GameTooltip:AddLine(r.nm, 1, 0.82, 0, true)
+            local tt = getTT()
+            if tt and tt.ShowFollowSourceTip then
+                tt.ShowFollowSourceTip(self, r, vendorLocOf(r.npcID) ~= nil, PF.ShoppingSourceDetail(r.src))
             end
-            local detail = PF.ShoppingSourceDetail(r.src)
-            if detail then GameTooltip:AddLine(detail, 1, 1, 1, true) end
-            GameTooltip:Show()
         end)
-        src0:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        src0:SetScript("OnLeave", function()
+            local tt = getTT()
+            if tt and tt.Hide then tt.Hide() end
+        end)
         if src0.SetHitRectInsets then src0:SetHitRectInsets(-2, -3, -3, -2) end
         src0:SetScript("OnMouseUp", function(self, btn)
             if btn ~= "LeftButton" then return end
@@ -2414,7 +2437,7 @@ local function BuildBody()
             if not loc then
                 craftNotify(format(L["%s 的位置暂未收录"], r.srcFull or r.srcText or "?"))
             end
-            ns.PlaySound(1)
+            Bridge.PlaySound(1)
         end)
     end
     BuildStep(6)
@@ -2425,7 +2448,7 @@ local function BuildBody()
         if not (s0 and s0.slug) then return end
         local nm = profNameOf(s0.slug)
         DoImport(s0.slug, nm)
-        ns.PlaySound(1)
+        Bridge.PlaySound(1)
     end)
     f.shopImp:SetPoint("RIGHT", f.shop.missTog, "LEFT", -(labW + 10), 0)
     TipOn(f.shopImp, L["一键导入到拍卖行"],
@@ -2436,7 +2459,7 @@ local function BuildBody()
         dbProf().shopStepView = not (dbProf().shopStepView and true or false)
         PF.shopScroll = 0
         PF.Paint()
-        ns.PlaySound(1)
+        Bridge.PlaySound(1)
     end)
     f.shopStep:SetPoint("RIGHT", f.shopImp, "LEFT", -10, 0)
     TipOn(f.shopStep, L["分步 / 汇总"],
@@ -2462,19 +2485,19 @@ local function BuildBody()
     f.nowBtn = NewButton(f.card, L["回到当前"], nowW, 20, 13)
     f.nowBtn:SetFrameLevel((f.card:GetFrameLevel() or 0) + 6)
     f.nowBtn:Hide()
-    f.nowBtn:SetScript("OnClick", function() PF.view = 0 PF.Paint() ns.PlaySound(1) end)
+    f.nowBtn:SetScript("OnClick", function() PF.view = 0 PF.Paint() Bridge.PlaySound(1) end)
 
     f.verifyBtn = NewButton(f.card, L["校正产出"], nowW, 20, 13)
     f.verifyBtn:SetFrameLevel((f.card:GetFrameLevel() or 0) + 6)
     f.verifyBtn:Hide()
-    f.verifyBtn:SetScript("OnClick", function() verifyOutputDialog() ns.PlaySound(1) end)
+    f.verifyBtn:SetScript("OnClick", function() verifyOutputDialog() Bridge.PlaySound(1) end)
 
     local labels = { L["购物清单"], L["上一步"], L["下一步"] }
     local onclick = { function() PF.showShop = not PF.showShop PF.Paint() end, PF.Prev, PF.Skip }
     f.btns = {}
     for i = 1, 3 do
         local bt = NewButton(f, labels[i], BTN_W[i], 22, 14)
-        bt:SetScript("OnClick", function() onclick[i]() ns.PlaySound(1) end)
+        bt:SetScript("OnClick", function() onclick[i]() Bridge.PlaySound(1) end)
         f.btns[i] = bt
     end
 
@@ -2494,26 +2517,26 @@ local function BuildBody()
     f.muteBtn.tex = f.muteBtn:CreateTexture(nil, "ARTWORK")
     f.muteBtn.tex:SetSize(12, 12)
     f.muteBtn.tex:SetPoint("CENTER", f.muteBtn, "CENTER", 0, 0)
-    f.muteBtn.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
+    f.muteBtn.tex:SetTexture(Bridge.Media("ProfMute"))
     f.muteBtn:SetScript("OnClick", function()
         local p = dbProf()
         p.muteCue = (not p.muteCue) and true or nil
         PF.PaintMute()
         cueMsg(p.muteCue and L["已静音：不再播放升级语音"] or L["已恢复语音提示"])
         if not p.muteCue then playCue("on") end
-        ns.PlaySound(1)
+        Bridge.PlaySound(1)
     end)
     f.muteBtn:SetScript("OnEnter", function(self)
         self.__hover = true
         PF.PaintMute(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(cueMuted() and L["语音提示：已静音（点击恢复）"] or L["语音提示：开启（点击静音）"], 1, 1, 1)
-        GameTooltip:Show()
+        local tt = getTT()
+        if tt and tt.ShowFollowMuteTip then tt.ShowFollowMuteTip(self, cueMuted()) end
     end)
     f.muteBtn:SetScript("OnLeave", function(self)
         self.__hover = false
         PF.PaintMute(self)
-        GameTooltip:Hide()
+        local tt = getTT()
+        if tt and tt.Hide then tt.Hide() end
     end)
     PF.PaintMute(f.muteBtn)
     BuildStep(7)
@@ -2604,8 +2627,8 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
             local per = (m[2] or 1)
             local need = per * math.max(0, remaining or 0)
             local ok = have >= need
-            local nm, got = DG.ItemName(m[1])
-            if not got then DG.RequestItem(m[1]) pending = true end
+            local nm, got = Bridge.ItemName(m[1])
+            if not got then Bridge.RequestItem(m[1]) pending = true end
             local line = rowsMat[i]
             line:SetTextColor(Unpack(ok and C_OK or C_BAD))
             local txt = format("%s %d/%d", nm, have, need)
@@ -2618,10 +2641,11 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
             line:Show()
             local ic = rowsMatIcon[i]
             local pdm = ns.ProfModule
-            ic:SetTexture((pdm and pdm.ItemIcon and pdm.ItemIcon(m[1])) or DG.ItemIcon(m[1]) or Host.FALLBACK_ICON)
-            if ns.hui and ns.hui.SetIconRing then
-                local mq = DG.QualOf and DG.QualOf(m[1]) or nil
-                ns.hui.SetIconRing(ic, mq and { ns.hui.QColor(mq) } or nil)
+            ic:SetTexture((pdm and pdm.ItemIcon and pdm.ItemIcon(m[1])) or Bridge.ItemIcon(m[1]) or FALLBACK_ICON)
+            local hui = getHui()
+            if hui and hui.SetIconRing then
+                local mq = Bridge.ItemQuality(m[1])
+                hui.SetIconRing(ic, mq and { hui.QColor(mq) } or nil)
             end
             ic:ClearAllPoints()
             ic:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -(56 + (i - 1) * 26))
@@ -2642,13 +2666,13 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
             more:SetWidth(math.max(60, w - (resR or 0)))
             more:Show()
             rowsMatIcon[MAT_MAX + 1]:Hide()
-            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
+            if getHui() and getHui().SetIconRing then getHui().SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
             rowsMatBadge[MAT_MAX + 1]:Hide()
             n = n + 1
         else
             rowsMat[MAT_MAX + 1]:Hide()
             rowsMatIcon[MAT_MAX + 1]:Hide()
-            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
+            if getHui() and getHui().SetIconRing then getHui().SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
             rowsMatBadge[MAT_MAX + 1]:Hide()
         end
     elseif rec then
@@ -2661,12 +2685,12 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
     for i = n + 1, MAT_MAX do
         rowsMat[i]:Hide()
         rowsMatIcon[i]:Hide()
-        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[i], nil) end
+        if getHui() and getHui().SetIconRing then getHui().SetIconRing(rowsMatIcon[i], nil) end
         rowsMatBadge[i]:Hide()
     end
     if n < MAT_MAX + 1 then
         rowsMatIcon[MAT_MAX + 1]:Hide()
-        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
+        if getHui() and getHui().SetIconRing then getHui().SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
         rowsMatBadge[MAT_MAX + 1]:Hide()
     end
     return n, pending, canCraft
@@ -2762,7 +2786,7 @@ function PF.Paint()
         for _, tex in ipairs(f.__round) do tex:SetVertexColor(br, bgc, bb, ba) end
     elseif atCap then
         f:SetBackdropBorderColor(0.93, 0.32, 0.32, 0.95)
-    elseif ns.huiTheme == "hui" then
+    elseif Bridge.HuiTheme() == "hui" then
         f:SetBackdropBorderColor(1, 1, 1, 0.10)
     else
         f:SetBackdropBorderColor(0.30, 0.30, 0.30, 1)
@@ -2833,13 +2857,14 @@ function PF.Paint()
         local prodItem = recItem(rec)
         if prodItem then
             local pdm = ns.ProfModule
-            card.icon:SetTexture((pdm and pdm.ItemIcon and pdm.ItemIcon(prodItem)) or DG.ItemIcon(prodItem))
+            card.icon:SetTexture((pdm and pdm.ItemIcon and pdm.ItemIcon(prodItem)) or Bridge.ItemIcon(prodItem))
         else
-            card.icon:SetTexture(Host.FALLBACK_ICON)
+            card.icon:SetTexture(FALLBACK_ICON)
         end
-        if ns.hui and ns.hui.SetIconRing then
-            local pq = (prodItem and DG.QualOf) and DG.QualOf(prodItem) or nil
-            ns.hui.SetIconRing(card.icon, pq and { ns.hui.QColor(pq) } or nil)
+        local hui = getHui()
+        if hui and hui.SetIconRing then
+            local pq = prodItem and Bridge.ItemQuality(prodItem) or nil
+            hui.SetIconRing(card.icon, pq and { hui.QColor(pq) } or nil)
         end
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)
@@ -2886,9 +2911,13 @@ function PF.Paint()
         else srcLabel, srcColor = L["图纸"], CARD_COL.both end
         local chL, chS = card.chipLearn, card.chipSrc
             chL.lab:SetText(learned and L["已学"] or L["未学"])
-            DG.BadgeTint(chL, learned and DG.Q_BADGE_SHARE_BG or DG.Q_BADGE_RACE_BG)
-            local w1 = math.max(DG.Q_BADGE_MIN_W, FSW(chL.lab, 18) + DG.Q_BADGE_PAD * 2)
-            chL:SetSize(w1, DG.Q_BADGE_H)
+            local badgeMinW = Bridge.Const("Q_BADGE_MIN_W") or 18
+            local badgePad = Bridge.Const("Q_BADGE_PAD") or 4
+            local badgeH = Bridge.Const("Q_BADGE_H") or 16
+            local badgeGap = Bridge.Const("Q_BADGE_GAP") or 4
+            Bridge.BadgeTint(chL, learned and Bridge.Const("Q_BADGE_SHARE_BG") or Bridge.Const("Q_BADGE_RACE_BG"))
+            local w1 = math.max(badgeMinW, FSW(chL.lab, 18) + badgePad * 2)
+            chL:SetSize(w1, badgeH)
             local tagW = w1
             chL:ClearAllPoints()
             if srcLabel then
@@ -2896,14 +2925,14 @@ function PF.Paint()
                 chS:EnableMouse(true)
                 if manual then TipOn(chS, srcLabel, questInfo and questInfo.summary or seg.detail)
                 else TipOn(chS, src or srcLabel, detail) end
-                DG.BadgeTint(chS, srcColor or { 0.29, 0.33, 0.40 })
-                local w2 = math.max(DG.Q_BADGE_MIN_W, FSW(chS.lab, 18) + DG.Q_BADGE_PAD * 2)
-                chS:SetSize(w2, DG.Q_BADGE_H)
+                Bridge.BadgeTint(chS, srcColor or { 0.29, 0.33, 0.40 })
+                local w2 = math.max(badgeMinW, FSW(chS.lab, 18) + badgePad * 2)
+                chS:SetSize(w2, badgeH)
                 chS:ClearAllPoints()
                 chS:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
                 chS:Show()
-                chL:SetPoint("TOPRIGHT", chS, "TOPLEFT", -DG.Q_BADGE_GAP, 0)
-                tagW = tagW + DG.Q_BADGE_GAP + w2
+                chL:SetPoint("TOPRIGHT", chS, "TOPLEFT", -badgeGap, 0)
+                tagW = tagW + badgeGap + w2
             else
                 chS:Hide()
                 chL:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
@@ -2987,7 +3016,7 @@ function PF.Paint()
         local function clipText(txt, maxW)
             if type(txt) ~= "string" or txt == "" then return txt end
             local PDm = ns.ProfModule
-            local CS = ns.hui and ns.hui.CharStep
+            local CS = getHui() and getHui().CharStep
             if not (PDm and PDm.TextW and CS) then return txt end
             local ok, wv = pcall(PDm.TextW, txt, 14)
             if not ok or type(wv) ~= "number" or wv <= maxW then return txt end
@@ -3009,8 +3038,8 @@ function PF.Paint()
         local stepView = (dbProf().shopStepView) and true or false
         f.shopStep:SetText(stepView and L["汇总"] or L["分步"])
         local function pushRow(e)
-            local nm, got = DG.ItemName(e.id)
-            if not got then DG.RequestItem(e.id) pending = true end
+            local nm, got = Bridge.ItemName(e.id)
+            if not got then Bridge.RequestItem(e.id) pending = true end
             local raw = tonumber(e.have) or 0
             local pend = PF.BidPending(e.id, raw)
             local row = {
@@ -3104,10 +3133,10 @@ function PF.Paint()
             local tp = rowsShopTagPill[n + 1]
             local function paintPill(p, txt, x0, wpx, cr, cg, cb, ca)
                 p:ClearAllPoints()
-                p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + ((ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(14)) or -0.8))
+                p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + ((getHui() and getHui().ChipDY and getHui().ChipDY(14)) or -0.8))
                 p:SetWidth(math.max(wpx, 34))
-                if p.__chipFill and ns.hui and ns.hui.PaintSolidFill then
-                    ns.hui.PaintSolidFill(p.__chipFill, ns.hui.ChipSolidBase({ cr, cg, cb }))
+                if p.__chipFill and getHui() and getHui().PaintSolidFill then
+                    getHui().PaintSolidFill(p.__chipFill, getHui().ChipSolidBase({ cr, cg, cb }))
                     if p.__border then
                         for _, t in ipairs(p.__border) do t:SetVertexColor(cr, cg, cb, 1) end
                     end
@@ -3173,10 +3202,10 @@ function PF.Paint()
                     srcp:Hide()
                 end
                 tp:ClearAllPoints()
-                tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + ((ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(14)) or -0.8))
+                tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + ((getHui() and getHui().ChipDY and getHui().ChipDY(14)) or -0.8))
                 tp:SetWidth(math.max(tagW, 34))
-                if tp.__chipFill and ns.hui and ns.hui.PaintSolidFill then
-                    ns.hui.PaintSolidFill(tp.__chipFill, ns.hui.ChipSolidBase({ 0.55, 0.55, 0.55 }))
+                if tp.__chipFill and getHui() and getHui().PaintSolidFill then
+                    getHui().PaintSolidFill(tp.__chipFill, getHui().ChipSolidBase({ 0.55, 0.55, 0.55 }))
                     if tp.__border then
                         for _, t in ipairs(tp.__border) do t:SetVertexColor(0.55, 0.55, 0.55, 1) end
                     end
@@ -3328,7 +3357,7 @@ function PF.PaintImportBtn(bt, slug)
     bt:SetScript("OnClick", function()
         local name = profNameOf(slug)
         DoImport(slug, name)
-        ns.PlaySound(1)
+        Bridge.PlaySound(1)
     end)
     TipOn(bt, text, L["将拍卖行采购的缺口导入拍卖行插件的购物清单；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
     local ifs = bt.GetFontString and bt:GetFontString()
@@ -3373,4 +3402,4 @@ local function connectExecution()
         if PF.f and not state.hidden then PF.f:Show(); PF.Paint() end
     end) end
 end
-if ns.Init then ns.Init(connectExecution) else connectExecution() end
+Bridge.OnInit(connectExecution)

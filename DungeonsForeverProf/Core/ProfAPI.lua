@@ -19,8 +19,20 @@ local function getProfCfg()
   return ns.ProfessionsConfig or (type(gns) == "table" and gns.ProfessionsConfig) or nil
 end
 
-local function getHost()
-  return ns.ProfHost or (type(gns) == "table" and gns.ProfHost) or nil
+local function getBridge()
+  return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+end
+
+local function pickExportFn(name)
+  local ex = delegates.exports
+  if type(ex) == "table" and type(ex[name]) == "function" then
+    return ex[name]
+  end
+  local ui = delegates.ui
+  if type(ui) == "table" and type(ui[name]) == "function" then
+    return ui[name]
+  end
+  return nil
 end
 
 function API.RegisterDelegate(name, impl)
@@ -100,8 +112,9 @@ function API.ProfessionInfo(slug)
   local srcCfg = pcfg or vcfg or {}
   local name = DS and DS.RawText("profession", slug) or nil
   if not name and slug == "crates" then
-    local L = ns.L or (type(gns) == "table" and gns.L)
-    name = (type(L) == "table" and L["板条箱/工匠文书"]) or "Crates & Writs"
+    local b = getBridge()
+    local lt = b and type(b.LocaleRaw) == "function" and b.LocaleRaw() or nil
+    name = (type(lt) == "table" and lt["板条箱/工匠文书"]) or "Crates & Writs"
   end
   name = name or slug
 
@@ -186,9 +199,9 @@ function API.ProfLevel(slug)
 end
 
 function API.ProfLearned(cached)
-  local ui = delegates.ui
-  if ui and type(ui.ProfLearned) == "function" then
-    return ui.ProfLearned(cached)
+  local fn = pickExportFn("ProfLearned")
+  if fn then
+    return fn(cached)
   end
   local out = {}
   if type(_G.GetProfessions) == "function" and type(_G.GetProfessionInfo) == "function" then
@@ -251,9 +264,9 @@ function API.CraftProfessionOf(itemID)
 end
 
 function API.PatternIndex()
-  local ui = delegates.ui
-  if ui and type(ui.PatternIndex) == "function" then
-    return ui.PatternIndex()
+  local fn = pickExportFn("PatternIndex")
+  if fn then
+    return fn()
   end
   local DS = getDS()
   if not DS then return {} end
@@ -351,9 +364,9 @@ function API.CratesList()
 end
 
 function API.CrateOf(id)
-  local ui = delegates.ui
-  if ui and type(ui.CrateOf) == "function" then
-    return ui.CrateOf(id)
+  local fn = pickExportFn("CrateOf")
+  if fn then
+    return fn(id)
   end
   local DS = getDS()
   if not DS or type(id) ~= "number" then return nil end
@@ -379,10 +392,11 @@ function API.CrateIcon()
     if not firstID or id < firstID then firstID = id end
   end
   if not firstID then return nil end
-  local host = getHost()
-  if host and type(host.DG) == "table" and type(host.DG.ItemIcon) == "function" then
-    local ok, tex = pcall(host.DG.ItemIcon, firstID)
-    if ok and tex and tex ~= "" and tex ~= host.FALLBACK_ICON then return tex end
+  local b = getBridge()
+  if b and type(b.ItemIcon) == "function" then
+    local fb = type(b.Const) == "function" and b.Const("FALLBACK_ICON") or nil
+    local tex = b.ItemIcon(firstID)
+    if tex and tex ~= "" and tex ~= fb then return tex end
   end
   if type(_G.C_Item) == "table" and type(_G.C_Item.GetItemIconByID) == "function" then
     local ok, tex = pcall(_G.C_Item.GetItemIconByID, firstID)
@@ -412,9 +426,9 @@ function API.WritsList()
 end
 
 function API.WritOf(itemID)
-  local ui = delegates.ui
-  if ui and type(ui.WritOf) == "function" then
-    return ui.WritOf(itemID)
+  local fn = pickExportFn("WritOf")
+  if fn then
+    return fn(itemID)
   end
   local DS = getDS()
   if not DS or type(itemID) ~= "number" then return nil end
@@ -432,9 +446,9 @@ function API.WritTurnInZone(targetID)
 end
 
 function API.WritZoneOf(targetID)
-  local ui = delegates.ui
-  if ui and type(ui.WritZoneOf) == "function" then
-    return ui.WritZoneOf(targetID)
+  local fn = pickExportFn("WritZoneOf")
+  if fn then
+    return fn(targetID)
   end
   return API.WritTurnInZone(targetID)
 end
@@ -451,9 +465,9 @@ local function isTeachingItem(e, id)
 end
 
 function API.WritNeedOf(id, title)
-  local ui = delegates.ui
-  if ui and type(ui.WritNeedOf) == "function" then
-    return ui.WritNeedOf(id, title)
+  local fn = pickExportFn("WritNeedOf")
+  if fn then
+    return fn(id, title)
   end
   local DS = getDS()
   if not DS or type(id) ~= "number" then return nil end
@@ -706,16 +720,20 @@ function API.ResetItemNameMemo(_hard)
   for k in pairs(itemNameMemo) do
     itemNameMemo[k] = nil
   end
+  local ex = delegates.exports
+  if ex and type(ex.ResetItemNameMemo) == "function" then
+    pcall(ex.ResetItemNameMemo, _hard)
+  end
   local ui = delegates.ui
-  if ui and type(ui.ResetItemNameMemo) == "function" then
+  if ui and type(ui.ResetItemNameMemo) == "function" and (not ex or ui.ResetItemNameMemo ~= ex.ResetItemNameMemo) then
     pcall(ui.ResetItemNameMemo, _hard)
   end
 end
 
 function API.ProfKnows(itemID)
-  local ui = delegates.ui
-  if ui and type(ui.ProfKnows) == "function" then
-    return ui.ProfKnows(itemID) == true
+  local fn = pickExportFn("ProfKnows")
+  if fn then
+    return fn(itemID) == true
   end
   local DS = getDS()
   local Cond = getCond()
@@ -731,9 +749,9 @@ function API.ProfKnows(itemID)
 end
 
 function API.ProductCraftTitle(itemID)
-  local ui = delegates.ui
-  if ui and type(ui.ProductCraftTitle) == "function" then
-    return ui.ProductCraftTitle(itemID)
+  local fn = pickExportFn("ProductCraftTitle")
+  if fn then
+    return fn(itemID)
   end
   local slug = API.CraftProfessionOf(itemID)
   if not slug then return nil end
@@ -742,49 +760,49 @@ function API.ProductCraftTitle(itemID)
 end
 
 function API.PatternTipLines(id, title)
-  local ui = delegates.ui
-  if ui and type(ui.PatternTipLines) == "function" then
-    return ui.PatternTipLines(id, title)
+  local fn = pickExportFn("PatternTipLines")
+  if fn then
+    return fn(id, title)
   end
   return nil
 end
 
 function API.ProductTipLines(id, title)
-  local ui = delegates.ui
-  if ui and type(ui.ProductTipLines) == "function" then
-    return ui.ProductTipLines(id, title)
+  local fn = pickExportFn("ProductTipLines")
+  if fn then
+    return fn(id, title)
   end
   return nil
 end
 
 function API.CrateTipLines(id)
-  local ui = delegates.ui
-  if ui and type(ui.CrateTipLines) == "function" then
-    return ui.CrateTipLines(id)
+  local fn = pickExportFn("CrateTipLines")
+  if fn then
+    return fn(id)
   end
   return nil
 end
 
 function API.WritTipLines(id)
-  local ui = delegates.ui
-  if ui and type(ui.WritTipLines) == "function" then
-    return ui.WritTipLines(id)
+  local fn = pickExportFn("WritTipLines")
+  if fn then
+    return fn(id)
   end
   return nil
 end
 
 function API.CrateNeedLines(id, title)
-  local ui = delegates.ui
-  if ui and type(ui.CrateNeedLines) == "function" then
-    return ui.CrateNeedLines(id, title)
+  local fn = pickExportFn("CrateNeedLines")
+  if fn then
+    return fn(id, title)
   end
   return nil
 end
 
 function API.WritNeedLines(id, title)
-  local ui = delegates.ui
-  if ui and type(ui.WritNeedLines) == "function" then
-    return ui.WritNeedLines(id, title)
+  local fn = pickExportFn("WritNeedLines")
+  if fn then
+    return fn(id, title)
   end
   return nil
 end
@@ -824,6 +842,141 @@ function API.HoverRow()
   local ui = delegates.ui
   if ui and type(ui.HoverRow) == "function" then return ui.HoverRow() end
   return ui and ui.hoverRow or nil
+end
+
+function API.WrapRenderForProfile(wrapper)
+  local ui = delegates.ui
+  if ui and type(ui.WrapRenderForProfile) == "function" then
+    return ui.WrapRenderForProfile(wrapper)
+  end
+  return nil
+end
+
+function API.MarketWatchlistMeta()
+  local DS = getDS()
+  return (DS and type(DS.MarketWatchlistMeta) == "function" and DS.MarketWatchlistMeta()) or { schemaVersion = 1, windowDays = 7, markets = {} }
+end
+
+function API.MarketWatchlistUpdatedAt()
+  local DS = getDS()
+  return (DS and type(DS.MarketWatchlistUpdatedAt) == "function" and DS.MarketWatchlistUpdatedAt()) or nil
+end
+
+function API.MarketWatchlist(marketKeyOrCode)
+  local DS = getDS()
+  return (DS and type(DS.MarketWatchlist) == "function" and DS.MarketWatchlist(marketKeyOrCode)) or {}
+end
+
+function API.MarketEasySellEntry(itemID, marketKeyOrCode)
+  local DS = getDS()
+  return (DS and type(DS.MarketEasySellEntry) == "function" and DS.MarketEasySellEntry(itemID, marketKeyOrCode)) or nil
+end
+
+function API.IsMarketEasySell(itemID, marketKeyOrCode)
+  local DS = getDS()
+  return (DS and type(DS.IsMarketEasySell) == "function" and DS.IsMarketEasySell(itemID, marketKeyOrCode)) or false
+end
+
+function API.GetExcludedRecoveryItems(slug)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.GetExcludedItems) == "function" then
+    return rec.GetExcludedItems(slug)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.GetExcludedRecoveryItems) == "function" then
+    return db.GetExcludedRecoveryItems(slug)
+  end
+  return {}
+end
+
+function API.IsExcludedRecoveryItem(slug, itemID)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.IsExcludedItem) == "function" then
+    return rec.IsExcludedItem(slug, itemID)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.IsExcludedRecoveryItem) == "function" then
+    return db.IsExcludedRecoveryItem(slug, itemID)
+  end
+  return false
+end
+
+function API.SetExcludedRecoveryItem(slug, itemID, excluded)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.SetExcludedItem) == "function" then
+    return rec.SetExcludedItem(slug, itemID, excluded)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.SetExcludedRecoveryItem) == "function" then
+    return db.SetExcludedRecoveryItem(slug, itemID, excluded)
+  end
+  return false
+end
+
+function API.ToggleExcludedRecoveryItem(slug, itemID)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.ToggleExcludedItem) == "function" then
+    return rec.ToggleExcludedItem(slug, itemID)
+  end
+  local cur = API.IsExcludedRecoveryItem(slug, itemID)
+  return API.SetExcludedRecoveryItem(slug, itemID, not cur)
+end
+
+function API.ResetRecoveryOverrides(slug)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.ResetOverrides) == "function" then
+    return rec.ResetOverrides(slug)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.ResetRecoveryOverrides) == "function" then
+    return db.ResetRecoveryOverrides(slug)
+  end
+  return false
+end
+
+function API.GetCustomRecoveryRecipes(slug)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.GetCustomRecipes) == "function" then
+    return rec.GetCustomRecipes(slug)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.GetCustomRecoveryRecipes) == "function" then
+    return db.GetCustomRecoveryRecipes(slug)
+  end
+  return {}
+end
+
+function API.IsCustomRecoveryRecipe(slug, spellID)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.IsCustomRecipe) == "function" then
+    return rec.IsCustomRecipe(slug, spellID)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.IsCustomRecoveryRecipe) == "function" then
+    return db.IsCustomRecoveryRecipe(slug, spellID)
+  end
+  return false
+end
+
+function API.SetCustomRecoveryRecipe(slug, spellID, enabled)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.SetCustomRecipe) == "function" then
+    return rec.SetCustomRecipe(slug, spellID, enabled)
+  end
+  local db = ns.ProfDB or (type(gns) == "table" and gns.ProfDB)
+  if db and type(db.SetCustomRecoveryRecipe) == "function" then
+    return db.SetCustomRecoveryRecipe(slug, spellID, enabled)
+  end
+  return false
+end
+
+function API.ToggleCustomRecoveryRecipe(slug, spellID)
+  local rec = ns.ProfRecovery or (type(gns) == "table" and gns.ProfRecovery)
+  if rec and type(rec.ToggleCustomRecipe) == "function" then
+    return rec.ToggleCustomRecipe(slug, spellID)
+  end
+  local cur = API.IsCustomRecoveryRecipe(slug, spellID)
+  return API.SetCustomRecoveryRecipe(slug, spellID, not cur)
 end
 
 local function EnsureProfAPI()

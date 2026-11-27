@@ -25,45 +25,84 @@ local function getSupply() return getFrom("ProfSupply") end
 local function getMerge() return getFrom("ProfSourceMerge") end
 local function getExec() return getFrom("ProfExecution") end
 local function getFollow() return getFrom("ProfFollow") end
-local function getBridge() return getFrom("AuctionBridge") end
-local function getEasyBridge() return getFrom("EasyBridge") end
+local function getRec() return getFrom("ProfRecovery") end
+local function getHostBridge() return getFrom("ProfHostBridge") end
+local function getTT() return getFrom("ProfTooltips") end
+local function getEX() return getFrom("ProfMainExports") end
+local function getBridge()
+  local s = getFrom("ProfAuctionScanner")
+  if s then return s end
+  local hb = getHostBridge()
+  return hb and hb.ExternalAuctionBridge and hb.ExternalAuctionBridge() or nil
+end
 local function getCDWatch() return getFrom("ProfCDWatch") end
 local function getGatherRoutes() return getFrom("ProfGatheringRoutes") end
 local function getSolverRun() return getFrom("ProfSolverRun") end
-local function getHost() return getFrom("ProfHost") end
-local function getHui() return getFrom("hui") end
+local function getHui()
+  local hb = getHostBridge()
+  return hb and hb.Hui and hb.Hui() or nil
+end
+local function getFont()
+  local hb = getHostBridge()
+  return hb and hb.Font and hb.Font() or nil
+end
+local function hostConst(name, dflt)
+  local hb = getHostBridge()
+  local v = hb and hb.Const and hb.Const(name)
+  if v ~= nil then return v end
+  return dflt
+end
+local function hostMedia(key)
+  local hb = getHostBridge()
+  return hb and hb.Media and hb.Media(key) or ""
+end
+local function hostLocale()
+  local hb = getHostBridge()
+  return hb and hb.Locale and hb.Locale() or "zhCN"
+end
 
 local L = setmetatable({}, {
   __index = function(_, k)
-    local lt = getFrom("L")
-    if type(lt) == "table" and lt[k] ~= nil then return lt[k] end
+    local hb = getHostBridge()
+    if hb and type(hb.L) == "function" then return hb.L(k) end
     return tostring(k)
   end,
 })
 
-local Host = getHost()
-local DG = (type(Host) == "table" and type(Host.DG) == "table") and Host.DG or {}
-local function getDG()
-  local h = getHost()
-  if type(h) == "table" and type(h.DG) == "table" then
-    DG = h.DG
-  elseif type(getFrom("DG")) == "table" then
-    DG = getFrom("DG")
-  end
-  return DG
+local function Unpack(...)
+  local hb = getHostBridge()
+  if hb and type(hb.Unpack) == "function" then return hb.Unpack(...) end
+  local fn = _G.unpack
+  if type(fn) == "function" then return fn(...) end
 end
-
-local Unpack = (type(Host) == "table" and type(Host.Unpack) == "function") and Host.Unpack or unpack or table.unpack
-local MakeFS = type(Host) == "table" and Host.MakeFS or function() return {} end
-local NewButton = type(Host) == "table" and Host.NewButton or function() return {} end
-local SetOutline = type(Host) == "table" and Host.SetOutline or function() end
-local SetButtonSelected = type(Host) == "table" and Host.SetButtonSelected or function() end
-local C_GOLD = (type(Host) == "table" and Host.C_GOLD) or { 1, 0.82, 0 }
-local C_GREEN = (type(Host) == "table" and Host.C_GREEN) or { 0.25, 0.85, 0.35 }
-local C_GREY = (type(Host) == "table" and Host.C_GREY) or { 0.55, 0.55, 0.55 }
-local C_DIM = (type(Host) == "table" and Host.C_DIM) or { 0.63, 0.63, 0.63 }
-local C_WHITE = (type(Host) == "table" and Host.C_WHITE) or { 1, 1, 1 }
-local C_TEXT = (type(Host) == "table" and Host.C_TEXT) or { 0.88, 0.88, 0.88 }
+local function MakeFS(...)
+  local hb = getHostBridge()
+  if hb and type(hb.MakeFS) == "function" then return hb.MakeFS(...) end
+  return {}
+end
+local function NewButton(...)
+  local hb = getHostBridge()
+  if hb and type(hb.NewButton) == "function" then return hb.NewButton(...) end
+  return {}
+end
+local function SetOutline(...)
+  local hb = getHostBridge()
+  if hb and type(hb.SetOutline) == "function" then return hb.SetOutline(...) end
+end
+local function SetButtonSelected(...)
+  local hb = getHostBridge()
+  if hb and type(hb.SetButtonSelected) == "function" then return hb.SetButtonSelected(...) end
+end
+local function hostColor(name, dflt)
+  local hb = getHostBridge()
+  return (hb and hb.Color and hb.Color(name)) or dflt
+end
+local C_GOLD = hostColor("C_GOLD", { 1, 0.82, 0 })
+local C_GREEN = hostColor("C_GREEN", { 0.25, 0.85, 0.35 })
+local C_GREY = hostColor("C_GREY", { 0.55, 0.55, 0.55 })
+local C_DIM = hostColor("C_DIM", { 0.63, 0.63, 0.63 })
+local C_WHITE = hostColor("C_WHITE", { 1, 1, 1 })
+local C_TEXT = hostColor("C_TEXT", { 0.88, 0.88, 0.88 })
 local C_HELP = { 0.58, 0.64, 0.74 }
 local format = string.format
 
@@ -76,56 +115,46 @@ local function FSW(fs, dflt)
   return dflt or 0
 end
 
-local CONTENT_W = (type(Host) == "table" and Host.CONTENT_W) or 940
-local PAGE_INSET = (type(Host) == "table" and Host.PAGE_INSET) or 12
-local ROW_CLASS = (type(Host) == "table" and Host.ROW_CLASS) or "Button"
-local FALLBACK_ICON = (type(Host) == "table" and Host.FALLBACK_ICON) or "Interface\\Icons\\INV_Misc_QuestionMark"
+local CONTENT_W = hostConst("CONTENT_W", 940)
+local PAGE_INSET = hostConst("PAGE_INSET", 12)
+local ROW_CLASS = hostConst("ROW_CLASS", "Button")
+local FALLBACK_ICON = hostConst("FALLBACK_ICON", "Interface\\Icons\\INV_Misc_QuestionMark")
 
 local function refreshHostRefs()
-  local h = getHost()
-  if type(h) ~= "table" then return nil end
-  Host = h
-  if type(h.DG) == "table" then DG = h.DG end
-  if type(h.Unpack) == "function" then Unpack = h.Unpack end
-  if type(h.MakeFS) == "function" then MakeFS = h.MakeFS end
-  if type(h.NewButton) == "function" then NewButton = h.NewButton end
-  if type(h.SetOutline) == "function" then SetOutline = h.SetOutline end
-  if type(h.SetButtonSelected) == "function" then SetButtonSelected = h.SetButtonSelected end
-  if h.C_GOLD then C_GOLD = h.C_GOLD end
-  if h.C_GREEN then C_GREEN = h.C_GREEN end
-  if h.C_GREY then C_GREY = h.C_GREY end
-  if h.C_DIM then C_DIM = h.C_DIM end
-  if h.C_WHITE then C_WHITE = h.C_WHITE end
-  if h.C_TEXT then C_TEXT = h.C_TEXT end
-  if h.CONTENT_W then CONTENT_W = h.CONTENT_W end
-  if h.PAGE_INSET then PAGE_INSET = h.PAGE_INSET end
-  if h.ROW_CLASS then ROW_CLASS = h.ROW_CLASS end
-  if h.FALLBACK_ICON then FALLBACK_ICON = h.FALLBACK_ICON end
-  return h
+  local hb = getHostBridge()
+  if type(hb) ~= "table" then return nil end
+  C_GOLD = hostColor("C_GOLD", C_GOLD)
+  C_GREEN = hostColor("C_GREEN", C_GREEN)
+  C_GREY = hostColor("C_GREY", C_GREY)
+  C_DIM = hostColor("C_DIM", C_DIM)
+  C_WHITE = hostColor("C_WHITE", C_WHITE)
+  C_TEXT = hostColor("C_TEXT", C_TEXT)
+  CONTENT_W = hostConst("CONTENT_W", CONTENT_W)
+  PAGE_INSET = hostConst("PAGE_INSET", PAGE_INSET)
+  ROW_CLASS = hostConst("ROW_CLASS", ROW_CLASS)
+  FALLBACK_ICON = hostConst("FALLBACK_ICON", FALLBACK_ICON)
+  return hb.Host and hb.Host() or nil
 end
 
 local function perfMark(tag)
-  local op = getFrom("OpenPerf")
-  if type(op) == "table" and type(op.Mark) == "function" then pcall(op.Mark, tag) end
+  local hb = getHostBridge()
+  if hb and hb.PerfMark then hb.PerfMark(tag) end
 end
 
 local function perfBegin(tag)
-  local op = getFrom("OpenPerf")
-  if type(op) == "table" and type(op.Begin) == "function" then pcall(op.Begin, tag) end
+  local hb = getHostBridge()
+  if hb and hb.PerfBegin then hb.PerfBegin(tag) end
 end
 
 local function pageVisible(page)
-  local pv = getFrom("PageVisible")
-  if type(pv) == "function" then
-    local ok, v = pcall(pv, page)
-    return ok and v == true
-  end
+  local hb = getHostBridge()
+  if hb and hb.PageVisible then return hb.PageVisible(page) end
   return (type(page) == "table" and type(page.IsVisible) == "function" and page:IsVisible()) and true or false
 end
 
 local function playSoundSafe(id)
-  local ps = getFrom("PlaySound")
-  if type(ps) == "function" then pcall(ps, id) end
+  local hb = getHostBridge()
+  if hb and hb.PlaySound then hb.PlaySound(id) end
 end
 
 local function uiTable()
@@ -178,145 +207,38 @@ if type(gns) == "table" and gns ~= ns then
   gns.ProfModule = PD
 end
 
-local AH_EA, AH_AU = "EasyAuction", "Auctionator"
-local AH_LINK = "dfah:"
-
-local function AddonLoadState(name)
-    local numFn = (C_AddOns and C_AddOns.GetNumAddOns) or GetNumAddOns
-    local infoFn = (C_AddOns and C_AddOns.GetAddOnInfo) or GetAddOnInfo
-    local loadedFn = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
-    local st = "missing"
-    local ok, total = pcall(numFn)
-    if ok and type(total) == "number" and type(infoFn) == "function" then
-        for i = 1, total do
-            local got, nm = pcall(infoFn, i)
-            if got and nm == name then
-                st = "disabled"
-                if type(loadedFn) == "function" then
-                    local okL, loaded = pcall(loadedFn, i)
-                    if okL and loaded then st = "loaded" end
-                end
-                break
-            end
-        end
-    end
-    return st
-end
+local AH_NATIVE = "DungeonsForever"
 
 function PD.AHStates()
-    if PD.__ahStates then return PD.__ahStates.ea, PD.__ahStates.au end
-    PD.__ahStates = { ea = AddonLoadState(AH_EA), au = AddonLoadState(AH_AU) }
-    return PD.__ahStates.ea, PD.__ahStates.au
+    return "native", "native"
 end
 
 function PD.AHSourceName()
-    local bridge = getBridge()
-    local snap = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
-    local src = snap and snap.source
-    if src == "easyauction" then return AH_EA end
-    if src == "auctionator" then return AH_AU end
-    local ea, au = PD.AHStates()
-    if au == "loaded" and ea ~= "loaded" then return AH_AU end
-    if ea == "loaded" and au ~= "loaded" then return AH_EA end
-    return AH_AU
-end
-
-local ahCopyAt, ahCopyName
-
-local function AHName(name)
-    return format("|cff7fd4ff|H%s%s|h%s|h|r", AH_LINK, name, name)
-end
-
-local function AHCopy(link)
-    if type(link) ~= "string" or string.sub(link, 1, #AH_LINK) ~= AH_LINK then return false end
-    local name = string.sub(link, #AH_LINK + 1)
-    if name ~= AH_EA and name ~= AH_AU then return false end
-    local now = (type(GetTime) == "function") and GetTime() or 0
-    if ahCopyName == name and now - (ahCopyAt or 0) < 0.3 then return true end
-    ahCopyName, ahCopyAt = name, now
-    local bridge = getBridge()
-    if bridge and bridge.ShowCopy then
-        bridge.ShowCopy(name, format(L["插件名称：%s（已全选，Ctrl+C 复制）"], name))
-        return true
-    end
-    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
-        DEFAULT_CHAT_FRAME:AddMessage(name)
-    end
-    return true
-end
-
-local function InstallAHCopy()
-    if PD.__ahCopyReady then return end
-    PD.__ahCopyReady = true
-    if type(EventRegistry) == "table" and type(EventRegistry.RegisterCallback) == "function" then
-        pcall(EventRegistry.RegisterCallback, EventRegistry, "SetItemRef",
-            function(_, link) AHCopy(link) end, PD)
-    end
-    if type(hooksecurefunc) == "function" and type(_G.SetItemRef) == "function" then
-        pcall(hooksecurefunc, "SetItemRef", function(link) AHCopy(link) end)
-    end
-    if type(GameTooltip) == "table" and type(GameTooltip.SetHyperlinksEnabled) == "function" then
-        pcall(GameTooltip.SetHyperlinksEnabled, GameTooltip, true)
-    end
-end
-
-do
-    local initFn = getFrom("Init")
-    if type(initFn) == "function" then initFn(InstallAHCopy) else InstallAHCopy() end
+    return AH_NATIVE
 end
 
 function PD.AHEnableHint(short)
-    local ea, au = PD.AHStates()
-    if ea == "loaded" or au == "loaded" then return L["请扫描拍卖行"] end
-    if ea == "missing" and au == "missing" then
-        return short and L["请装行情插件"] or L["请安装行情插件"]
-    end
-    if short then return L["请启用行情插件"] end
-    if ea == "disabled" and au == "disabled" then
-        return format(L["请启用 %s 或 %s"], AHName(AH_EA), AHName(AH_AU))
-    end
-    if ea == "disabled" then return format(L["请启用 %s"], AHName(AH_EA)) end
-    return format(L["请启用 %s"], AHName(AH_AU))
+    return short and L["请扫描拍卖行"] or L["请在拍卖行点击「扫描行情」"]
 end
 
 function PD.AuctionatorState()
     local bridge = getBridge()
-    local status = bridge and bridge.Status and bridge.Status()
-    local state = status and status.state
-    if state == "missing" or state == "disabled" or state == "loading" then return state end
-    local ra = raMod()
-    local avail = (bridge and bridge.Available and bridge.Available())
-        or (ra and ra.Available and ra.Available())
-    if not avail then
-        local ea, au = PD.AHStates()
-        if ea == "missing" and au == "missing" then return "missing" end
-        if ea ~= "loaded" and au ~= "loaded" then return "disabled" end
+    local snapshot = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    if snapshot and snapshot.status == "available" then
+        return "ok"
+    end
+    local scan = bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    if scan and (scan.status == "scanning" or scan.status == "processing") then
         return "loading"
     end
-    if not (ra and ra.HasPriceData and ra.HasPriceData()) then return "noprice" end
-    return "ok"
+    return "noprice"
 end
 
 function PD.AuctionatorStatusText()
     local st = PD.AuctionatorState()
-    local ea, au = PD.AHStates()
-    if st == "missing" then
-        return format(L["未安装 %s 或 %s；装好其中一个后在拍卖行完成一次完整扫描。"],
-            AHName(AH_EA), AHName(AH_AU))
-    end
-    if st == "disabled" then
-        if ea == "disabled" and au == "disabled" then
-            return format(L["%s 和 %s 均安装但未启用，请启用一个后重载界面。"],
-                AHName(AH_EA), AHName(AH_AU))
-        end
-        if ea == "disabled" then
-            return format(L["%s 已安装但未启用，请启用后重载界面。"], AHName(AH_EA))
-        end
-        return format(L["%s 已安装但未启用，请启用后重载界面。"], AHName(AH_AU))
-    end
     if st == "loading" then return L["拍卖行价格读取中…"] end
     if st == "ok" then return L["拍卖行价格可用"] end
-    return L["请在拍卖行完成一次完整扫描后重新计算路线。"]
+    return L["尚无拍卖行行情，请打开拍卖行点击「扫描行情」。"]
 end
 
 function PD.SnapshotAge(s)
@@ -329,133 +251,94 @@ function PD.ScanSnapshotText(extraOnly)
     local bridge = getBridge()
     local snapshot = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
     if not snapshot then return end
-    if snapshot.status=="available" then
-        local minutes=math.max(0,math.floor(((time and time() or 0)-snapshot.observedAt)/60))
-        if snapshot.source=="easyauction" then
-            if extraOnly then return nil end
-            return format(L["使用 %d 分钟前的 EasyAuction 行情"],minutes)
-        end
-        local scan=bridge.FullScanStatus and bridge.FullScanStatus()
-        if scan and (scan.status=="scanning" or scan.status=="processing") then
+    if snapshot.status == "available" then
+        local minutes = math.max(0, math.floor(((time and time() or 0) - snapshot.observedAt) / 60))
+        local scan = bridge.FullScanStatus and bridge.FullScanStatus()
+        if scan and (scan.status == "scanning" or scan.status == "processing") then
             return L["正在更新扫描，当前使用上次完整扫描"]
-        elseif scan and (scan.status=="failed" or scan.status=="incomplete" or scan.status=="unverified") then
-            return format(L["本次扫描失败，沿用 %d 分钟前的完整扫描"],minutes)
+        elseif scan and (scan.status == "failed" or scan.status == "incomplete" or scan.status == "unverified" or scan.status == "cancelled") then
+            return format(L["本次扫描未完成，沿用 %d 分钟前的完整扫描"], minutes)
         end
         if extraOnly then return nil end
-        return format(L["使用 %d 分钟前的完整扫描"],minutes)
-    elseif snapshot.status=="expired" then
-        return L["完整扫描数据已超过 2 天，请更新后重新计算。"]
-    elseif snapshot.status=="mismatch" then
-        return L["已保存的完整扫描与当前规则集或阵营不匹配，请在当前市场完成一次完整扫描。"]
-    elseif snapshot.status=="invalid" then
-        return L["已保存的完整扫描数据无效，请重新完成一次完整扫描。"]
+        return format(L["使用 %d 分钟前的自建行情扫描"], minutes)
+    elseif snapshot.status == "expired" then
+        return L["完整扫描数据已超过 2 天，请打开拍卖行点击「扫描行情」更新。"]
+    elseif snapshot.status == "mismatch" then
+        return L["已保存的完整扫描与当前规则集或阵营不匹配，请在当前市场打开拍卖行点击「扫描行情」。"]
+    elseif snapshot.status == "invalid" then
+        return L["已保存的完整扫描数据无效，请打开拍卖行重新点击「扫描行情」。"]
     end
 end
 
 function PD.ScanHeadline()
     local bridge = getBridge()
-    local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
-    local status=snapshot and snapshot.status
-    if status=="expired" then return L["完整扫描数据已超过 2 天"] end
-    if status=="mismatch" then return L["已保存的完整扫描与当前规则集或阵营不匹配"] end
-    if status=="invalid" then return L["已保存的完整扫描数据无效"] end
-    local scan=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
-    if scan and (status==nil or status=="missing") and scan.status=="noresponse" then
+    local snapshot = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    local status = snapshot and snapshot.status
+    if status == "expired" then return L["完整扫描数据已超过 2 天"] end
+    if status == "mismatch" then return L["已保存的完整扫描与当前规则集或阵营不匹配"] end
+    if status == "invalid" then return L["已保存的完整扫描数据无效"] end
+    local scan = bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    if scan and (status == nil or status == "missing") and scan.status == "noresponse" then
         return L["这次完整扫描没有得到拍卖行的回应"]
     end
     return PD.ScanSnapshotText()
 end
 
 function PD.ScanModeAdvice()
-    local bridge = getBridge()
-    if bridge and bridge.ReplicateScanEnabled and bridge.ReplicateScanEnabled()==true then
-        return L["不使用专业功能时，推荐切回摘要模式。"]
-    end
+    return nil
 end
 
 function PD.ScanFixLines()
-    local bridge=getBridge()
-    local enabled=bridge and bridge.ReplicateScanEnabled and bridge.ReplicateScanEnabled()
-    local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
-    local st=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
-    local capture=st and st.status
-    local partial=snapshot and snapshot.status=="expired" and snapshot.staleIncomplete
-    local out={}
-    local eb=getEasyBridge()
-    if capture=="noresponse" then
-        out[#out+1]=L["拍卖行没有返回扫描数据：距上次完整扫描不足 15 分钟时，服务器会忽略请求。"]
-        out[#out+1]=L["请等 15 分钟后到拍卖行再点一次「完整扫描」，扫描期间不要关闭拍卖行。"]
+    local bridge = getBridge()
+    local snapshot = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    local st = bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    local capture = st and st.status
+    local partial = snapshot and snapshot.status == "expired" and snapshot.staleIncomplete
+    local out = {}
+    if capture == "noresponse" then
+        out[#out + 1] = L["拍卖行没有返回扫描数据：距上次完整扫描不足 15 分钟时，服务器会忽略请求。"]
+        out[#out + 1] = L["请等 15 分钟冷却结束后，在拍卖行顶部重新点击「扫描行情」，扫描期间不要关闭拍卖行。"]
         return out
     end
-    if eb and eb.Available and eb.Available() and snapshot and snapshot.source=="easyauction" then
-        out[#out+1]=L["EasyAuction 行情已超过 2 天，请打开拍卖行让它重新扫描。"]
-        return out
-    end
-    if enabled~=true then
-        local ea, au = PD.AHStates()
-        if au ~= "loaded" and ea == "loaded" then
-            out[#out+1]=L["EasyAuction 会随拍卖行打开自动扫描；如果仍提示过期，请重载界面后再打开一次拍卖行。"]
-        else
-            out[#out+1]=L["设置 → 插件 → Auctionator → 高级里勾选「较慢的备用扫描模式」"]
-            out[#out+1]=L["重载界面后再到拍卖行完整扫描一次。"]
-        end
-    elseif capture=="summary" or capture=="mode-changed" then
-        out[#out+1]=L["如果你已经完整扫描过，这里仍然提示过期，说明插件没收到这次扫描；请重载界面后再扫一次。"]
-    elseif partial then
-        out[#out+1]=L["过期数据不完整：库存数量已被清理，本次只能按过期价格计算，库存按未知处理。"]
+    if partial then
+        out[#out + 1] = L["过期数据不完整：库存数量已被清理，本次只能按过期价格计算，库存按未知处理。"]
+    elseif snapshot and snapshot.status == "expired" then
+        out[#out + 1] = L["数据已过有效期；请打开拍卖行点击「扫描行情」，或点上面那行用过期数据算一次。"]
     else
-        out[#out+1]=L["数据已过有效期；请到拍卖行再做一次完整扫描，或点上面那行用过期数据算一次。"]
+        out[#out + 1] = L["请打开拍卖行点击顶部「扫描行情」按钮，等待进度完成即可更新价格与挂单深度。"]
     end
     return out
 end
 
 function PD.AHReplicateFix()
-    local ea, au = PD.AHStates()
-    if au ~= "loaded" and ea == "loaded" then
-        return L["EasyAuction 会随拍卖行打开自动扫描；如果仍提示过期，请重载界面后再打开一次拍卖行。"]
-    end
-    return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行完成一次完整扫描。"]
+    return L["请打开拍卖行点击顶部「扫描行情」按钮完成一次全量扫描。"]
 end
 
 function PD.ReplicateScanMessage(reason)
-    if reason=="easyauctionStale" then
-        return L["EasyAuction 行情已超过 2 天，请打开拍卖行让它重新扫描。"]
+    if reason == "expired" or reason == "mismatch" or reason == "invalid" then
+        return PD.ScanSnapshotText(), PD.ScanFixLines()
     end
-    if reason=="replicateModeDisabled" or reason=="replicateScanRequired" or reason=="replicateModeUnknown" then
-        local bridge=getBridge()
-        local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
-        if snapshot and snapshot.status~="available" and snapshot.status~="missing" then
+    if reason == "scanRequired" or reason == "replicateScanRequired" or reason == "replicateModeDisabled" or reason == "replicateModeUnknown" then
+        local bridge = getBridge()
+        local snapshot = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+        if snapshot and snapshot.status ~= "available" and snapshot.status ~= "missing" then
             return PD.ScanSnapshotText(), PD.ScanFixLines()
         end
-    end
-    if reason=="replicateModeDisabled" then
-        return PD.AHReplicateFix()
-    elseif reason=="replicateScanRequired" then
-        local bridge = getBridge()
-        if bridge and bridge.FullScanSnapshotStatus then
-            return L["尚无可用的完整扫描数据，请打开拍卖行完成一次完整扫描。"]
-        end
-        return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
-    elseif reason=="replicateModeUnknown" then
-        local st=PD.AuctionatorState()
-        if st=="missing" or st=="disabled" or st=="loading" then return PD.AuctionatorStatusText() end
-        return PD.AHReplicateFix()
+        return L["尚无可用的完整扫描数据，请打开拍卖行点击顶部「扫描行情」完成一次扫描。"], PD.ScanFixLines()
     end
 end
 
 function PD.ReplicateScanWarning()
     local bridge = getBridge()
-    if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==true then return nil end
-    local st=PD.AuctionatorState()
-    if st=="missing" or st=="disabled" or st=="loading" then return PD.AuctionatorStatusText(),true end
+    if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady() == true then return nil end
     if not (bridge and bridge.ReplicateScanReady) then
-        local text,fix=PD.ReplicateScanMessage("replicateModeUnknown")
-        return text,true,fix
+        local text, fix = PD.ReplicateScanMessage("scanRequired")
+        return text, true, fix
     end
-    local ready,reason=bridge.ReplicateScanReady()
-    if ready==true then return nil end
-    local text,fix=PD.ReplicateScanMessage(reason or "replicateScanRequired")
-    return text,true,fix
+    local ready, reason = bridge.ReplicateScanReady()
+    if ready == true then return nil end
+    local text, fix = PD.ReplicateScanMessage(reason or "scanRequired")
+    return text, true, fix
 end
 
 do
@@ -481,98 +364,98 @@ end
 
 function PD.PriceStampText(sec)
     if not sec then return nil end
-    local src = PD.AHSourceName()
-    if sec < 60 then return format(L["价格快照：刚刚（%s）"], src) end
+    if sec < 60 then return L["价格快照：刚刚"] end
     if sec < 90 * 60 then
-        return format(L["价格快照 %d 分钟前（%s）"], math.max(1, math.floor(sec / 60 + 0.5)), src)
+        return format(L["价格快照 %d 分钟前"], math.max(1, math.floor(sec / 60 + 0.5)))
     end
     if sec < 48 * 3600 then
-        return format(L["价格快照 %d 小时前（%s）"], math.max(1, math.floor(sec / 3600 + 0.5)), src)
+        return format(L["价格快照 %d 小时前"], math.max(1, math.floor(sec / 3600 + 0.5)))
     end
-    return format(L["价格快照 %d 天前（%s）"], math.floor(sec / 86400 + 0.5), src)
+    return format(L["价格快照 %d 天前"], math.floor(sec / 86400 + 0.5))
 end
 
 function PD.PriceStampDaysText(days)
-    local src = PD.AHSourceName()
-    if (tonumber(days) or 0) <= 0 then return format(L["价格快照：今天（%s）"], src) end
-    return format(L["价格快照 %d 天前（%s）"], days, src)
+    if (tonumber(days) or 0) <= 0 then return L["价格快照：今天"] end
+    return format(L["价格快照 %d 天前"], days)
 end
 
 function PD.ScanCaptureText()
-    local bridge=getBridge()
-    local st=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
-    local status=st and st.status
-    if status=="ready" then return L["扫描捕获：已就绪"],"ok" end
-    if status=="scanning" then
-        local pct=math.max(0,math.min(99,math.floor((tonumber(st and st.pct) or 0)*100)))
-        return format(L["扫描捕获：正在读取拍卖行 %d%%"],pct),"warn"
+    local bridge = getBridge()
+    local st = bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    local status = st and st.status
+    if status == "ready" then return L["扫描状态：已就绪（点击拍卖行顶部「扫描行情」）"], "ok" end
+    if status == "scanning" then
+        local pct = math.max(0, math.min(99, math.floor((tonumber(st and st.pct) or 0) * 100)))
+        return format(L["扫描状态：正在读取拍卖行 %d%%"], pct), "warn"
     end
-    if status=="processing" then
-        local done,total=tonumber(st and st.done),tonumber(st and st.total)
-        local pct=(done and total and total>0) and math.floor(done/total*100) or 0
-        return format(L["扫描捕获：正在整理数据 %d%%"],math.max(0,math.min(100,pct))),"warn"
+    if status == "processing" then
+        local done, total = tonumber(st and st.done), tonumber(st and st.total)
+        local pct = (done and total and total > 0) and math.floor(done / total * 100) or 0
+        return format(L["扫描状态：正在整理数据 %d%%"], math.max(0, math.min(100, pct))), "warn"
     end
-    if status=="noresponse" then return L["扫描捕获：拍卖行没有回应"],"bad" end
-    if status=="complete" then return L["扫描捕获：已完整捕获"],"ok" end
-    if status=="failed" or status=="incomplete" or status=="unverified" then return L["扫描捕获：本次失败"],"bad" end
-    if status=="mode-changed" then return L["扫描捕获：模式刚切换，请重扫"],"warn" end
-    if status=="summary" then return L["扫描捕获：未挂载"],"bad" end
-    return L["扫描捕获：无法读取"],"bad"
+    if status == "noresponse" then return L["扫描状态：拍卖行没有回应"], "bad" end
+    if status == "cancelled" then return L["扫描状态：已取消"], "warn" end
+    if status == "complete" then return L["扫描状态：已完成"], "ok" end
+    if status == "failed" or status == "incomplete" or status == "unverified" then return L["扫描状态：本次失败"], "bad" end
+    return L["扫描状态：待扫描"], "warn"
 end
 
 function PD.AuctionParseText()
-    local bridge=getBridge()
-    local st=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
-    if not st or st.status~="processing" then return nil end
-    local done,total=tonumber(st.done),tonumber(st.total)
-    if done and total and total>0 then
-        local frac=math.max(0,math.min(1,done/total))
-        return format(L["正在解析拍卖行数据 %d%%"],math.max(0,math.min(100,math.floor(frac*100)))),frac
+    local bridge = getBridge()
+    local st = bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    if not st or st.status ~= "processing" then return nil end
+    local done, total = tonumber(st.done), tonumber(st.total)
+    if done and total and total > 0 then
+        local frac = math.max(0, math.min(1, done / total))
+        return format(L["正在解析拍卖行数据 %d%%"], math.max(0, math.min(100, math.floor(frac * 100)))), frac
     end
     return L["正在解析拍卖行数据"]
 end
 
 function PD.ScanModeText()
-    local bridge=getBridge()
-    local enabled=bridge and bridge.ReplicateScanEnabled and bridge.ReplicateScanEnabled()
-    if enabled==true then return L["慢速扫描模式：已开启"],"ok" end
-    if enabled==false then return L["慢速扫描模式：未开启"],"bad" end
-    return L["慢速扫描模式：读不到配置"],"bad"
+    local bridge = getBridge()
+    local left = bridge and bridge.CooldownLeft and bridge.CooldownLeft() or 0
+    if left > 0 then
+        local m = math.floor(left / 60)
+        local s = math.floor(left % 60)
+        return format(L["扫描冷却：剩余 %02d:%02d"], m, s), "warn"
+    end
+    return L["扫描冷却：就绪"], "ok"
 end
 
 function PD.ScanSnapshotAgeText()
-    local bridge=getBridge()
-    local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
-    if not snapshot then return L["上次完整扫描：无法读取"],"bad" end
-    local scan=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
-    local capture=scan and scan.status
-    if snapshot.status=="missing" and capture=="scanning" then
-        return L["上次完整扫描：正在扫描，等拍卖行返回"],"warn"
+    local bridge = getBridge()
+    local snapshot = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    if not snapshot then return L["上次完整扫描：无法读取"], "bad" end
+    local scan = bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    local capture = scan and scan.status
+    if snapshot.status == "missing" and capture == "scanning" then
+        return L["上次完整扫描：正在扫描，等拍卖行返回"], "warn"
     end
-    if snapshot.status=="missing" and capture=="processing" then
-        local done,total=tonumber(scan.done),tonumber(scan.total)
-        local pct=(done and total and total>0) and math.floor(done/total*100) or 0
-        return format(L["上次完整扫描：正在整理数据 %d%%"],math.max(0,math.min(100,pct))),"warn"
+    if snapshot.status == "missing" and capture == "processing" then
+        local done, total = tonumber(scan.done), tonumber(scan.total)
+        local pct = (done and total and total > 0) and math.floor(done / total * 100) or 0
+        return format(L["上次完整扫描：正在整理数据 %d%%"], math.max(0, math.min(100, pct))), "warn"
     end
-    if snapshot.status=="missing" and capture=="noresponse" then
-        return L["上次完整扫描：这次扫描没有得到回应"],"bad"
+    if snapshot.status == "missing" and capture == "noresponse" then
+        return L["上次完整扫描：这次扫描没有得到回应"], "bad"
     end
-    if snapshot.status=="expired" then
-        local stamp=tonumber(snapshot.observedAt)
-        if not stamp or stamp<=0 then return L["上次完整扫描：已超过 2 天有效期"],"bad" end
-        local age=SnapAgePhrase(math.max(0,(time and time() or 0)-stamp))
-        if age then return format(L["上次完整扫描：%s前，已超过 2 天有效期"],age),"bad" end
-        return L["上次完整扫描：已超过 2 天有效期"],"bad"
+    if snapshot.status == "expired" then
+        local stamp = tonumber(snapshot.observedAt)
+        if not stamp or stamp <= 0 then return L["上次完整扫描：已超过 2 天有效期"], "bad" end
+        local age = SnapAgePhrase(math.max(0, (time and time() or 0) - stamp))
+        if age then return format(L["上次完整扫描：%s前，已超过 2 天有效期"], age), "bad" end
+        return L["上次完整扫描：已超过 2 天有效期"], "bad"
     end
-    if snapshot.status=="mismatch" then return L["上次完整扫描：规则集或阵营不匹配"],"bad" end
-    if snapshot.status=="invalid" then return L["上次完整扫描：数据无效"],"bad" end
-    if snapshot.status=="available" then
-        local stamp=tonumber(snapshot.observedAt)
-        local age=stamp and SnapAgePhrase(math.max(0,(time and time() or 0)-stamp))
-        if age then return format(L["上次完整扫描：%s前"],age),"ok" end
-        return L["上次完整扫描：已就绪"],"ok"
+    if snapshot.status == "mismatch" then return L["上次完整扫描：规则集或阵营不匹配"], "bad" end
+    if snapshot.status == "invalid" then return L["上次完整扫描：数据无效"], "bad" end
+    if snapshot.status == "available" then
+        local stamp = tonumber(snapshot.observedAt)
+        local age = stamp and SnapAgePhrase(math.max(0, (time and time() or 0) - stamp))
+        if age then return format(L["上次完整扫描：%s前"], age), "ok" end
+        return L["上次完整扫描：已就绪"], "ok"
     end
-    return L["上次完整扫描：无记录"],"bad"
+    return L["上次完整扫描：无记录"], "bad"
 end
 
 local SCAN_OK_C = { 0.55, 0.85, 0.6 }
@@ -587,18 +470,16 @@ local function ScanCheckLine(text, level)
 end
 
 function PD.ScanSelfCheck()
-    local bridge=getBridge()
+    local bridge = getBridge()
     if not bridge then return nil end
-    local state=PD.AuctionatorState()
-    if state=="missing" or state=="disabled" or state=="loading" then return nil end
-    local t1,l1=PD.ScanCaptureText()
-    local t2,l2=PD.ScanModeText()
-    local t3,l3=PD.ScanSnapshotAgeText()
+    local t1, l1 = PD.ScanCaptureText()
+    local t2, l2 = PD.ScanModeText()
+    local t3, l3 = PD.ScanSnapshotAgeText()
     return {
         { L["为什么无法重新计算："], SCAN_HEAD_C },
-        ScanCheckLine(t1,l1),
-        ScanCheckLine(t2,l2),
-        ScanCheckLine(t3,l3),
+        ScanCheckLine(t1, l1),
+        ScanCheckLine(t2, l2),
+        ScanCheckLine(t3, l3),
     }
 end
 
@@ -646,9 +527,10 @@ function PD.DoRecalc(slug)
     PD.exactFailed = {}
     local E = getEco()
     if E and E.ApplyPolicies then E.ApplyPolicies(slug) end
+    if ra and ra.ResetPrices then ra.ResetPrices() end
     if ra and ra.Invalidate then ra.Invalidate() end
     if PD.policyDirty then PD.policyDirty[slug] = nil end
-    PD.autoPage = "route"
+    if PD.autoPage == "log" then PD.autoPage = "route" end
     local learned = PD.ProfLearned and PD.ProfLearned() or {}
     local opts = PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur)
     opts.target = PD.LvTarget(slug)
@@ -679,10 +561,10 @@ end
 function PD.SnapshotBadgeState(s)
     s = s or {}
     if not next(s) then return "no_plan" end
+    if s.notCalculated then return "not_calculated" end
     if s.referenceOnly then return "recipe_reference" end
     if s.diagnosticPolicyChanged or s.status=="recalculate_required" then return "rules_changed" end
     if PD.PlanLearningBlocked(s) then return "learning_unknown" end
-    if s.scheme == "optim" and s.planVersion~=2 then return "optim" end
     if s.auctionSupplyShortages and #s.auctionSupplyShortages>0 then return "stock_short" end
     if s.status == "infeasible" then return "no_route" end
     if s.planVersion == 2 and s.completeCost == false then
@@ -723,6 +605,7 @@ function PD.SnapshotBadgeText(s)
         if st=="unpriced" or st=="noprice" then return L["价格待补全"],0.95,0.75,0.4 end
     end
     if st == "no_plan" then return nil end
+    if st == "not_calculated" then return L["待计算"], 0.95, 0.78, 0.42 end
     if (not snapshot or snapshot.status~="available")
         and (st=="verified" or st=="frame" or st=="ageunknown") then
         return L["请扫描拍卖行"],0.95,0.75,0.4
@@ -731,7 +614,6 @@ function PD.SnapshotBadgeText(s)
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
     if st == "rules_changed" then return L["路线待重算"], 0.95, 0.75, 0.4 end
     if st == "learning_unknown" then return L["资料待补"], 0.95, 0.75, 0.4 end
-    if st == "optim" then return L["乐观计数"], 0.85, 0.82, 0.72 end
     if st == "calculating" then return L["计算中"], 0.95, 0.75, 0.4 end
     if st == "no_route" then return L["无可用路线"], 0.95, 0.75, 0.4 end
     if st == "incomplete" then return L["请扫描拍卖行"], 0.95, 0.75, 0.4 end
@@ -760,12 +642,12 @@ PD.CARD_INSET = PAGE_INSET
 PD.CARD_TOP = 8
 PD.NAV_PAD = 8
 PD.NAV_X, PD.NAV_TOP = PD.CARD_INSET + PD.NAV_PAD, PD.CARD_TOP + PD.NAV_PAD
-PD.NAV_W = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and uiGeo("NAV_W_EN", 184) or uiGeo("NAV_W_ZH", 148)
+PD.NAV_W = (hostLocale() == "enUS") and uiGeo("NAV_W_EN", 184) or uiGeo("NAV_W_ZH", 148)
 PD.NAV_FS, PD.NAV_ICON = uiGeo("NAV_FS", 16), uiGeo("NAV_ICON", 20)
 PD.NAV_ITEM_H, PD.NAV_GROUP_H, PD.NAV_GAP = uiGeo("NAV_ITEM_H", 24), uiGeo("NAV_GROUP_H", 26), uiGeo("NAV_GAP", 8)
 PD.NAV_LV_FS = 14
 PD.CARD_NAV_R = PD.CARD_INSET + PD.NAV_W + 2 * PD.NAV_PAD
-PD.RIGHT_X = PD.CARD_NAV_R + (DG.GUTTER or 8) + 8
+PD.RIGHT_X = PD.CARD_NAV_R + (hostConst("GUTTER", 8)) + 8
 PD.RIGHT_W = CONTENT_W - PD.RIGHT_X - PD.CARD_INSET
 PD.SUB_Y, PD.SUB_H, PD.SUB_W, PD.SUB_STEP = PD.CARD_TOP + 8, uiGeo("SUB_H", 24), uiGeo("SUB_W", 76), uiGeo("SUB_STEP", 84)
 PD.SUB2_Y = PD.SUB_Y + PD.SUB_H + 8
@@ -781,8 +663,8 @@ function PD.BodyTop()
     return PD.BODY_TOP
 end
 PD.FAC_ICON = {
-    a = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Alliance",
-    h = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Horde",
+    a = hostMedia("FactionAlliance"),
+    h = hostMedia("FactionHorde"),
 }
 PD.TOOL_H, PD.TOOL_GAP, PD.TOOL_W = 24, 8, 72
 PD.TOOL_BODY_GAP = 8
@@ -806,12 +688,11 @@ do
     if PD.SETTING_DEF.autoExcludeQuestVendors == nil then PD.SETTING_DEF.autoExcludeQuestVendors = true end
     if PD.SETTING_DEF.autoExcludeInstanceVendors == nil then PD.SETTING_DEF.autoExcludeInstanceVendors = true end
     if PD.SETTING_DEF.autoExcludeInstanceTrainers == nil then PD.SETTING_DEF.autoExcludeInstanceTrainers = true end
-    if PD.SETTING_DEF.autoScheme == nil then PD.SETTING_DEF.autoScheme = "cheapest" end
+    if PD.SETTING_DEF.autoScheme == nil then PD.SETTING_DEF.autoScheme = "cost" end
     if PD.SETTING_DEF.autoSecondaryLeveling == nil then PD.SETTING_DEF.autoSecondaryLeveling = false end
-    if PD.SETTING_DEF.autoResidualMass == nil then PD.SETTING_DEF.autoResidualMass = false end
-    if PD.SETTING_DEF.autoSkillBudget == nil then PD.SETTING_DEF.autoSkillBudget = "balanced" end
-    if PD.SETTING_DEF.computationSpeed == nil then PD.SETTING_DEF.computationSpeed = "fast" end
-    if PD.SETTING_DEF.recoveryEnabled == nil then PD.SETTING_DEF.recoveryEnabled = false end
+    if PD.SETTING_DEF.autoRouteRiskMode == nil then PD.SETTING_DEF.autoRouteRiskMode = "expected" end
+    if PD.SETTING_DEF.autoReserveMode == nil then PD.SETTING_DEF.autoReserveMode = "safe" end
+    if PD.SETTING_DEF.auctionRecoveryEnabled == nil then PD.SETTING_DEF.auctionRecoveryEnabled = false end
     if PD.SETTING_DEF.recoveryFeePercent == nil then
         local pc = getPricingCfg()
         PD.SETTING_DEF.recoveryFeePercent = (type(pc) == "table" and pc.DEFAULT_RECOVERY_FEE_PCT) or 5
@@ -853,8 +734,8 @@ do
             autoAllowCurrencyFormulas = true, autoExcludeQuestRecipes = true, autoExcludeQuestTrainers = true,
             autoExcludeQuestVendors = true, autoExcludeInstanceVendors = true, autoExcludeInstanceTrainers = true,
             autoSecondaryLeveling = true, autoFromCurrent = true,
-            autoStartSkill = true, autoCraftTools = true, recoveryEnabled = true,
-            recoveryFeePercent = true, autoResidualMass = true, autoSkillBudget = true,
+            autoStartSkill = true, autoCraftTools = true, auctionRecoveryEnabled = true,
+            recoveryFeePercent = true, autoRouteRiskMode = true, autoReserveMode = true,
         }
     end
 end
@@ -881,7 +762,7 @@ function PD.SetStartSkill(v)
     if n < 1 then n = 1 elseif n > cap then n = cap end
     if tonumber(PD.SettingRaw("autoStartSkill")) == n then return end
     PD.SetSettingRaw("autoStartSkill", n)
-    PD.LvRecalc()
+    PD.MarkRouteStale(PD.cur, "settings")
 end
 
 function PD.FixedOnly(slug)
@@ -898,16 +779,20 @@ function PD.SettingRaw(k, slug)
     local dbMod = getDBMod()
     if type(dbMod) == "table" and type(dbMod.SettingRaw) == "function" then
         local v = dbMod.SettingRaw(k, slug)
-        if k == "autoSkillBudget" then
-            local sc = getSolverCfg()
-            local modes = type(sc) == "table" and sc.GREEN_BUDGET_MODES
-            if type(modes) == "table" and not modes[v] then return "balanced" end
+        if k == "autoRouteRiskMode" then
+            return v == "quantile" and "quantile" or "expected"
+        elseif k == "autoReserveMode" then
+            return v == "expected" and "expected" or "safe"
         end
         return v
     end
     if k == "autoLearnedOnly" or k == "autoAllowUnknownLearning" or k == "autoSkipUnpricedFormulas"
-       or k == "autoNoFormula" then
+       or k == "autoNoFormula" or k == "autoSkillBudget" or k == "autoResidualMass" or k == "computationSpeed" then
         return nil
+    end
+    if k == "recoveryEnabled" then
+        if PD.FixedOnly(slug) then return false end
+        return PD.SettingRaw("autoScheme", slug) == "net"
     end
     if PD.FixedOnly(slug) then
         if k == "autoRoute" then return false end
@@ -917,13 +802,13 @@ function PD.SettingRaw(k, slug)
     local values = PD.PROF_SETTING_KEYS[k] and db.professionSettings and db.professionSettings[slug]
     local v = values and values[k]
     if v == nil then v = db[k] end
-    if k == "autoScheme" and v == "stable" then return "cheapest" end
-    if k == "autoSkillBudget" then
-        local sc = getSolverCfg()
-        local modes = type(sc) == "table" and sc.GREEN_BUDGET_MODES
-        if type(modes) == "table" and modes[v] then return v end
-        if v == "optimistic" or v == "balanced" or v == "pessimistic" then return v end
-        return "balanced"
+    if k == "autoScheme" then
+        return v == "net" and "net" or "cost"
+    end
+    if k == "autoRouteRiskMode" then
+        return v == "quantile" and "quantile" or "expected"
+    elseif k == "autoReserveMode" then
+        return v == "expected" and "expected" or "safe"
     end
     if v == nil then return PD.SETTING_DEF[k] end
     return v
@@ -937,11 +822,39 @@ function PD.BagMaterialsAvailable(slug)
         and not PD.CookingFishingMode(slug) and not PD.FixedOnly(slug) or false
 end
 
+function PD.RecoveryModeActive(slug, plan)
+    slug = slug or PD.cur
+    if PD.FixedOnly(slug) or PD.CookingFishingMode(slug) then return false end
+    if not (PD.AutoRouteEnabled and PD.AutoRouteEnabled(slug)) then return false end
+    if PD.SettingRaw("autoScheme", slug) ~= "net" then return false end
+    if type(plan) == "table" and plan.scheme and plan.scheme ~= "net" then return false end
+    return true
+end
+
 function PD.ChangeRouteSetting(key, value, slug)
     local ra = raMod()
+    local xp = getExec()
+    if key == "autoReserveMode" then
+        PD.SetSettingRaw(key, value, slug)
+        local plans = {
+            ra and ra.Peek and ra.Peek(slug) or false,
+            xp and xp.GetPlan and xp.GetPlan(slug) or false,
+            PD.autoSnapshotSlug == slug and PD.autoSnapshot or false,
+        }
+        for _, plan in ipairs(plans) do
+            if type(plan) == "table" then
+                plan.reserveMode = value
+                if type(plan.reserve) == "table" then
+                    plan.reserve.enabled = (value == "safe")
+                    plan.reserve.mode = value
+                end
+            end
+        end
+        PD.RequestRender()
+        return
+    end
     if ra and ra.Cancel then ra.Cancel(slug, "settings") end
     PD.SetSettingRaw(key, value, slug)
-    local xp = getExec()
     local plans = {
         ra and ra.Peek and ra.Peek(slug) or false,
         xp and xp.GetPlan and xp.GetPlan(slug) or false,
@@ -957,6 +870,32 @@ function PD.ChangeRouteSetting(key, value, slug)
     PD.RequestRender()
 end
 
+function PD.MarkRouteStale(slug, reason)
+    slug = slug or PD.cur
+    reason = reason or "settings"
+    local rec = getRec()
+    if rec and rec.Invalidate then pcall(rec.Invalidate) end
+    local ra = raMod()
+    if ra and ra.Cancel then ra.Cancel(slug, reason) end
+    if ra and ra.Invalidate then pcall(ra.Invalidate, reason) end
+    local xp = getExec()
+    local plans = {
+        ra and ra.Peek and ra.Peek(slug) or false,
+        xp and xp.GetPlan and xp.GetPlan(slug) or false,
+        PD.autoSnapshotSlug == slug and PD.autoSnapshot or false,
+    }
+    for _, plan in ipairs(plans) do
+        if type(plan) == "table" then
+            if reason == "settings" then plan.settingsChanged = true end
+            plan.stale = true
+            plan.staleReason = reason
+        end
+    end
+    PD.RequestRender()
+end
+
+PD.MarkRecoveryDirty = PD.MarkRouteStale
+
 function PD.SetUseBagMaterials(on, slug)
     slug = slug or PD.cur
     if not PD.BagMaterialsAvailable(slug) then return end
@@ -966,16 +905,53 @@ function PD.SetUseBagMaterials(on, slug)
     end
 end
 
-function PD.GreenBudgetLabel(mode)
-    return mode == "optimistic" and L["升点预算·乐观"]
-        or mode == "pessimistic" and L["升点预算·悲观"]
-        or L["升点预算·均衡"]
+function PD.RouteRiskLabel(mode)
+    return mode == "quantile" and L["全程稳健（少选黄绿配方）"] or L["省钱优先（后期防脸黑）"]
 end
 
-function PD.GreenBudgetShort(mode)
-    return mode == "optimistic" and L["乐观"]
-        or mode == "pessimistic" and L["悲观"]
-        or L["均衡"]
+function PD.RouteRiskShort(mode)
+    return mode == "quantile" and L["全程稳健"] or L["省钱优先"]
+end
+
+function PD.ReserveModeLabel(mode)
+    return mode == "expected" and L["基础用量"] or L["多备余量"]
+end
+
+function PD.ReserveModeShort(mode)
+    return mode == "expected" and L["基础用量"] or L["多备余量"]
+end
+
+function PD.ShowReserveMenu(owner)
+    local hui = getHui()
+    if not (owner and hui and hui.ShowMenu) then
+        local cur = PD.SettingRaw("autoReserveMode", PD.cur)
+        PD.ChangeRouteSetting("autoReserveMode", cur == "expected" and "safe" or "expected", PD.cur)
+        playSoundSafe(1)
+        return
+    end
+    local cur = PD.SettingRaw("autoReserveMode", PD.cur)
+    local isSafe = cur ~= "expected"
+    local items = {
+        {
+            text = L["多备余量"],
+            checked = isSafe,
+            color = isSafe and { 1, 0.82, 0 } or nil,
+            func = function()
+                PD.ChangeRouteSetting("autoReserveMode", "safe", PD.cur)
+                playSoundSafe(1)
+            end,
+        },
+        {
+            text = L["基础用量"],
+            checked = not isSafe,
+            color = (not isSafe) and { 1, 0.82, 0 } or nil,
+            func = function()
+                PD.ChangeRouteSetting("autoReserveMode", "expected", PD.cur)
+                playSoundSafe(1)
+            end,
+        },
+    }
+    hui.ShowMenu(items, { owner = owner, anchor = owner })
 end
 
 function PD.SetSettingRaw(k, value, slug)
@@ -1019,11 +995,10 @@ function PD.SetCookingRoute(mode)
     if mode == "fishing" then
         PD.StopSolverRoute()
         PD.solverKey = nil
+        if PD.autoPage == "recovery" then PD.autoPage = "route" end
     end
     PD.exclusionsOpen, PD.partnerPicker = false, nil
-    PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
-    PD.FlushPolicies()
-    PD.LvRecalc()
+    PD.MarkRouteStale(PD.cur, "settings")
     if PD.scroll then PD.scroll:SetVerticalScroll(0) end
     playSoundSafe(1)
 end
@@ -1033,34 +1008,14 @@ function PD.SetRouteScheme(key)
     if type(key) ~= "string" or key == "" then return end
     local wasFishing = PD.CookingFishingMode()
     if wasFishing then ProfDB().cookingRoute = "standard" end
-    if PD.SettingRaw("autoScheme") == key and not wasFishing then return end
-    PD.SetSettingRaw("autoScheme",key)
-    local ra = raMod()
-    if ra then
-        if ra.Recalculate and ra.OptionsFor then
-            local learned = PD.ProfLearned and PD.ProfLearned() or {}
-            local lv = learned[PD.cur] and learned[PD.cur].cur
-            ra.Recalculate(PD.cur, ra.OptionsFor(PD.cur, lv))
-        elseif ra.Invalidate then
-            ra.Invalidate()
-        end
-    end
-    PD.RequestRender()
+    local wasFixed = not PD.Setting("autoRoute")
+    if wasFixed then PD.SetSettingRaw("autoRoute", true) end
+    if key ~= "net" and PD.autoPage == "recovery" then PD.autoPage = "route" end
+    if PD.SettingRaw("autoScheme") == key and not wasFishing and not wasFixed then return end
+    PD.SetSettingRaw("autoScheme", key)
+    PD.MarkRouteStale(PD.cur, "settings")
     if PD.scroll then PD.scroll:SetVerticalScroll(0) end
     playSoundSafe(1)
-end
-function PD.CycleComputationSpeed()
-    local current = PD.SettingRaw("computationSpeed")
-    local mode = current == "fast" and "turbo" or current == "turbo" and "normal" or "fast"
-    PD.SetSettingRaw("computationSpeed", mode)
-    PD.__turboPlanPaint = nil
-    PD.RequestRender()
-    playSoundSafe(1)
-end
-
-function PD.ComputationSpeedLabel()
-    local mode = PD.SettingRaw("computationSpeed")
-    return mode == "fast" and L["快速（默认）"] or mode == "turbo" and L["极速"] or L["流畅"]
 end
 
 function PD.ShowSchemeMenu(owner)
@@ -1077,6 +1032,7 @@ function PD.ShowSchemeMenu(owner)
         return
     end
     local fishing = PD.CookingFishingMode()
+    local auto = PD.Setting("autoRoute")
     local cur = PD.SettingRaw("autoScheme")
     local items = {}
     if PD.cur == "cooking" then
@@ -1088,7 +1044,7 @@ function PD.ShowSchemeMenu(owner)
         }
     end
     for _, sk in ipairs(order) do
-        local on = (not fishing) and (sk == cur)
+        local on = auto and (not fishing) and (sk == cur)
         items[#items + 1] = {
             text = (ra and ra.SchemeLabel and ra.SchemeLabel(sk)) or sk,
             checked = on,
@@ -1117,48 +1073,30 @@ function PD.CycleRouteScheme()
     local ra = raMod()
     local order = (ra and ra.SchemeOrder and ra.SchemeOrder()) or {}
     if #order == 0 then return end
+    if not PD.Setting("autoRoute") then
+        PD.SetSettingRaw("autoRoute", true)
+    end
     local current, nextIndex = PD.SettingRaw("autoScheme"), 1
     for i, key in ipairs(order) do
         if key == current then nextIndex = (i % #order) + 1; break end
     end
-    PD.SetSettingRaw("autoScheme",order[nextIndex])
-    if ra then
-        if ra.Recalculate and ra.OptionsFor then
-            local learned = PD.ProfLearned and PD.ProfLearned() or {}
-            local current = learned[PD.cur] and learned[PD.cur].cur
-            ra.Recalculate(PD.cur, ra.OptionsFor(PD.cur, current))
-        elseif ra.Invalidate then
-            ra.Invalidate()
-        end
-    end
-    PD.RequestRender()
+    PD.SetSettingRaw("autoScheme", order[nextIndex])
+    if order[nextIndex] ~= "net" and PD.autoPage == "recovery" then PD.autoPage = "route" end
+    PD.MarkRouteStale(PD.cur, "settings")
     playSoundSafe(1)
 end
 
 function PD.ProfRecalc()
     local ra = raMod()
-    if PD.FixedOnly() then
-        if ra and ra.Invalidate then ra.Invalidate() end
-        PD.RequestRender();return
+    if PD.FixedOnly() or not PD.AutoRouteEnabled() then
+        if ra and ra.ResetPrices then ra.ResetPrices() end
+        if ra and ra.Invalidate then ra.Invalidate("prices") end
+        PD.RequestRender()
+        playSoundSafe(1)
+        return
     end
-    if ra then
-        if ra.Recalculate and ra.OptionsFor then
-            local learned = PD.ProfLearned and PD.ProfLearned() or {}
-            local lv = learned[PD.cur] and learned[PD.cur].cur
-            ra.Recalculate(PD.cur, ra.OptionsFor(PD.cur, lv))
-        elseif ra.Invalidate then
-            ra.Invalidate()
-        end
-    end
-    PD.RequestRender()
+    PD.MarkRouteStale(PD.cur, "settings")
     playSoundSafe(1)
-end
-
-function PD.SetRecoveryEnabled(on)
-    on = on and true or false
-    if PD.Setting("recoveryEnabled") == on then return end
-    PD.SetSettingRaw("recoveryEnabled",on)
-    PD.ProfRecalc()
 end
 
 function PD.SetRecoveryFee(pct)
@@ -1170,36 +1108,224 @@ function PD.SetRecoveryFee(pct)
     PD.ProfRecalc()
 end
 
-function PD.EngChoiceLabel(value)
+function PD.SpecChoiceLabel(value, groupOrSlug)
+    if not value or value == "none" then return L["不指定"] end
+    local G = getGates()
+    if G and type(G.SpecLabel) == "function" then
+        local lbl = G.SpecLabel(value, groupOrSlug)
+        if type(lbl) == "string" and lbl ~= "" then return lbl end
+    end
     if value == "goblin" then return L["地精工程学"] end
     if value == "gnomish" then return L["侏儒工程学"] end
-    return L["不指定"]
+    return tostring(value)
+end
+
+function PD.EngChoiceLabel(value)
+    return PD.SpecChoiceLabel(value, "engineering")
+end
+
+function PD.ProfSpecOptions(slug)
+    local G = getGates()
+    slug = slug or PD.cur
+    if not (G and type(G.HasSpecializations) == "function" and G.HasSpecializations(slug)) then
+        return {}
+    end
+    local groups = G.SpecGroups(slug)
+    if slug == "blacksmithing" then
+        local wsLbl = PD.SpecChoiceLabel("weaponsmith", "blacksmithing")
+        local armLbl = PD.SpecChoiceLabel("armorsmith", "blacksmithing")
+        local opts = {
+            {
+                label = L["不指定"],
+                shortLabel = L["不指定"],
+                choices = { blacksmithing = "none", blacksmithing_weaponsmith = "none" },
+            },
+            {
+                label = armLbl,
+                shortLabel = armLbl,
+                choices = { blacksmithing = "armorsmith", blacksmithing_weaponsmith = "none" },
+            },
+            {
+                label = wsLbl,
+                shortLabel = wsLbl,
+                choices = { blacksmithing = "weaponsmith", blacksmithing_weaponsmith = "none" },
+            },
+        }
+        for _, sp in ipairs(G.SpecsForGroup("blacksmithing_weaponsmith")) do
+            local subLbl = PD.SpecChoiceLabel(sp.specKey, "blacksmithing_weaponsmith")
+            opts[#opts + 1] = {
+                label = wsLbl .. " · " .. subLbl,
+                shortLabel = subLbl,
+                choices = { blacksmithing = "weaponsmith", blacksmithing_weaponsmith = sp.specKey },
+            }
+        end
+        return opts
+    end
+    local grp = groups[1]
+    if not grp then return {} end
+    local opts = {
+        {
+            label = L["不指定"],
+            shortLabel = L["不指定"],
+            choices = { [grp] = "none" },
+        },
+    }
+    for _, sp in ipairs(G.SpecsForGroup(grp)) do
+        local lbl = PD.SpecChoiceLabel(sp.specKey, grp)
+        opts[#opts + 1] = {
+            label = lbl,
+            shortLabel = lbl,
+            choices = { [grp] = sp.specKey },
+        }
+    end
+    return opts
+end
+
+function PD.GetProfSpecDisplay(slug)
+    local G = getGates()
+    slug = slug or PD.cur
+    local res = {
+        shortLabel = L["不指定"],
+        fullLabel = L["不指定"],
+        isSet = false,
+        actualLabel = nil,
+        actualConflict = false,
+        anyUnknown = false,
+        planMismatch = false,
+        selectedByGroup = {},
+        actualByGroup = {},
+    }
+    if not (G and type(G.SpecGroups) == "function") then return res end
+    local groups = G.SpecGroups(slug)
+    if #groups == 0 then return res end
+    local learnedParts = {}
+    for _, grp in ipairs(groups) do
+        local sel = (G.GetChoiceSetting and G.GetChoiceSetting(grp)) or "none"
+        local act = (G.LearnedChoice and G.LearnedChoice(grp)) or "unknown"
+        res.selectedByGroup[grp] = sel
+        res.actualByGroup[grp] = act
+        if sel ~= "none" then res.isSet = true end
+        if act == "conflict" then
+            res.actualConflict = true
+        elseif act == "unknown" then
+            res.anyUnknown = true
+        elseif act ~= "none" then
+            learnedParts[#learnedParts + 1] = PD.SpecChoiceLabel(act, grp)
+        end
+    end
+    if slug == "blacksmithing" then
+        local actBs = res.actualByGroup.blacksmithing
+        local actSub = res.actualByGroup.blacksmithing_weaponsmith
+        if actBs == "armorsmith" and actSub and actSub ~= "none" and actSub ~= "unknown" then
+            res.actualConflict = true
+        end
+    end
+    if #learnedParts > 0 then
+        res.actualLabel = table.concat(learnedParts, " · ")
+    end
+    if res.isSet then
+        if slug == "blacksmithing" then
+            local selBs = res.selectedByGroup.blacksmithing or "none"
+            local selSub = res.selectedByGroup.blacksmithing_weaponsmith or "none"
+            if selSub ~= "none" then
+                local subLbl = PD.SpecChoiceLabel(selSub, "blacksmithing_weaponsmith")
+                local wsLbl = PD.SpecChoiceLabel("weaponsmith", "blacksmithing")
+                res.shortLabel = subLbl
+                res.fullLabel = wsLbl .. " · " .. subLbl
+            else
+                local pLbl = PD.SpecChoiceLabel(selBs, "blacksmithing")
+                res.shortLabel = pLbl
+                res.fullLabel = pLbl
+            end
+        else
+            local grp = groups[1]
+            local lbl = PD.SpecChoiceLabel(res.selectedByGroup[grp], grp)
+            res.shortLabel = lbl
+            res.fullLabel = lbl
+        end
+        if not res.actualConflict then
+            for _, grp in ipairs(groups) do
+                local sel = res.selectedByGroup[grp]
+                local act = res.actualByGroup[grp]
+                if sel ~= "none" and act ~= "none" and act ~= "unknown" and act ~= sel then
+                    res.planMismatch = true
+                    break
+                end
+            end
+            if not res.planMismatch and slug == "blacksmithing" then
+                local selBs = res.selectedByGroup.blacksmithing
+                local selSub = res.selectedByGroup.blacksmithing_weaponsmith
+                local actBs = res.actualByGroup.blacksmithing
+                local actSub = res.actualByGroup.blacksmithing_weaponsmith
+                if selBs == "armorsmith" and actSub and actSub ~= "none" and actSub ~= "unknown" then
+                    res.planMismatch = true
+                elseif selSub and selSub ~= "none" and actBs == "armorsmith" then
+                    res.planMismatch = true
+                end
+            end
+        end
+    end
+    return res
+end
+
+function PD.SetProfSpecChoice(slug, choicesMap)
+    local G = getGates()
+    slug = slug or PD.cur
+    if not (G and slug and type(choicesMap) == "table") then return end
+    if type(G.SetProfessionChoices) == "function" then
+        local ok, changed = G.SetProfessionChoices(slug, choicesMap)
+        if not ok or not changed then return end
+        PD.ProfRecalc()
+        return
+    end
+    local changed = false
+    for grp, val in pairs(choicesMap) do
+        if G.GetChoiceSetting and G.GetChoiceSetting(grp) ~= val then
+            if G.SetPlannedChoice and G.SetPlannedChoice(val, grp) then
+                changed = true
+            end
+        end
+    end
+    if changed then PD.ProfRecalc() end
 end
 
 function PD.SetEngChoice(value)
-    local G = getGates()
-    if not (G and G.SetPlannedChoice) then return end
-    if G.GetChoiceSetting and G.GetChoiceSetting() == value then return end
-    if not G.SetPlannedChoice(value) then return end
-    PD.ProfRecalc()
+    PD.SetProfSpecChoice("engineering", { engineering = value or "none" })
 end
 
-function PD.ShowEngChoiceMenu(owner)
+function PD.ShowSpecChoiceMenu(owner, slug)
     local G = getGates()
     local hui = getHui()
+    slug = slug or PD.cur
     if not (G and G.GetChoiceSetting and hui and hui.ShowMenu) then return end
-    local selected = G.GetChoiceSetting()
+    local opts = PD.ProfSpecOptions(slug)
+    if #opts == 0 then return end
+    local groups = (G.SpecGroups and G.SpecGroups(slug)) or {}
+    local selected = {}
+    for _, grp in ipairs(groups) do
+        selected[grp] = G.GetChoiceSetting(grp)
+    end
     local items = {}
-    for _, opt in ipairs({ "none", "goblin", "gnomish" }) do
-        local checked = selected == opt
+    for _, opt in ipairs(opts) do
+        local checked = true
+        for _, grp in ipairs(groups) do
+            if (selected[grp] or "none") ~= (opt.choices[grp] or "none") then
+                checked = false
+                break
+            end
+        end
         items[#items + 1] = {
-            text = PD.EngChoiceLabel(opt),
+            text = opt.label,
             checked = checked,
             color = checked and { 1, 0.82, 0 } or nil,
-            func = function() PD.SetEngChoice(opt) end,
+            func = function() PD.SetProfSpecChoice(slug, opt.choices) end,
         }
     end
     hui.ShowMenu(items, { owner = owner, anchor = owner })
+end
+
+function PD.ShowEngChoiceMenu(owner)
+    PD.ShowSpecChoiceMenu(owner, "engineering")
 end
 
 function PD.ShowRecoveryFeeMenu(owner)
@@ -1245,15 +1371,13 @@ local function BuildFeeForm()
     hint:SetWidth(268)
     hint:SetWordWrap(true)
     hint:SetText(L["0–25 之间的整数，拍卖行卖出时扣掉的佣金比例"])
-    local ceb = getFrom("CreateEditBox")
-    local eb
-    if type(ceb) == "function" then
-        eb = ceb(f, 72)
-    else
+    local hb = getHostBridge()
+    local eb = hb and hb.CreateEditBox and hb.CreateEditBox(f, 72) or nil
+    if not eb then
         eb = CreateFrame("EditBox", nil, f)
         eb:SetSize(72, 22)
         eb:SetAutoFocus(false)
-        eb:SetFont(getFrom("FONT") or "Fonts\\FRIZQT__.TTF", 12, "")
+        eb:SetFont(getFont() or "Fonts\\FRIZQT__.TTF", 12, "")
     end
     eb:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, -10)
     eb:SetNumeric(true)
@@ -1378,12 +1502,12 @@ function PD.CurPriceText(curID, amount)
     end
     if not name and curID ~= PD.FAVOR_CURID then
         local raw = ds and ds.RawText and ds.RawText("item", curID)
-        local dg = getDG()
+        local hb = getHostBridge()
         if type(raw) == "string" and raw ~= "" then
             name = raw
             icon = PD.ItemIcon(curID)
-        elseif dg and dg.ItemName then
-            local inm, got = dg.ItemName(curID)
+        elseif hb and hb.ItemName then
+            local inm, got = hb.ItemName(curID)
             if got and inm then
                 name = inm
                 icon = PD.ItemIcon(curID)
@@ -1638,7 +1762,7 @@ PD.LIST_PAD = 8
 PD.GRID_X = 0
 PD.GRID_W = PD.RIGHT_W - PD.LIST_PAD
 PD.COL_GAP = 12
-local LV_SPLIT = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and 0.75 or 0.80
+local LV_SPLIT = (hostLocale() == "enUS") and 0.75 or 0.80
 PD.COL_LW = math.floor((PD.GRID_W - PD.COL_GAP) * LV_SPLIT)
 PD.COL_RW = PD.GRID_W - PD.COL_GAP - PD.COL_LW
 
@@ -1884,10 +2008,10 @@ local function zoneNameFn(id)
 end
 
 local function ensureDGContracts()
-    local d = getDG()
-    if type(d) == "table" then
-        d.PROF_SUBTABS = PROF_SUBTABS
-        d.ZoneName = zoneNameFn
+    local hb = getHostBridge()
+    if hb and type(hb.PublishDGContract) == "function" then
+        hb.PublishDGContract("PROF_SUBTABS", PROF_SUBTABS)
+        hb.PublishDGContract("ZoneName", zoneNameFn)
     end
 end
 ensureDGContracts()
@@ -1935,91 +2059,28 @@ PD.Fit = function(text, fs, width)
 end
 
 local PD_MEMO_POS_CAP = 32768
-local _nmPos, _nmPosN = {}, 0
-local _nmNeg, _nmN = {}, 0
-local _icPos, _icPosN = {}, 0
-local _icNeg, _icN = {}, 0
 function PD.ResetItemNameMemo(hard)
-    _nmNeg, _nmN = {}, 0
-    _icNeg, _icN = {}, 0
-    if hard then
-        _nmPos, _nmPosN, _icPos, _icPosN = {}, 0, {}, 0
-        PD.spellNameMemo, PD.spellNameN = {}, 0
+    local ex = getEX()
+    if ex and type(ex.ResetItemNameMemo) == "function" then
+        return ex.ResetItemNameMemo(hard)
     end
+    if hard then PD.spellNameMemo, PD.spellNameN = {}, 0 end
 end
+
 function PD.ItemName(id)
-    if id == nil then return L["暂时没有客户端数据"], false end
-    local hit = _nmPos[id]
-    if hit ~= nil then return hit, true end
-    if _nmNeg[id] then return L["暂时没有客户端数据"], false end
-    local DS = getDS()
-    local nm = DS and type(DS.RawText) == "function" and DS.RawText("item", id) or nil
-    local got = type(nm) == "string" and nm ~= ""
-    if not got then
-        local d = getDG()
-        if type(d) == "table" and type(d.ItemName) == "function" then
-            nm, got = d.ItemName(id)
-        end
+    local ex = getEX()
+    if ex and type(ex.ItemName) == "function" then
+        return ex.ItemName(id)
     end
-    if not got and type(_G.C_Item) == "table" and type(_G.C_Item.GetItemNameByID) == "function" then
-        local ok, n = pcall(_G.C_Item.GetItemNameByID, id)
-        if ok and type(n) == "string" and n ~= "" then nm, got = n, true end
-    end
-    if not got and type(_G.GetItemInfo) == "function" then
-        local ok, n = pcall(_G.GetItemInfo, id)
-        if ok and type(n) == "string" and n ~= "" then nm, got = n, true end
-    end
-    if got then
-        if _nmPosN >= PD_MEMO_POS_CAP then _nmPos, _nmPosN = {}, 0 end
-        _nmPos[id], _nmPosN = nm, _nmPosN + 1
-        return nm, true
-    end
-    if _nmN >= 8192 then _nmNeg, _nmN = {}, 0 end
-    _nmNeg[id], _nmN = true, _nmN + 1
-    return nm or L["暂时没有客户端数据"], false
+    return id == nil and L["暂时没有客户端数据"] or ("#" .. tostring(id)), false
 end
 
 function PD.ItemIcon(id)
-    if id == nil then return FALLBACK_ICON end
-    local hit = _icPos[id]
-    if hit ~= nil then return hit end
-    if _icNeg[id] then return FALLBACK_ICON end
-    local function isBlankIcon(t)
-        return not t or t == "" or t == 0 or t == 134400 or t == FALLBACK_ICON
+    local ex = getEX()
+    if ex and type(ex.ItemIcon) == "function" then
+        return ex.ItemIcon(id)
     end
-    local tex
-    local d = getDG()
-    if type(d) == "table" and type(d.ItemIcon) == "function" then
-        tex = d.ItemIcon(id)
-    end
-    if isBlankIcon(tex) and type(_G.C_Item) == "table" and type(_G.C_Item.GetItemIconByID) == "function" then
-        local ok, t = pcall(_G.C_Item.GetItemIconByID, id)
-        if ok and not isBlankIcon(t) then tex = t end
-    end
-    if isBlankIcon(tex) then
-        local DS = getDS()
-        local item = DS and type(DS.Item) == "function" and DS.Item(id) or nil
-        local ic = type(item) == "table" and item.icon or nil
-        if type(ic) == "number" and ic > 0 and ic ~= 134400 then
-            tex = ic
-        elseif type(ic) == "string" and ic ~= "" then
-            if ic:match("^%d+$") then
-                local n = tonumber(ic)
-                if n and n > 0 and n ~= 134400 then tex = n end
-            else
-                tex = ic:find("[/\\]") and ic or ("Interface\\Icons\\" .. ic)
-            end
-        end
-    end
-    if isBlankIcon(tex) then tex = FALLBACK_ICON end
-    if tex ~= FALLBACK_ICON then
-        if _icPosN >= PD_MEMO_POS_CAP then _icPos, _icPosN = {}, 0 end
-        _icPos[id], _icPosN = tex, _icPosN + 1
-        return tex
-    end
-    if _icN >= 8192 then _icNeg, _icN = {}, 0 end
-    _icNeg[id], _icN = true, _icN + 1
-    return tex
+    return FALLBACK_ICON
 end
 
 function PD.EnsureTipNameRefresh()
@@ -2029,8 +2090,8 @@ function PD.EnsureTipNameRefresh()
     pcall(ev.RegisterEvent, ev, "ITEM_DATA_LOAD_RESULT")
     ev:SetScript("OnEvent", function(_, _, itemID, success)
         if itemID == nil or success == false then return end
-        _nmNeg[itemID] = nil
-        _icNeg[itemID] = nil
+        local ex = getEX()
+        if ex and type(ex.ClearItemNegative) == "function" then ex.ClearItemNegative(itemID) end
         local r = PD.hoverRow
         if not (r and r.__spell and r.__tipExtra and r:IsMouseOver()) then return end
         if PD.__nmT then return end
@@ -2049,19 +2110,9 @@ function PD.EnsureTipNameRefresh()
 end
 
 function PD.PrimeNames(mats)
-    if type(mats) ~= "table" then return end
-    PD.EnsureTipNameRefresh()
-    local d = getDG()
-    for i = 1, #mats do
-        local m = mats[i]
-        local id = type(m) == "table" and (m[1] or m.itemID) or nil
-        if type(id) == "number" then
-            _nmNeg[id] = nil
-            _icNeg[id] = nil
-            if type(d) == "table" and type(d.RequestItem) == "function" then
-                d.RequestItem(id)
-            end
-        end
+    local ex = getEX()
+    if ex and type(ex.PrimeNames) == "function" then
+        return ex.PrimeNames(mats)
     end
 end
 
@@ -2180,6 +2231,7 @@ if not PD.built then
     PD.shopGroup = false
     PD.toolKey = nil
     PD.moneyKey = nil
+    PD.specKey = nil
     PD.perkOpen = {}
     PD.rows, PD.toolBtns = {}, {}
     PD.specs = nil
@@ -2227,9 +2279,9 @@ function PD.SetRowHover(r, on)
             local c4 = getHui().layer.L4
             r:SetBackdropColor(c4[1], c4[2], c4[3], c4[4] or 1)
         else
-            r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+            r:SetBackdropColor(1, 1, 1, hostConst("LOOT_CARD_BG_HOVER", 0.08))
         end
-        r:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+        r:SetBackdropBorderColor(1, 1, 1, hostConst("LOOT_CARD_EDGE_HOVER", 0.25))
     elseif r.__z then
         r:SetBackdropColor(1, 1, 1, PD.ZEBRA_A)
         r:SetBackdropBorderColor(1, 1, 1, 0)
@@ -2262,7 +2314,7 @@ function PD.SyncHover()
     end
 end
 
-PD.PILL_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\HUIPillCap"
+PD.PILL_CAP_TEX = hostMedia("HUIPillCap")
 PD.PILL_CAP_W = 5
 
 function PD.MakePill(parent, col, cr)
@@ -2310,66 +2362,19 @@ function PD.SegButtons(r)
 end
 
 function PD.SpellTipLines()
-    local GT = GameTooltip
-    if not (GT and type(GT.NumLines) == "function") then return nil end
-    local ok, v = pcall(GT.NumLines, GT)
-    if ok and type(v) == "number" then return v end
-    return nil
+    local tt = getTT()
+    return tt and tt.SpellTipLines and tt.SpellTipLines() or nil
 end
 
-local TIP_MAX = 24
 function PD.TipShow(owner, lines, point)
-    if not (owner and type(lines) == "table") then return end
-    local GT = GameTooltip
-    if not GT then return end
-    GT:SetOwner(owner, point or "ANCHOR_RIGHT")
-    GT:ClearLines()
-    local last, n = nil, 0
-    for i = 1, #lines do
-        local ln = lines[i]
-        local t = type(ln) == "table" and ln[1] or nil
-        if type(t) == "string" then
-            t = t:gsub("%s+$", "")
-            if t ~= "" and t ~= last then
-                last = t
-                n = n + 1
-                if n <= TIP_MAX then
-                    GT:AddLine(t, ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
-                end
-            end
-        end
-    end
-    if n > 0 then GT:Show() end
+    local tt = getTT()
+    if tt and tt.TipShow then return tt.TipShow(owner, lines, point) end
 end
 
 function PD.ShowSpellTip(owner, extra)
-    local sid = owner and owner.__spell
-    if type(sid) ~= "number" then return false end
-    local GT = GameTooltip
-    if not GT then return false end
-    GT:SetOwner(owner, "ANCHOR_RIGHT")
-    GT:ClearLines()
-    local ok = false
-    if type(GT.SetSpellByID) == "function" then
-        ok = pcall(GT.SetSpellByID, GT, sid)
-    elseif type(GT.SetSpell) == "function" then
-        ok = pcall(GT.SetSpell, GT, sid, BOOKTYPE_SPELL or "spell")
-    end
-    if not ok then
-        return false
-    end
-    local n = PD.SpellTipLines()
-    if n == nil and type(GT.SetHyperlink) == "function" then
-        local ok2 = pcall(GT.SetHyperlink, GT, "spell:" .. tostring(sid))
-        if not ok2 then return false end
-        n = PD.SpellTipLines()
-    end
-    if type(n) == "number" and n < 1 then
-        return false
-    end
-    if type(extra) == "table" and #extra > 0 and DG.TipAppendLines then DG.TipAppendLines(extra) end
-    GT:Show()
-    return true
+    local tt = getTT()
+    if tt and tt.ShowSpellTip then return tt.ShowSpellTip(owner, extra) end
+    return false
 end
 
 function PD.Row(i)
@@ -2508,7 +2513,7 @@ function PD.Row(i)
         r.tagFs:Hide()
     end
     r.tagBg = r.tagChip
-    local arrowTex = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\arrow.tga"
+    local arrowTex = hostMedia("Arrow")
     r.foldArrD = r:CreateTexture(nil, "ARTWORK")
     r.foldArrD:SetSize(14, 14)
     r.foldArrD:SetTexture(arrowTex)
@@ -2574,7 +2579,8 @@ function PD.Row(i)
         elseif self.__it then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
-            DG.ShowItemTip(self, self.__it, extra, self.__tipTitle)
+            local tt = getTT()
+            if tt and tt.ShowItemTip then tt.ShowItemTip(self, self.__it, extra, self.__tipTitle) end
         end
     end)
     r:SetScript("OnLeave", function(self)
@@ -2587,7 +2593,8 @@ function PD.Row(i)
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
             if self.__spell and PD.InsertSpellLink(self.__spell) then return end
             if self.__it then
-                DG.ItemShiftClick(self, button)
+                local hb = getHostBridge()
+                if hb and hb.ItemShiftClick then hb.ItemShiftClick(self, button) end
                 return
             end
         end
@@ -2596,7 +2603,8 @@ function PD.Row(i)
     end)
     r:EnableMouseWheel(true)
     r:SetScript("OnMouseWheel", function(self, delta)
-        DG.WheelScroll(PD.scroll, PD.child, delta)
+        local hb = getHostBridge()
+        if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
     end)
     PD.rows[i] = r
     return r
@@ -2694,11 +2702,10 @@ function PD.PCEnsure(r)
         r.pcRowChip[k] = chip
     end
     r.pcBtn = {}
-    local cbt = getFrom("CreateButton")
+    local hb = getHostBridge()
     for k = 1, 2 do
-        local btn
-        if type(cbt) == "function" then
-            btn = cbt(r)
+        local btn = hb and hb.CreateButton and hb.CreateButton(r) or nil
+        if btn then
             btn:SetSize(62, 24)
             btn:SetFrameLevel((r:GetFrameLevel() or 0) + 6)
             if SetButtonSelected then SetButtonSelected(btn, false, "main") end
@@ -2907,8 +2914,9 @@ function PD.RowClassColor(cls)
             if type(r) == "number" then return { r, g, b } end
         end
     end
-    if type(DG) == "table" and type(DG.QClassColor) == "function" then
-        local c = DG.QClassColor(cls)
+    local hb = getHostBridge()
+    if hb and type(hb.QClassColor) == "function" then
+        local c = hb.QClassColor(cls)
         if type(c) == "table" and not (c[1] == C_GOLD[1] and c[2] == C_GOLD[2]
                                        and c[3] == C_GOLD[3]) then
             return { c[1], c[2], c[3] }
@@ -2973,7 +2981,8 @@ function PD.PCApply(r, spec, w, h)
             r.icon:SetAlpha(d.on and 1 or 0.45)
             local tex = d.icon
             if type(tex) == "number" and not d.iconIsFileID then
-                local itTex = PD.ItemIcon and PD.ItemIcon(tex) or (DG.ItemIcon and DG.ItemIcon(tex))
+                local hb = getHostBridge()
+                local itTex = (PD.ItemIcon and PD.ItemIcon(tex)) or (hb and hb.ItemIcon and hb.ItemIcon(tex))
                 if itTex and itTex ~= FALLBACK_ICON then tex = itTex end
             end
             SetIcon(r.icon, tex)
@@ -2984,7 +2993,7 @@ function PD.PCApply(r, spec, w, h)
         local nw = w - nx2 - pad
         local fl2 = getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE"
         r.a:Show()
-        r.a:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 14, fl2)
+        r.a:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 14, fl2)
         r.a:ClearAllPoints()
         r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx2, -(pad + 2))
         r.a:SetWidth(nw)
@@ -3075,7 +3084,8 @@ function PD.PCApply(r, spec, w, h)
         r.__pcNumBg:Hide()
         local tex = d.icon
         if type(tex) == "number" and not d.iconIsFileID then
-            local itTex = PD.ItemIcon and PD.ItemIcon(tex) or (DG.ItemIcon and DG.ItemIcon(tex))
+            local hb = getHostBridge()
+            local itTex = (PD.ItemIcon and PD.ItemIcon(tex)) or (hb and hb.ItemIcon and hb.ItemIcon(tex))
             if itTex and itTex ~= FALLBACK_ICON then tex = itTex end
         end
         SetIcon(r.icon, tex)
@@ -3089,7 +3099,7 @@ function PD.PCApply(r, spec, w, h)
     local rfs = d.rightFs or PD.PC_FS_SM
     if r.__rfs ~= rfs then
         r.__rfs = rfs
-        r.__pcRight:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), rfs,
+        r.__pcRight:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), rfs,
             getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
     end
     local rc = d.rightColor
@@ -3109,7 +3119,7 @@ function PD.PCApply(r, spec, w, h)
     end
     local nmMax = math.max(w - nx - pad - math.max(rw + 8, 24), 52)
     r.a:ClearAllPoints()
-    r.a:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.PC_FS_NAME, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+    r.a:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.PC_FS_NAME, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
     r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx, -PD.PC_NAME_DY)
     r.a:SetWidth(nmMax)
     r.a:SetJustifyH("LEFT")
@@ -3172,7 +3182,7 @@ function PD.PCApply(r, spec, w, h)
                 nm:SetWidth(math.max(w - 2 * pad - used, 40))
                 if not nm.__dfOl then
                     nm.__dfOl = true
-                    nm:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.PC_FS_NAME, "OUTLINE")
+                    nm:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.PC_FS_NAME, "OUTLINE")
                 end
                 nm:SetText(row.name or "")
                 local cc = PD.RowClassColor(row.cls)
@@ -3284,20 +3294,23 @@ function PD.RealizePendingRow(e)
 end
 
 function PD.BuildPendRows()
+    local hb = getHostBridge()
     local list = PD.__pendRows
     if not list then
         PD.__pendRows = {}
-        DG.Gate.Finish()
+        if hb and hb.GateFinish then hb.GateFinish() end
         return
     end
-    local t0 = DG.__nowMs()
-    local left = DG.LOOT_ROW_FRAME_CAP
+    local t0 = hb and hb.NowMs and hb.NowMs()
+    local left = hostConst("LOOT_ROW_FRAME_CAP", 12)
+    local loader = hb and hb.Loader and hb.Loader()
+    local budgetMs = (type(loader) == "table" and loader.budgetMs) or 6
     while #list > 0 and left > 0 do
         PD.RealizePendingRow(table.remove(list, 1))
-        DG.Gate.Advance(1)
+        if hb and hb.GateAdvance then hb.GateAdvance(1) end
         left = left - 1
-        local t1 = t0 and DG.__nowMs()
-        if t1 and (t1 - t0) >= DG.Loader.budgetMs then break end
+        local t1 = t0 and hb and hb.NowMs and hb.NowMs()
+        if t1 and (t1 - t0) >= budgetMs then break end
     end
     if #list > 0 then
         local st = getFrom("ProfStep")
@@ -3306,30 +3319,31 @@ function PD.BuildPendRows()
         else
             for k = 1, #list do PD.RealizePendingRow(list[k]) end
             PD.__pendRows = {}
-            DG.Gate.Finish()
+            if hb and hb.GateFinish then hb.GateFinish() end
             if PD.DEMO_SAVE then PD.EndGateDemo() end
         end
     else
-        DG.Gate.Finish()
+        if hb and hb.GateFinish then hb.GateFinish() end
         if PD.DEMO_SAVE then PD.EndGateDemo() end
     end
 end
 
 function PD.FlushPendingRows()
+    local hb = getHostBridge()
     local n = #PD.__pendRows
     if n == 0 then
-        DG.Gate.Finish()
+        if hb and hb.GateFinish then hb.GateFinish() end
         return
     end
     local st = getFrom("ProfStep")
     if n < PD.ROW_SYNC_MAX or not (st and st.Push and st.Run) then
         for k = 1, n do PD.RealizePendingRow(PD.__pendRows[k]) end
         PD.__pendRows = {}
-        DG.Gate.Finish()
+        if hb and hb.GateFinish then hb.GateFinish() end
         if PD.DEMO_SAVE then PD.EndGateDemo() end
         return
     end
-    DG.Gate.Begin(n)
+    if hb and hb.GateBegin then hb.GateBegin(n) end
     st.Push(PD.BuildPendRows)
     st.Run()
 end
@@ -3846,7 +3860,7 @@ function PD.BindRow(r, spec, h)
         local wantFs = spec.fs or (spec.kind == "head" and 16 or 13)
         local _, curFs = r.a:GetFont()
         if curFs ~= wantFs then
-            r.a:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), wantFs,
+            r.a:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), wantFs,
                         getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         end
     end
@@ -3856,10 +3870,10 @@ function PD.BindRow(r, spec, h)
         local fl = getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE"
         local _, bfs = r.b:GetFont()
         local wb = spec.bFs or auxFs
-        if bfs ~= wb then r.b:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), wb, fl) end
+        if bfs ~= wb then r.b:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), wb, fl) end
         local _, cfs = r.c:GetFont()
         local wc = auxFs
-        if cfs ~= wc then r.c:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), wc, fl) end
+        if cfs ~= wc then r.c:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), wc, fl) end
     end
     PD.ClearMats(r)
     PD.ClearMatSegs(r)
@@ -3888,11 +3902,11 @@ function PD.BindRow(r, spec, h)
     do
         local _, dfs = r.d:GetFont()
         if dfs ~= 11 then
-            r.d:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 11, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+            r.d:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 11, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         end
         local _, efs = r.e:GetFont()
         if efs ~= 13 then
-            r.e:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 13, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+            r.e:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 13, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         end
     end
 
@@ -3964,7 +3978,7 @@ function PD.BindRow(r, spec, h)
         r.b:SetText(""); r.d:SetText(""); r.e:SetText(""); r.f:SetText("")
         if spec.sub and spec.sub ~= "" then
             local sf = getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE"
-            r.b:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 14, sf)
+            r.b:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 14, sf)
             r.b:SetText(spec.sub)
             r.b:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
             r.b:ClearAllPoints()
@@ -4177,7 +4191,7 @@ function PD.BindRow(r, spec, h)
         for _, column in ipairs(columns) do
             local text = column[1]
             text:SetTextColor(Unpack(C_GREY))
-            text:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 14, hout)
+            text:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 14, hout)
             text:SetText(column[2])
             text:ClearAllPoints()
             text:SetPoint(column[3], r, column[3], column[4], 0)
@@ -4257,7 +4271,7 @@ function PD.BindRow(r, spec, h)
             do
                 local _, dfs = r.d:GetFont()
                 if dfs ~= 12 then
-                    r.d:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+                    r.d:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
                 end
             end
             r.d:SetText(spec.craftRight or "")
@@ -4411,8 +4425,8 @@ function PD.BindRow(r, spec, h)
         local gcol = spec.nameColor
         if not gcol and spec.qItem then
             local gq = PD.QualCached(spec.qItem)
-            local dg = getDG()
-            if gq and dg and dg.QColor then gcol = { dg.QColor(gq) } end
+            local hb = getHostBridge()
+            if gq and hb and hb.QColor then gcol = { hb.QColor(gq) } end
         end
         if spec.icons then
             r.e:SetText("")
@@ -4467,8 +4481,8 @@ function PD.BindRow(r, spec, h)
         r.c2:SetTextColor(Unpack(spec.passed and C_DIM or C_GOLD))
         r.a:SetText(tostring(spec.stepIndex or ""))
         r.d:SetText(spec.rng or "")
-        r.d:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.LV_FS, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
-        r.e:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.LV_FS, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        r.d:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.LV_FS, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        r.e:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.LV_FS, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         r.e:SetText(spec.text or "")
         r.b:SetText("")
         r.c:SetText(spec.cnt or "")
@@ -4487,7 +4501,7 @@ function PD.BindRow(r, spec, h)
         if spec.costWhyShort then
             if not whyFs then
                 whyFs = r:CreateFontString(nil, "OVERLAY")
-                whyFs:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+                whyFs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
                 whyFs:SetJustifyH("RIGHT")
                 whyFs:SetWordWrap(false)
                 r.__costWhy = whyFs
@@ -4507,7 +4521,7 @@ function PD.BindRow(r, spec, h)
         if spec.cntSub then
             if not subFs then
                 subFs = r:CreateFontString(nil, "OVERLAY")
-                subFs:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.LV_CNT_SUB_FS,
+                subFs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.LV_CNT_SUB_FS,
                               getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
                 subFs:SetJustifyH("RIGHT")
                 subFs:SetWordWrap(false)
@@ -4531,26 +4545,27 @@ function PD.BindRow(r, spec, h)
                 return base
             end
             local cardStyle = true
+            local hb = getHostBridge()
             if not bd then
-                bd = DG.MakeBadge(r, item.bg)
+                bd = hb and hb.MakeBadge and hb.MakeBadge(r, item.bg)
                 bd:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
                 r[key] = bd
             end
             if bd.__wantCol ~= item.bg then
                 bd.__wantCol = item.bg
-                DG.BadgeTint(bd, item.bg)
+                if hb and hb.BadgeTint then hb.BadgeTint(bd, item.bg) end
             end
             bd.lab:SetText(item.text)
             local hui = getHui()
             local solidChip = bd.__chipFill and hui and hui.ChipH
-            local fs = solidChip and 11 or (cardStyle and 10 or DG.Q_BADGE_FS)
+            local fs = solidChip and 11 or (cardStyle and 10 or hostConst("Q_BADGE_FS", 10))
             if bd.__fs ~= fs then
                 local flags = (not solidChip and cardStyle)
                     and (hui and hui.FontFlags and hui.FontFlags("OUTLINE") or "OUTLINE") or ""
-                bd.lab:SetFont(getFrom("FONT") or "Fonts\\FRIZQT__.TTF", fs, flags)
+                bd.lab:SetFont(getFont() or "Fonts\\FRIZQT__.TTF", fs, flags)
                 bd.__fs = fs
             end
-            local pad = (solidChip and hui.CHIP_S_PAD) or (cardStyle and PD.CARD_PAD or DG.Q_BADGE_PAD)
+            local pad = (solidChip and hui.CHIP_S_PAD) or (cardStyle and PD.CARD_PAD or hostConst("Q_BADGE_PAD", 4))
             local w = (FSW(bd.lab, 16)) + pad * 2
             if solidChip and hui.CHIP_S_MIN_W and w < hui.CHIP_S_MIN_W then w = hui.CHIP_S_MIN_W end
             local bh
@@ -4561,10 +4576,11 @@ function PD.BindRow(r, spec, h)
                 if th <= 0 then th = 12 end
                 bh = 2 * (math.floor(th / 2) + 1)
             else
-                bh = DG.Q_BADGE_H
+                bh = hostConst("Q_BADGE_H", 16)
             end
-            local x = base + DG.Q_BADGE_GAP
-            if x + w > PD.LV_MAT_X - DG.Q_BADGE_GAP then
+            local badgeGap = hostConst("Q_BADGE_GAP", 4)
+            local x = base + badgeGap
+            if x + w > PD.LV_MAT_X - badgeGap then
                 bd:Hide()
                 return base
             end
@@ -4598,7 +4614,8 @@ function PD.BindRow(r, spec, h)
                     PD.InsertSpellLink(zone.__spell)
                     return
                 end
-                DG.ItemShiftClick(zone, button)
+                local hb = getHostBridge()
+                if hb and hb.ItemShiftClick then hb.ItemShiftClick(zone, button) end
             else spec.act(zone, button) end
         end or nil
         iz.__tipExtra = spec.tipExtra
@@ -4632,8 +4649,8 @@ function PD.BindRow(r, spec, h)
     local ncol = spec.nameColor
     if not ncol and spec.qItem then
         local q = PD.QualCached(spec.qItem)
-        local dg = getDG()
-        if q and dg and dg.QColor then ncol = { dg.QColor(q) } end
+        local hb = getHostBridge()
+        if q and hb and hb.QColor then ncol = { hb.QColor(q) } end
     end
     r.a:SetTextColor(Unpack(ncol or C_TEXT))
     r.a:SetText(spec.disp or spec.text or "")
@@ -4645,7 +4662,7 @@ function PD.BindRow(r, spec, h)
         local dfsW = spec.right2Fs or PD.RIGHT2_FS
         local _, dfs = r.d:GetFont()
         if dfs ~= dfsW then
-            r.d:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), dfsW, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+            r.d:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), dfsW, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         end
     end
     if spec.right2Color then
@@ -4771,11 +4788,11 @@ function PD.BindRow(r, spec, h)
             local flags = getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE"
             local _, dfs = r.d:GetFont()
             if dfs ~= PD.SRC_FS then
-                r.d:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.SRC_FS, flags)
+                r.d:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.SRC_FS, flags)
             end
             local _, vfs = r.dv:GetFont()
             if vfs ~= PD.SRC_FS then
-                r.dv:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.SRC_FS, flags)
+                r.dv:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.SRC_FS, flags)
             end
         end
         r.dv:ClearAllPoints()
@@ -5099,6 +5116,7 @@ function PD.FilterByCampStation(slug, stationKey)
     PD.setOpen = false
     PD.subTabSlug = nil
     PD.moneyKey = nil
+    PD.specKey = nil
     PD.searchQ = ""
     if PD.searchBox then
         PD.searchBox.eb:SetText("")
@@ -5569,20 +5587,22 @@ function PD.SetCardHover(c, on)
     if c.__hov then
         for _, t in ipairs(c.__hov) do t:SetShown(on) end
     elseif on then
-        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+        local edgeH = hostConst("LOOT_CARD_EDGE_HOVER", 0.25)
+        c:SetBackdropColor(1, 1, 1, hostConst("LOOT_CARD_BG_HOVER", 0.08))
         if c.__ixLearned then
             local r, g, b = PD.NavAccent()
-            c:SetBackdropBorderColor(r, g, b, DG.LOOT_CARD_EDGE_HOVER)
+            c:SetBackdropBorderColor(r, g, b, edgeH)
         else
-            c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+            c:SetBackdropBorderColor(1, 1, 1, edgeH)
         end
     else
-        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+        local edgeN = hostConst("LOOT_CARD_EDGE", 0.14)
+        c:SetBackdropColor(1, 1, 1, hostConst("LOOT_CARD_BG", 0.04))
         if c.__ixLearned then
             local r, g, b = PD.NavAccent()
-            c:SetBackdropBorderColor(r, g, b, DG.LOOT_CARD_EDGE)
+            c:SetBackdropBorderColor(r, g, b, edgeN)
         else
-            c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+            c:SetBackdropBorderColor(1, 1, 1, edgeN)
         end
     end
 end
@@ -5659,7 +5679,7 @@ function PD.BuildIndexGrid(parent)
                 end
             end)
             c:SetScript("OnMouseWheel", function(_, delta)
-                DG.WheelScroll(PD.scroll, PD.child, delta)
+                local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
             end)
             byGroup[gi][#byGroup[gi] + 1] = c
             PD.ixCards[#PD.ixCards + 1] = c
@@ -5775,8 +5795,9 @@ function PD.GCEnsure(i)
     for k = 1, 4 do
         local b = CreateFrame("Button", nil, c)
         b:SetScript("OnEnter", function(self)
-            if self.__it and DG.ShowItemTip then
-                DG.ShowItemTip(self, { self.__it })
+            local tt = getTT()
+            if self.__it and tt and tt.ShowItemTip then
+                tt.ShowItemTip(self, { self.__it })
             end
         end)
         b:SetScript("OnLeave", function()
@@ -6112,7 +6133,7 @@ function PD.PaintIndexCards()
                 if lv then
                     c:SetBackdropBorderColor(r, g, b, 1)
                 else
-                    c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+                    c:SetBackdropBorderColor(1, 1, 1, hostConst("LOOT_CARD_EDGE", 0.14))
                 end
             end
         end
@@ -6129,8 +6150,8 @@ function PD.MakeCard(f)
             edgeFile = "Interface\\Buttons\\WHITE8x8",
             edgeSize = 1,
         })
-        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-        c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+        c:SetBackdropColor(1, 1, 1, hostConst("LOOT_CARD_BG", 0.04))
+        c:SetBackdropBorderColor(1, 1, 1, hostConst("LOOT_CARD_EDGE", 0.14))
     end
     return c
 end
@@ -6244,7 +6265,7 @@ function PD.Build(page)
     end
 
     PD.subBtns = {}
-    for _, def in ipairs((DG and DG.PROF_SUBTABS) or getUICfg().TABS or {}) do
+    for _, def in ipairs(hostConst("PROF_SUBTABS") or getUICfg().TABS or {}) do
         local bt = NewButton(page, def.text, PD.SUB_W, PD.SUB_H, 14)
         SetButtonSelected(bt, false)
         bt:Hide()
@@ -6316,7 +6337,7 @@ function PD.Build(page)
     if getHui() and getHui().RoundIcon then getHui().RoundIcon(gear.__icon) end
     gear.__icon:SetSize(14, 14)
     gear.__icon:SetPoint("CENTER", gear, "CENTER", 0, 0)
-    SetIcon(gear.__icon, getFrom("SET_ICON"))
+    SetIcon(gear.__icon, hostConst("SET_ICON"))
     gear:SetPoint("TOPRIGHT", page, "TOPLEFT",
                   PD.RIGHT_X + PD.RIGHT_W - PD.LIST_PAD, -PD.SUB_Y)
     gear:SetScript("OnClick", function()
@@ -6407,7 +6428,7 @@ function PD.Build(page)
     for _, td in ipairs({
         { key = "mode",   text = L["模式"] },
         { key = "scheme", text = L["路线方案"] },
-        { key = "budget", text = L["升点预算"] },
+        { key = "budget", text = L["备料方式"] },
         { key = "excl",   text = L["排除"] },
         { key = "target", text = L["目标等级"] },
         { key = "spec",   text = L["专精"] },
@@ -6433,7 +6454,7 @@ function PD.Build(page)
         tf.val:SetPoint("CENTER", tf, "CENTER", 0, 0)
         tf:EnableMouseWheel(true)
         tf:SetScript("OnMouseWheel", function(self, delta)
-            DG.WheelScroll(PD.scroll, PD.child, delta)
+            local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
         end)
         PD.lvTiles[td.key] = tf
     end
@@ -6442,7 +6463,7 @@ function PD.Build(page)
     resCard:EnableMouse(true)
     resCard:EnableMouseWheel(true)
     resCard:SetScript("OnMouseWheel", function(self, delta)
-        DG.WheelScroll(PD.scroll, PD.child, delta)
+        local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
     end)
     if hui and hui.BuildRoundedBG and hui.layer then
         hui.BuildRoundedBG(resCard, 8, hui.layer.L1, "both", true, 1)
@@ -6487,6 +6508,7 @@ function PD.Build(page)
         if PD.FixedOnly() then return end
         local on = not PD.Setting("autoRoute")
         PD.SetSettingRaw("autoRoute",on)
+        if not on and PD.autoPage == "recovery" then PD.autoPage = "route" end
         local ra = raMod()
         if not on and ra and ra.Invalidate then ra.Invalidate() end
         PD.RequestRender()
@@ -6595,7 +6617,7 @@ function PD.Build(page)
                 if vtxt ~= "" and PD.TextW(vtxt, 16) > cw - 10 then vfs = 14 end
                 if tf.__vfs ~= vfs then
                     tf.__vfs = vfs
-                    tf.val:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), vfs,
+                    tf.val:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), vfs,
                         getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
                 end
                 tf:Show()
@@ -6616,7 +6638,7 @@ function PD.Build(page)
         PD.PaintTileBorder(eb, { 1, 1, 1, 0.10 })
         eb:SetSize(60, 20)
         eb:SetPoint("CENTER", tf, "CENTER", 0, 0)
-        eb:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 14, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        eb:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 14, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         eb:SetTextColor(1, 0.82, 0)
         eb:SetJustifyH("CENTER")
         eb:SetAutoFocus(false)
@@ -6639,11 +6661,15 @@ function PD.Build(page)
             CloseTarget()
             if old == v then return end
             if v == PD.LV_DEF then db.lvTarget[PD.cur] = nil else db.lvTarget[PD.cur] = v end
-            local ra = raMod()
-            if ra and ra.Invalidate then ra.Invalidate() end
-            local _pf = getFollow()
-            if _pf and _pf.RefreshRoute then pcall(_pf.RefreshRoute, PD.cur) end
-            PD.RequestRender()
+            if PD.AutoRouteEnabled() then
+                PD.MarkRouteStale(PD.cur, "settings")
+            else
+                local ra = raMod()
+                if ra and ra.Invalidate then ra.Invalidate("settings") end
+                local _pf = getFollow()
+                if _pf and _pf.RefreshRoute then pcall(_pf.RefreshRoute, PD.cur) end
+                PD.RequestRender()
+            end
         end
         local cancelled = nil
         eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
@@ -6686,7 +6712,7 @@ function PD.Build(page)
     seb:SetPoint("RIGHT", sb, "RIGHT", 0, 0)
     sb.label:ClearAllPoints()
     sb.label:SetPoint("RIGHT", seb, "LEFT", -8, 0)
-    seb:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 14, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+    seb:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 14, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
     seb:SetTextColor(1, 1, 1, 1)
     seb:SetJustifyH("LEFT")
     seb:SetAutoFocus(false)
@@ -6779,7 +6805,7 @@ function PD.Build(page)
         else
             eb:SetPoint("LEFT", lvBox.label, "RIGHT", 6, 0)
         end
-        eb:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 14, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        eb:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 14, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         eb:SetTextColor(1, 1, 1, 1)
         eb:SetJustifyH("CENTER")
         eb:SetAutoFocus(false)
@@ -6787,7 +6813,7 @@ function PD.Build(page)
         eb:SetMaxLetters(3)
         eb:EnableMouseWheel(true)
         eb:SetScript("OnMouseWheel", function(self, delta)
-            DG.WheelScroll(PD.scroll, PD.child, delta)
+            local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
         end)
         eb.ph = MakeFS(eb, 14, C_GREY, "CENTER")
         eb.ph:SetText(ph)
@@ -6883,7 +6909,7 @@ function PD.Build(page)
     local scroll = CreateFrame("ScrollFrame", nil, page)
     scroll:EnableMouseWheel(true)
     scroll:SetScript("OnMouseWheel", function(self, delta)
-        DG.WheelScroll(PD.scroll, PD.child, delta)
+        local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
         if PD.UpdateVScroll then PD.UpdateVScroll() end
         if PD.CullRows then PD.CullRows() end
     end)
@@ -7036,17 +7062,21 @@ function PD.Build(page)
         tg:EnableMouse(true)
         if hui and hui.ReskinToggle then hui.ReskinToggle(tg) end
         tg:SetScript("OnClick", function(self)
-            if self.__key then
+            if type(self.__onToggle) == "function" then
+                local nextVal = self.__onToggle()
+                if nextVal ~= nil then self:SetChecked(nextVal and true or false) end
+            elseif self.__key then
                 if self.__key=="autoUseBagMaterials" then
                     PD.SetUseBagMaterials(not PD.Setting(self.__key))
-                else PD.SetSettingRaw(self.__key,not PD.Setting(self.__key)) end
+                elseif self.__key=="auctionRecoveryEnabled" then
+                    PD.ChangeRouteSetting("auctionRecoveryEnabled", not PD.Setting(self.__key), PD.cur)
+                else
+                    PD.SetSettingRaw(self.__key,not PD.Setting(self.__key))
+                end
                 self:SetChecked(PD.Setting(self.__key))
-                if self.__key=="autoUseBagMaterials" then
-                elseif self.__key=="autoFromCurrent" then
-                    PD.LvRecalc()
+                if self.__key=="autoUseBagMaterials" or self.__key=="auctionRecoveryEnabled" then
                 elseif string.sub(self.__key, 1, 4) == "auto" then
-                    local ra = raMod()
-                    if ra and ra.Invalidate then ra.Invalidate() end
+                    PD.MarkRouteStale(PD.cur, "settings")
                 end
             end
             PD.RequestRender()
@@ -7057,16 +7087,14 @@ function PD.Build(page)
     coroutine.yield()
 
     PD.setEdits = {}
-    local ceb = getFrom("CreateEditBox")
+    local hbEdit = getHostBridge()
     for i = 1, PD.SETTING_TOG_MAX do
-        local eb
-        if type(ceb) == "function" then
-            eb = ceb(child, 52)
-        else
+        local eb = hbEdit and hbEdit.CreateEditBox and hbEdit.CreateEditBox(child, 52) or nil
+        if not eb then
             eb = CreateFrame("EditBox", nil, child)
             eb:SetSize(52, 22)
             eb:SetAutoFocus(false)
-            eb:SetFont(getFrom("FONT") or "Fonts\\FRIZQT__.TTF", 12, "")
+            eb:SetFont(getFont() or "Fonts\\FRIZQT__.TTF", 12, "")
         end
         eb:SetNumeric(true)
         eb:SetMaxLetters(3)
@@ -7088,7 +7116,7 @@ function PD.Build(page)
         local hp = CreateFrame("Button", nil, child)
         hp:SetSize(16, 16)
         hp.icon = hp:CreateTexture(nil, "ARTWORK")
-        hp.icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Brand\\HelpIcon")
+        hp.icon:SetTexture(hostMedia("HelpIcon"))
         hp.icon:SetSize(14, 14)
         hp.icon:SetPoint("CENTER")
         hp.icon:SetVertexColor(C_HELP[1], C_HELP[2], C_HELP[3])
@@ -7102,7 +7130,7 @@ function PD.Build(page)
         end)
         hp:EnableMouseWheel(true)
         hp:SetScript("OnMouseWheel", function(_, delta)
-            DG.WheelScroll(PD.scroll, PD.child, delta)
+            local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
         end)
         hp:Hide()
         PD.setHelps[i] = hp
@@ -7172,35 +7200,12 @@ function PD.Build(page)
     end))
 end
 
-local learnedMemo, learnedT
 function PD.ProfLearned(cached)
-    local now = cached and GetTime and GetTime() or nil
-    if now and learnedMemo and (now - (learnedT or 0)) < 0.5 then return learnedMemo end
-    local out = {}
-    if type(GetProfessions) ~= "function" then return out end
-    local ok, a, b, c, d, e, f = pcall(GetProfessions)
-    if not ok then return out end
-    local slots = { a, b, c, d, e, f }
-    local ds = getDS()
-    local cfg = getProfCfg()
-    local slMap = cfg and cfg.SKILL_LINE_TO_SLUG or {}
-    for i = 1, 6 do
-        local idx = slots[i]
-        if idx and type(GetProfessionInfo) == "function" then
-            local oki, _, _, cur, mx, _, _, sid = pcall(GetProfessionInfo, idx)
-            local slug = sid and ((ds and ds.SkillLineToSlug and ds.SkillLineToSlug(sid)) or slMap[sid])
-            if oki and slug and cur and mx then
-                local nCur = tonumber(cur) or 0
-                local nMax = tonumber(mx) or 0
-                local prev = out[slug]
-                if not prev or nCur > prev.cur or (nCur == prev.cur and nMax > prev.max) then
-                    out[slug] = { cur = nCur, max = nMax, skillLineID = sid }
-                end
-            end
-        end
+    local ex = getEX()
+    if ex and type(ex.ProfLearned) == "function" then
+        return ex.ProfLearned(cached)
     end
-    if now then learnedMemo, learnedT = out, now end
-    return out
+    return {}
 end
 
 local function NavAccent()
@@ -7312,7 +7317,7 @@ function PD.PickTabs()
     for _, t in ipairs(tabs) do PD.avail[t] = true end
     if not PD.avail[PD.tab] then PD.tab = tabs[1] or "overview" end
     local shown = 0
-    for _, def in ipairs(DG.PROF_SUBTABS) do
+    for _, def in ipairs(hostConst("PROF_SUBTABS") or PROF_SUBTABS) do
         local bt = PD.subBtns[def.key]
         local on = PD.avail[def.key] and true or false
         local txt = def.text
@@ -7386,7 +7391,7 @@ function PD.PickTabs()
         end
         if gon then
             SetButtonSelected(PD.setGear, PD.setOpen and true or false)
-            local gc = PD.setOpen and (getFrom("SET_ICON_ON") or { 1, 1, 1 }) or (getFrom("SET_ICON_IDLE") or { 0.55, 0.62, 0.70 })
+            local gc = PD.setOpen and hostConst("SET_ICON_ON", { 1, 1, 1 }) or hostConst("SET_ICON_IDLE", { 0.55, 0.62, 0.70 })
             PD.setGear.__icon:SetVertexColor(gc[1], gc[2], gc[3])
         end
     end
@@ -7728,30 +7733,37 @@ end
 
 function PD.PlaceLvRange()
     local box = PD.lvRangeBox
-    if not box then return end
+    if not box then return 0 end
     if PD.tab ~= "recipe" or PD.setOpen or PD.cur == "__index" then
         box:Hide()
-        return
+        return 0
     end
     local ends = PD.toolEnds or {}
     local row, x = nil, 0
     for r, e in pairs(ends) do
         if (e or 0) > 0 and (row == nil or r > row) then row, x = r, e end
     end
-    if row == nil then box:Hide() return end
+    if row == nil then box:Hide() return 0 end
+    local extraH = 0
+    local lim = PD.RIGHT_W - (PD.SearchReserve() or 0)
+    if x > 0 and (x + PD.LVR_W) > lim then
+        row = row + 1
+        x = 0
+        extraH = PD.TOOL_H + PD.TOOL_GAP
+    end
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + x,
                  -(PD.BODY_TOP + row * (PD.TOOL_H + PD.TOOL_GAP)))
     box:Show()
+    return extraH
 end
 
 function PD.UpdateCalculationNotice()
     local notice = PD.__calculationNotice
-    local speed = PD.SettingRaw("computationSpeed")
     local SR = getSolverRun()
     local active = PD.built and PD.page and pageVisible(PD.page)
         and PD.tab == "leveling" and not PD.setOpen and PD.cur and PD.cur ~= "__index"
-        and (speed == "fast" or speed == "turbo") and SR and SR.Active and SR.Active(PD.cur)
+        and SR and SR.Active and SR.Active(PD.cur)
     local job = active and active.job
     if not job or job.finished or job.cancelled or job.invalid or job.status == "stopped" or job.status == "error" then
         if notice then notice:Hide(); notice.slug = nil end
@@ -7787,14 +7799,14 @@ function PD.UpdateCalculationNotice()
         local title = MakeFS(panel, 16, headInk, "LEFT")
         title:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -16)
         title:SetWidth(408)
-        title:SetText(L["正在计算，请暂时不要操作"])
+        title:SetText(L["正在计算升级路线…"])
         notice.title = title
         local message = MakeFS(panel, 14, C_TEXT, "LEFT")
         message:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -44)
         message:SetSize(408, 64)
         message:SetWordWrap(true)
         message:SetJustifyV("TOP")
-        message:SetText(L["计算期间可能掉帧或短暂卡顿，路线内容会稍后刷新。计算完成后此提示自动关闭。"])
+        message:SetText(L["正在根据当前价格计算最省钱的升级路线，完成后自动关闭。"])
         notice.message = message
         local status = MakeFS(panel, 14, C_WHITE, "LEFT")
         status:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -116)
@@ -7824,15 +7836,6 @@ function PD.UpdateCalculationNotice()
             PD.StopSolverRoute(slug)
             PD.UpdateCalculationNotice()
             PD.RequestRender()
-        end)
-        notice.smooth = NewButton(panel, L["切回流畅"], 144, 24, 14)
-        notice.smooth:SetPoint("RIGHT", notice.stop, "LEFT", -8, 0)
-        notice.smooth:SetScript("OnClick", function()
-            PD.SetSettingRaw("computationSpeed", "normal")
-            PD.__turboPlanPaint = nil
-            PD.UpdateCalculationNotice()
-            PD.RequestRender()
-            playSoundSafe(1)
         end)
         PD.__calculationNotice = notice
         PD.page:HookScript("OnHide", function() notice:Hide(); notice.slug = nil end)
@@ -8051,7 +8054,8 @@ function PD.PaintGatherTiles()
     tiles.cost.val:SetTextColor(Unpack(C_WHITE))
     PD.SetBadge(nil)
     PD.SetSub(nil)
-    PD.TipTile(tiles.cost, { { L["静态推荐路线（全程显示）：按资料整理的采集区间推进，不含价格与概率，无需价格插件"], 0.7, 0.7, 0.7 } })
+    tiles.cost:SetScript("OnEnter", nil)
+    tiles.cost:SetScript("OnLeave", nil)
     PD.PlaceCards(2)
     return PD.LV_TILE_H + 8
 end
@@ -8090,6 +8094,7 @@ function PD.PaintLvTiles()
             end
             local on = not PD.Setting("autoRoute")
             PD.SetSettingRaw("autoRoute", on)
+            if not on and PD.autoPage == "recovery" then PD.autoPage = "route" end
             local ra = getRA()
             if not on and ra and ra.Invalidate then ra.Invalidate() end
             PD.RequestRender()
@@ -8121,27 +8126,27 @@ function PD.PaintLvTiles()
         end
         TipOn(tiles.mode, modeLines)
     end
-    local sch = s.scheme or "cheapest"
+    local sch = (auto and s.scheme) or PD.SettingRaw("autoScheme") or "cost"
+    if sch == "cheapest" then sch = "cost" end
     tiles.scheme.label:SetText(L["路线方案"])
     local ra = raMod()
-    tiles.scheme.val:SetText(fishRoute and L["钓鱼路线"] or ((ra and ra.SchemeLabel) and ra.SchemeLabel(sch) or L["最省钱"]))
+    tiles.scheme.val:SetText(fishRoute and L["钓鱼路线"]
+        or (not auto and L["固定参考"])
+        or ((ra and ra.SchemeLabel) and ra.SchemeLabel(sch) or L["最低成本"]))
     if fixedOnly then
         tiles.scheme:SetScript("OnClick", nil)
     else
         tiles.scheme:SetScript("OnClick", function() PD.ShowSchemeMenu(tiles.scheme) end)
     end
-    tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
+    tiles.scheme.val:SetTextColor(Unpack((auto or fishRoute) and C_WHITE or C_GREY))
     local schemeDesc = {
-        stable = L["优先提高达标和后续配方解锁概率，降低补做风险，再比较采购成本"],
-        cheapest = L["比较采购、自制与图纸支出；回血模式开启时比较净成本"],
-        matcost = L["只按材料价选配方"],
-        crafts = L["升点率高优先，同分取便宜"],
-        optim = L["按卖店价值选配方，采购仍检查实际报价与库存"],
+        cost = L["按材料采购、自制中间品与图纸总支出最低选路"],
+        net = L["扣除剩余产物预计回血收入后，按净花费最低选路"],
     }
     local schemeLines = {}
     local sorder = (getRA() and getRA().SchemeOrder and getRA().SchemeOrder()) or {}
     for _, sk in ipairs(sorder) do
-        local curK = (sk == sch)
+        local curK = auto and (not fishRoute) and (sk == sch)
         local nm = (getRA() and getRA().SchemeLabel) and getRA().SchemeLabel(sk) or sk
         local head = curK and "|cffffd100" or "|cffffffff"
         schemeLines[#schemeLines + 1] = {
@@ -8157,30 +8162,28 @@ function PD.PaintLvTiles()
             {L["点击可切换到其他路线方案"], 0.7, 0.7, 0.7},
         }
     else
-        schemeLines[#schemeLines + 1] = { L["点击选择路线方案"], 0.7, 0.7, 0.7 }
+        schemeLines[#schemeLines + 1] = { auto and L["点击切换路线方案"] or L["点击选择自动路线方案"], 0.7, 0.7, 0.7 }
     end
     TipOn(tiles.scheme, schemeLines)
     tiles.budget.__use = PD.AutoRouteEnabled() and not fishRoute
     if tiles.budget.__use then
-        local bmode = PD.SettingRaw("autoSkillBudget", PD.cur)
-        tiles.budget.label:SetText(L["升点预算"])
-        tiles.budget.val:SetText(PD.GreenBudgetShort(bmode))
+        local rmode = PD.SettingRaw("autoReserveMode", PD.cur)
+        local isSafe = rmode ~= "expected"
+        tiles.budget.label:SetText(L["备料方式"])
+        tiles.budget.val:SetText(PD.ReserveModeShort(rmode))
         tiles.budget.val:SetTextColor(Unpack(C_WHITE))
         PD.PaintTileBorder(tiles.budget, { 1, 1, 1, 0.10 })
-        tiles.budget:SetScript("OnClick", function()
-            local mode = PD.SettingRaw("autoSkillBudget", PD.cur)
-            PD.ChangeRouteSetting("autoSkillBudget",
-                mode == "optimistic" and "balanced"
-                or mode == "pessimistic" and "optimistic"
-                or "pessimistic", PD.cur)
-            playSoundSafe(1)
+        if tiles.budget.RegisterForClicks then tiles.budget:RegisterForClicks("LeftButtonUp") end
+        tiles.budget:SetScript("OnClick", function(self)
+            PD.ShowReserveMenu(self)
         end)
         TipOn(tiles.budget, {
-            { PD.GreenBudgetLabel(bmode), 1, 0.82, 0 },
-            { L["乐观按平均次数计算。均衡和悲观分别按单点 80% 和 95% 把握计算，悲观还将绿方的估算升点率减半。选方和购物单使用同一份用量。点击切换，再重新计算。"] },
-            { L["开启回血时，选方只按平均会做出的冲点成品估算收益。"] },
-            { PD.GreenBudgetShort("optimistic") .. " / " .. PD.GreenBudgetShort("balanced")
-              .. " / " .. PD.GreenBudgetShort("pessimistic"), 0.7, 0.7, 0.7 },
+            { L["调整购物清单里黄、绿配方的材料购买量，不影响升级路线。"], 0.85, 0.85, 0.85 },
+            { (isSafe and "|cffffd100" or "|cffffffff") .. L["多备余量"] .. "|r|cff8f8f8f：|r|cffb3b3b3"
+                .. L["多买一些备用材料，尽量一次买齐冲完，少跑拍卖行补货。"] .. "|r", 1, 1, 1 },
+            { ((not isSafe) and "|cffffd100" or "|cffffffff") .. L["基础用量"] .. "|r|cff8f8f8f：|r|cffb3b3b3"
+                .. L["只按平均消耗采购，前期花钱更少，运气差时可能需要补买。"] .. "|r", 1, 1, 1 },
+            { L["点击切换备料方式"], 0.7, 0.7, 0.7 },
         })
     else
         tiles.budget:SetScript("OnClick", nil)
@@ -8203,14 +8206,14 @@ function PD.PaintLvTiles()
         tiles.cost.val:SetText(PD.PlanCostText(s))
         tiles.cost.val:SetTextColor(Unpack(C_GOLD))
         costLines={{L["固定攻略参考；逐配方资料待补全。"],0.95,0.75,0.4}}
+    elseif s.notCalculated then
+        tiles.cost.val:SetText(L["—"])
+        tiles.cost.val:SetTextColor(Unpack(C_GREY))
+        costLines = { { L["尚未计算升级路线，点击「开始计算」按当前设置与行情生成。"], 0.95, 0.78, 0.42 } }
     elseif s.status == "selection_required" or s.status == "recalculate_required" or s.status == "infeasible" then
         tiles.cost.val:SetText(L["—"])
         tiles.cost.val:SetTextColor(Unpack(C_GREY))
         costLines = {{PD.PlanStatusText(s), 0.95, 0.75, 0.4}}
-    elseif s.scheme == "optim" and s.planVersion~=2 then
-        tiles.cost.val:SetText((getRA() and getRA().MoneyStr) and getRA().MoneyStr(s.total or 0, "copper") or tostring(s.total or 0))
-        tiles.cost.val:SetTextColor(Unpack(C_GREY))
-        costLines = { { L["乐观计数：花费按商人购买价或卖店价值粗算，不是拍卖行行情"], 0.7, 0.7, 0.7 } }
     elseif s.priced and s.total then
         tiles.cost.val:SetText(PD.PlanCostText(s))
         tiles.cost.val:SetTextColor(Unpack(C_GOLD))
@@ -8232,16 +8235,20 @@ function PD.PaintLvTiles()
         tiles.cost.val:SetTextColor(Unpack(C_GREY))
         costLines = { { scanNotice or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
     end
-    if s.greenBudget and not tiles.budget.__use then
-        costLines[#costLines+1]={PD.GreenBudgetLabel(s.greenBudget),0.7,0.85,1}
+    local recMode = PD.RecoveryModeActive(PD.cur, s)
+    if s.routeRiskMode == "quantile" then
+        costLines[#costLines+1]={L["已开启全程优先稳健配方"],0.7,0.85,1}
+    end
+    if s.reserveMode == "safe" and type(s.safePrepTotal) == "number" and s.safePrepTotal > (s.total or 0) then
+        local ra = getRA()
+        costLines[#costLines+1]={format(L["多备余量采购参考：%s"], (ra and ra.MoneyStr) and ra.MoneyStr(s.safePrepTotal, "copper") or tostring(s.safePrepTotal)),0.7,0.85,1}
     end
     if s.useBagMaterials then costLines[#costLines+1]={L["已计入背包材料"],0.55,0.85,0.6} end
     if (s.np or 0) > 0 then
         costLines[#costLines + 1] = { format(L["含无价材料 %d 种：花费为估算下限"], s.np),
                                       0.95, 0.75, 0.4 }
     end
-    local ahState
-    if s.scheme ~= "optim" or s.planVersion==2 then ahState = PD.SnapshotBadgeState(s) end
+    local ahState = PD.SnapshotBadgeState(s)
     if ahState == "missing" or ahState == "disabled" then
         costLines[#costLines + 1] = { PD.AuctionatorStatusText(), 0.95, 0.75, 0.4 }
     elseif ahState == "loading" then
@@ -8250,17 +8257,16 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { PD.ScanSnapshotText(true)
             or L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], 0.95, 0.75, 0.4 }
     end
-    if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
+    if recMode and type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         local netTxt = format(L["预计回血 %s · 净成本 %s"],
             PD.RecoveryMoney(s.recoveryTotal), PD.RecoveryMoney(net))
-        if s.recoveryFeePercent then
-            netTxt = netTxt .. format(L["（已扣 %d%% 手续费，剩余产物按全部成交计）"], s.recoveryFeePercent)
+        if s.auctionRecoveryEnabled then
+            netTxt = netTxt .. format(L["（拍卖行易卖清单/自选回血，扣 %d%% 手续费）"], s.recoveryFeePercent or 5)
+        else
+            netTxt = netTxt .. L["（仅按卖店回血计）"]
         end
         costLines[#costLines + 1] = { netTxt, 0.55, 0.85, 0.6 }
-        if s.greenBudget and s.greenBudget~="optimistic" and s.priorityTotal and math.abs(s.priorityTotal-net)>=1 then
-            costLines[#costLines+1]={format(L["选方采用的净成本 %s"],PD.RecoveryMoney(s.priorityTotal)),0.7,0.85,1}
-        end
         if (s.recoveryMissing or 0) > 0 then
             costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请打开拍卖行完成一次完整扫描后重新计算。"], s.recoveryMissing),
                                           0.95, 0.75, 0.4 }
@@ -8277,26 +8283,28 @@ function PD.PaintLvTiles()
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；默认全程（300）。点击修改"], 0.7, 0.7, 0.7 } })
     local engG = getGates()
-    if PD.cur == "engineering" and engG and engG.GetChoiceSetting then
-        local engSet = engG.GetChoiceSetting()
+    if engG and engG.HasSpecializations and engG.HasSpecializations(PD.cur) then
+        local st = PD.GetProfSpecDisplay(PD.cur)
         tiles.spec.__use = true
         tiles.spec.label:SetText(L["专精"])
-        tiles.spec.val:SetText(engSet == "none" and L["不指定"] or PD.EngChoiceLabel(engSet))
+        tiles.spec.val:SetText(st.shortLabel or L["不指定"])
         tiles.spec.val:SetTextColor(Unpack(C_WHITE))
         tiles.spec:SetScript("OnClick", function()
-            PD.ShowEngChoiceMenu(tiles.spec)
+            PD.ShowSpecChoiceMenu(tiles.spec, PD.cur)
             playSoundSafe(1)
         end)
-        local specTip = { { L["点击指定工程专精；不指定时使用角色已学会的专精配方"], 0.7, 0.7, 0.7 } }
-        local engActual = engG.EngineeringChoice and engG.EngineeringChoice() or "unknown"
-        if engActual == "unknown" then
-            specTip[#specTip + 1] = { L["角色专精状态尚未读取，请登录角色并打开工程学面板后重试。"], 0.95, 0.75, 0.4 }
-        elseif engActual == "conflict" then
-            specTip[#specTip + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
-        elseif engSet == "none" and (engActual == "goblin" or engActual == "gnomish") then
-            specTip[#specTip + 1] = { format(L["当前已学工程专精：%s。"], PD.EngChoiceLabel(engActual)), 0.8, 0.9, 0.7 }
-        elseif engSet ~= "none" and engActual ~= "none" and engActual ~= engSet then
-            specTip[#specTip + 1] = { format(L["已学专精与计划不一致：已学%s。"], PD.EngChoiceLabel(engActual)), 0.88, 0.42, 0.38 }
+        local specTip = { { L["点击指定专业专精；不指定时使用角色已学会的专精配方"], 0.7, 0.7, 0.7 } }
+        if st.isSet and st.fullLabel and st.fullLabel ~= st.shortLabel then
+            specTip[#specTip + 1] = { format(L["已选专精计划：%s。"], st.fullLabel), 0.92, 0.86, 0.62 }
+        end
+        if st.actualConflict then
+            specTip[#specTip + 1] = { L["当前已学专精存在冲突，需先重置其中一支。"], 0.88, 0.42, 0.38 }
+        elseif not st.actualLabel and st.anyUnknown then
+            specTip[#specTip + 1] = { L["角色专精状态尚未读取，请登录角色并打开对应专业面板后重试。"], 0.95, 0.75, 0.4 }
+        elseif not st.isSet and st.actualLabel then
+            specTip[#specTip + 1] = { format(L["当前已学专精：%s。"], st.actualLabel), 0.8, 0.9, 0.7 }
+        elseif st.planMismatch and st.actualLabel then
+            specTip[#specTip + 1] = { format(L["已学专精与计划不一致：已学%s。"], st.actualLabel), 0.88, 0.42, 0.38 }
         end
         TipOn(tiles.spec, specTip)
         PD.PaintTileBorder(tiles.spec, { 1, 1, 1, 0.10 })
@@ -8309,12 +8317,12 @@ function PD.PaintLvTiles()
     local snapBadge, br, bg, bb = PD.SnapshotBadgeText(s)
     PD.SetBadge(snapBadge, br, bg, bb)
     local atxt
-    if s.referenceOnly then
+    if s.notCalculated then
+        atxt = L["尚未计算升级路线，点击「开始计算」生成。"]
+    elseif s.referenceOnly then
         atxt=PD.PlanStatusText(s)
     elseif s.planVersion == 2 then
         atxt = PD.PlanStatusText(s)
-    elseif s.scheme == "optim" then
-        atxt = L["乐观计数 · 不依赖价格插件"]
     elseif s.priced and snapDays then
         atxt = PD.MarketLineText(nil, snapDays)
     elseif s.priced and snapSec then
@@ -8350,7 +8358,7 @@ function PD.PaintLvTiles()
         }
         if cost == nil then costLines[#costLines + 1] = { L["请核对制作记录中的费用"], 0.95, 0.75, 0.4 } end
         PD.SetBadge(L["按方案单价估算"], 0.7, 0.7, 0.7)
-    elseif PD.autoPage == "recovery" and s.status ~= "recalculate_required" then
+    elseif recMode and PD.autoPage == "recovery" and s.status ~= "recalculate_required" then
         local rec = tonumber(s.recoveryTotal) or 0
         tiles.cost.label:SetText(L["预计总回血"])
         tiles.cost.val:SetText(PD.RecoveryMoney(rec))
@@ -8364,30 +8372,21 @@ function PD.PaintLvTiles()
         end
         PD.SetBadge(L["按快照售价估算"], 0.7, 0.7, 0.7)
     end
-    if PD.autoPage ~= "log" and s.residualMass then
-        costLines[#costLines + 1] = { L["拍卖产物按七折估值，NPC卖价不打折。"], 0.7, 0.7, 0.7 }
-    end
-    if PD.autoPage ~= "log" and s.recoveryOptimized and s.profitPriorityLimit then
-        costLines[#costLines + 1] = { L["盈利优先每配方最多20次；多余产物仍计入预计回血。"], 0.7, 0.7, 0.7 }
-    end
-    if PD.autoPage ~= "log" and s.recoveryEstimated then
+    if recMode and PD.autoPage ~= "log" and s.recoveryEstimated then
         costLines[#costLines + 1] = { L["回血暂按历史数据估算；重新计算可更新。"], 0.95, 0.75, 0.4 }
     end
     if PD.ScanModeAdvice() then
         costLines[#costLines+1]={PD.AHReplicateFix(),0.7,0.7,0.7}
     end
-    local uniqueLines,seenLines={},{}
-    for _,line in ipairs(costLines) do
-        if not seenLines[line[1]] then uniqueLines[#uniqueLines+1]=line;seenLines[line[1]]=true end
-    end
-    TipOn(tiles.cost, uniqueLines)
+    tiles.cost:SetScript("OnEnter", nil)
+    tiles.cost:SetScript("OnLeave", nil)
     if fixedOnly then tiles.scheme.__use = false end
     local n = 0
     for _, k in ipairs(PD.chipOrder) do
         if tiles[k].__use then n = n + 1 end
     end
     PD.PlaceCards(n > 0 and n or 1)
-    if PD.autoPage ~= "log" and type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
+    if recMode and PD.autoPage ~= "log" and type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local recNet = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         local netTxt
         if recNet < 0 then
@@ -8439,8 +8438,9 @@ function PD.SweepNames()
     if PD.sweeping or not PD.notReady then return end
     PD.sweeping = true
     local got = false
+    local hb = getHostBridge()
     for _, id in ipairs(PD.notReady) do
-        local _, ok = DG.ItemName(id)
+        local _, ok = hb and hb.ItemName and hb.ItemName(id)
         if ok then got = true; break end
     end
     PD.notReady = nil
@@ -8539,18 +8539,8 @@ function PD.PerkTagText(pk)
 end
 
 function PD.PerkTipLines(pk, lvs, cur)
-    local ds = getDS()
-    local lines = {}
-    local nm = pk.perkKey and ds and ds.PerkText and ds.PerkText(pk.perkKey, "name") or pk.perkKey
-    if type(nm) == "string" and nm ~= "" then
-        lines[#lines + 1] = { nm, 1, 0.82, 0 }
-    end
-    local head = lvs[cur]
-        or (pk.perkKey and ds and ds.RawText and (ds.RawText("perk", pk.perkKey, "description") or ds.RawText("perk", pk.perkKey, "desc")))
-        or ""
-    if head ~= "" then lines[#lines + 1] = { head } end
-    if #lines == 0 then return nil end
-    return lines
+    local tt = getTT()
+    return tt and tt.PerkTipLines and tt.PerkTipLines(pk, lvs, cur) or nil
 end
 
 function PD.PushCardRow(rows, list, cols, colw)
@@ -8646,46 +8636,8 @@ function PD.PushPerkCards(rows, slug)
 end
 
 function PD.CampTipLines(c)
-    local ds = getDS()
-    local lines = {}
-    local nm = campNameOf(c)
-    if nm ~= "" then
-        lines[#lines + 1] = { nm, 1, 0.82, 0 }
-    end
-    local function add(label, v)
-        if type(v) == "string" and v ~= "" then
-            lines[#lines + 1] = { label .. "：" .. v }
-        end
-    end
-    local desc = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "description") or ds.RawText("camp", c.campKey, "desc"))
-    local buff = c.campKey and ds and ds.RawText and (ds.RawText("camp", c.campKey, "buff") or ds.RawText("camp", c.campKey, "effect"))
-    local repName = c.replacesCampKey and campNameByKey(c.replacesCampKey)
-    local exName = c.exclusiveSpellID and SpellName(c.exclusiveSpellID)
-    add(L["描述"], desc)
-    add(L["增益"], buff)
-    add(L["取代"], repName)
-    add(L["互斥"], exName)
-    if c.campfireCapacity then add(L["容量"], tostring(c.campfireCapacity)) end
-    if c.reagentsKnown ~= false and c.reagents and #c.reagents > 0 then
-        lines[#lines + 1] = { format(L["材料：%s"], campReagentText(c.reagents)), 0.7, 0.7, 0.7 }
-    elseif c.reagentsKnown == false then
-        lines[#lines + 1] = { format(L["材料：%s"], L["尚未收录"]), 0.7, 0.7, 0.7 }
-    end
-    if c.formulaItemIDs and c.formulaItemIDs[1] then
-        lines[#lines + 1] = { format(L["图纸：%s"], PD.ItemName(c.formulaItemIDs[1])) }
-    end
-    local stKey = c.stationKey
-    if type(stKey) == "string" and stKey ~= "" and not CAMP_STATION_EXCLUDED[stKey] then
-        local stCnt = PD.CountRecipesByStation(c.profession, stKey)
-        if stCnt > 0 then
-            lines[#lines + 1] = { format(L["需要此设施：%d 配方（点击筛选）"], stCnt), 0.45, 0.85, 1 }
-            if c.wowheadURL then
-                lines[#lines + 1] = { L["Shift+点击复制资料链接"], 0.65, 0.65, 0.65 }
-            end
-        end
-    end
-    if #lines == 0 then return nil end
-    return lines
+    local tt = getTT()
+    return tt and tt.CampTipLines and tt.CampTipLines(c) or nil
 end
 
 function PD.CampTagText(c)
@@ -9223,6 +9175,8 @@ function PD.MapName(uiMap, fallback)
 end
 
 function PD.MatIconTex(id, px)
+    local ex = getEX()
+    if ex and type(ex.MatIconTex) == "function" then return ex.MatIconTex(id, px) end
     px = px or 14
     local ic = PD.NormTexIcon(PD.ItemIcon(id) or FALLBACK_ICON) or FALLBACK_ICON
     return format("|T%s:%d:%d|t", ic, px, px)
@@ -9378,7 +9332,7 @@ function PD.MatBlockCnt(r, i)
     local fs = r.mcx[i]
     if not fs then
         fs = r:CreateFontString(nil, "OVERLAY")
-        fs:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.REC_MAT_CNT_FS, "THICKOUTLINE")
+        fs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.REC_MAT_CNT_FS, "THICKOUTLINE")
         fs:SetWordWrap(false)
         fs:SetTextColor(1, 1, 1)
         r.mcx[i] = fs
@@ -9430,7 +9384,7 @@ function PD.RecMatLineH()
         end
         if fs then
             local flags = (getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE")) or "OUTLINE"
-            fs:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.REC_MAT_FS, flags)
+            fs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.REC_MAT_FS, flags)
             fs:SetText("吸收")
             local got = fs:GetStringHeight()
             if type(got) == "number" and got >= 8 and got <= 32 then h = got end
@@ -9452,7 +9406,7 @@ function PD.RecMatMetrics()
     return lineH, gap, top
 end
 
-PD.SORT_UP, PD.SORT_DN = getFrom("SORT_UP"), getFrom("SORT_DN")
+PD.SORT_UP, PD.SORT_DN = hostConst("SORT_UP"), hostConst("SORT_DN")
 local SORT_UP, SORT_DN = PD.SORT_UP, PD.SORT_DN
 local C_ARR_DIM = { 0.34, 0.36, 0.40 }
 local SORT_W = 11
@@ -9465,8 +9419,8 @@ function PD.HeadArrow(r, i)
     if not s then
         local up = r:CreateTexture(nil, "ARTWORK")
         local dn = r:CreateTexture(nil, "ARTWORK")
-        local su = SORT_UP or getFrom("SORT_UP")
-        local sd = SORT_DN or getFrom("SORT_DN")
+        local su = SORT_UP or hostConst("SORT_UP")
+        local sd = SORT_DN or hostConst("SORT_DN")
         if su then up:SetTexture(su) end
         if sd then dn:SetTexture(sd) end
         up:SetSize(SORT_W, SORT_H)
@@ -9742,7 +9696,7 @@ function PD.WarnChip(r, plainTip)
         PD.WireTipZone(z, r)
     end
     local tex = z:CreateTexture(nil, "OVERLAY", nil, 2)
-    tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri")
+    tex:SetTexture(hostMedia("WarnTri"))
     tex:SetSize(18, 18)
     tex:SetPoint("CENTER", z, "CENTER", 0, 0)
     r.__warn = z
@@ -9939,13 +9893,15 @@ function PD.WireTipZone(z, r)
         elseif self.__spell and PD.ShowSpellTip then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
-            if not PD.ShowSpellTip(self, extra) and self.__it and DG.ShowItemTip then
-                DG.ShowItemTip(self, self.__it, extra)
+            local tt = getTT()
+            if not PD.ShowSpellTip(self, extra) and self.__it and tt and tt.ShowItemTip then
+                tt.ShowItemTip(self, self.__it, extra)
             end
-        elseif self.__it and DG.ShowItemTip then
+        elseif self.__it then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
-            DG.ShowItemTip(self, self.__it, extra)
+            local tt = getTT()
+            if tt and tt.ShowItemTip then tt.ShowItemTip(self, self.__it, extra) end
         end
     end)
     z:SetScript("OnLeave", function(self)
@@ -9954,16 +9910,17 @@ function PD.WireTipZone(z, r)
         GameTooltip:Hide()
     end)
     z:SetScript("OnClick", function(self, button)
+        local hb = getHostBridge()
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
             local sp = self.__spell
             if sp and PD.InsertSpellLink(sp) then return end
             if self.__it then
-                DG.ItemShiftClick(self, button)
+                if hb and hb.ItemShiftClick then hb.ItemShiftClick(self, button) end
                 return
             end
             if r and r.__spell and PD.InsertSpellLink(r.__spell) then return end
-            if r and r.__it and DG.InsertItemLink then
-                DG.InsertItemLink(r.__it[1])
+            if r and r.__it and hb and hb.InsertItemLink then
+                hb.InsertItemLink(r.__it[1])
                 return
             end
         end
@@ -9977,11 +9934,12 @@ function PD.WireTipZone(z, r)
                 return
             end
         end
-        DG.ItemShiftClick(self, button)
+        if hb and hb.ItemShiftClick then hb.ItemShiftClick(self, button) end
     end)
     z:SetScript("OnMouseWheel", function(self, delta)
         PD.HideVendorPick()
-        DG.WheelScroll(PD.scroll, PD.child, delta)
+        local hb = getHostBridge()
+        if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
     end)
 end
 
@@ -10082,10 +10040,11 @@ function PD.QualCached(id)
     if id == nil then return nil end
     local v = _qCache[id]
     if v == nil then
-        local dg = getDG()
-        if dg and dg.QualOf then
-            v = dg.QualOf(id)
-        else
+        local hb = getHostBridge()
+        if hb and hb.ItemQuality then
+            v = hb.ItemQuality(id)
+        end
+        if v == nil then
             local ds = getDS()
             local it = ds and ds.Item and ds.Item(id)
             v = it and it.quality or nil
@@ -10106,8 +10065,8 @@ function PD.PaintMatSegs(r, segs, color, budget)
         local scol = col
         if segs[i].id then
             local q = PD.QualCached(segs[i].id)
-            local dg = getDG()
-            if q and dg and dg.QColor then scol = { dg.QColor(q) } end
+            local hb = getHostBridge()
+            if q and hb and hb.QColor then scol = { hb.QColor(q) } end
         end
         fs:SetTextColor(Unpack(scol))
         fs:SetText(segs[i].text or "")
@@ -11072,13 +11031,13 @@ function PD.RowBlk(r, j)
     b.ic:SetSize(PD.TBL_ICON, PD.TBL_ICON)
     b.nm = MakeFS(r, 12, C_TEXT, "LEFT")
     b.ct = MakeFS(r, PD.TBL_MAT_CNT_FS, C_GOLD, "LEFT")
-    b.ct:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), PD.TBL_MAT_CNT_FS, "THICKOUTLINE")
+    b.ct:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), PD.TBL_MAT_CNT_FS, "THICKOUTLINE")
     b.ct:SetShadowColor(0, 0, 0, 1)
     b.ct:SetShadowOffset(1, -1)
     b.nm:SetWordWrap(false)
     b.ct:SetWordWrap(false)
     b.tag = MakeFS(r, 12, C_TEXT, "CENTER")
-    b.tag:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 12, "THICKOUTLINE")
+    b.tag:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 12, "THICKOUTLINE")
     b.tag:SetPoint("TOP", b.ic, "TOP", 0, -1)
     b.tag:SetShadowColor(0, 0, 0, 1)
     b.tag:SetShadowOffset(1, -1)
@@ -11860,7 +11819,7 @@ function PD.VendorPickToggle(zone, ents, title)
         shield:SetScript("OnMouseDown", function() PD.HideVendorPick() end)
         shield:SetScript("OnMouseWheel", function(self, delta)
             PD.HideVendorPick()
-            DG.WheelScroll(PD.scroll, PD.child, delta)
+            local hb = getHostBridge(); if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
         end)
         pick.__shield = shield
         local hui = getHui()
@@ -12059,30 +12018,8 @@ function PD.RecipeOutputText(r)
 end
 
 function PD.RecipeSourceLines(lines, r)
-    lines = lines or {}
-    if r and r.legacyPoisonGuide then return lines end
-    if r and r.clientUnavailable then
-        lines[#lines + 1] = {L["未实装"], 0.95, 0.75, 0.4}
-        lines[#lines + 1] = {L["此记录仅供查阅，不参与自动路线。"], 0.95, 0.75, 0.4}
-    end
-    local output = PD.RecipeOutputText(r)
-    if output then lines[#lines + 1] = {output, 0.65, 0.75, 0.85} end
-    local economy = getEco()
-    local ra = getRA()
-    if r and economy and economy.RouteRecipeEligibility then
-        local allowed,reason,detail=economy.RouteRecipeEligibility(r)
-        if not allowed then
-            local text=economy.DiagnosticText and economy.DiagnosticText(reason) or reason
-            lines[#lines+1]={text,0.95,0.75,0.4}
-            if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
-                local diagnostic=ra and ra.LearningDiagnostic and ra.LearningDiagnostic(reason,r,detail)
-                    or {spell=r.spell,item=r.formula,missingReasons=detail and detail.missingReasons}
-                lines[#lines+1]={PD.LearningGapText(diagnostic),0.95,0.75,0.4}
-                lines[#lines+1]={L["保留供查阅；取得已确认学习路径后才用于自动路线。"],0.7,0.7,0.7}
-            end
-        end
-    end
-    return lines
+    local tt = getTT()
+    return tt and tt.RecipeSourceLines and tt.RecipeSourceLines(lines, r) or (lines or {})
 end
 
 function PD.RecipeVisible(spell, slug)
@@ -12740,82 +12677,8 @@ function PD.SourceQuestText(kind, npc, itemID, conditions)
 end
 
 function PD.VendorBlockLines(lines, itemID)
-    local C_NM, C_MT, C_PR = { 0.92, 0.94, 0.98 }, { 0.63, 0.65, 0.70 }, { 0.55, 0.85, 0.60 }
-    local list = PD.VendorOffersOf(itemID)
-    if not list then
-        lines[#lines + 1] = { format(L["商人：%s"], "—"), Unpack(C_MT) }
-        return
-    end
-    local mine = PD.MyVendorSide()
-    if mine then
-        local keep, other = {}, 0
-        for i = 1, #list do
-            local s = PD.VendorSideOf(list[i])
-            if s == "n" or s == mine then
-                keep[#keep + 1] = list[i]
-            else
-                other = other + 1
-            end
-        end
-        list = keep
-        if #list == 0 then
-            lines[#lines + 1] = { format(L["商人：%s"], other > 0 and L["对方阵营专属"] or "—"), Unpack(C_MT) }
-            return
-        end
-    end
-    local ra = getRA()
-    local shown = #list
-    for i = 1, shown do
-        local o = list[i]
-        local nm = PD.VendorName(o)
-        if type(nm) ~= "string" or nm == "" or nm == "?" then nm = L["位置未收录的商人"] end
-        lines[#lines + 1] = { format(L["商人：%s"], nm), Unpack(C_NM) }
-        PD.PurchaseConditionLines(lines, o.npcID or o.id, o.itemID or itemID, o)
-        local zone = o.area and PD.CampZoneName(o.area) or nil
-        local side = PD.VendorSideOf(o)
-        local head = PD.VendorSideText(side)
-        if type(zone) == "string" and zone ~= "" then head = head .. " · " .. zone end
-        lines[#lines + 1] = { head, Unpack(C_MT) }
-        local stock=PD.FormulaStockText(o)
-        if stock then lines[#lines+1]={stock,Unpack(C_MT)} end
-        local ptxt, isCur
-        if o.paymentOption ~= nil then
-            ptxt, isCur = PD.FormulaCostText(o), true
-        elseif o.cur and o.amt then
-            local cnm, cicon = PD.CurrencyOf(o.cur)
-            if cnm then
-                isCur = true
-                ptxt = tostring(o.amt)
-                local texCurIcon = PD.NormTexIcon(cicon)
-                if texCurIcon then
-                    ptxt = ptxt .. " |T" .. texCurIcon .. ":12:12:0:0:64:64:4:60:4:60|t"
-                end
-                ptxt = ptxt .. " " .. cnm
-            else
-                local iname = PD.VendorItemName(o.cur)
-                if iname then ptxt = iname .. " ×" .. tostring(o.amt) end
-            end
-        end
-        if not ptxt and type(o.price) == "number" and o.price > 0 and ra and ra.MoneyStr then
-            ptxt = ra.MoneyStr(o.price, "copper")
-        end
-        if ptxt then
-            if not isCur and type(o.pack) == "number" and o.pack > 1 then
-                ptxt = ptxt .. " · " .. format(L["每组 %d 件"], o.pack)
-            end
-            lines[#lines + 1] = { format(L["价格：%s"], ptxt), Unpack(C_PR) }
-        end
-    end
-    if #list > shown then
-        local names = {}
-        for i = shown + 1, math.min(#list, shown + 3) do
-            local nm = PD.VendorName(list[i])
-            if type(nm) == "string" and nm ~= "" and nm ~= "?" then names[#names + 1] = nm end
-        end
-        local txt = format(L["另有 %d 处"], #list - shown)
-        if #names > 0 then txt = txt .. " · " .. table.concat(names, "、") end
-        lines[#lines + 1] = { txt, Unpack(C_MT) }
-    end
+    local tt = getTT()
+    if tt and tt.VendorBlockLines then return tt.VendorBlockLines(lines, itemID) end
 end
 
 function PD.DropPctText(pct)
@@ -12862,380 +12725,93 @@ function PD.DropRowsOf(itemID)
 end
 
 function PD.DropBlockLines(lines, itemID)
-    local C_DR = { 0.72, 0.72, 0.76 }
-    local list = PD.DropRowsOf(itemID)
-    if not list then return end
-    local shown = math.min(#list, PD.DROP_SHOW_MAX or 2)
-    for i = 1, shown do
-        local o = list[i]
-        local txt = format(L["掉落：%s"], o.name)
-        local zone = o.area and PD.CampZoneName(o.area) or nil
-        if type(zone) == "string" and zone ~= "" then txt = txt .. " · " .. zone end
-        local pt = PD.DropPctText(o.pct)
-        if pt then txt = txt .. " · " .. pt end
-        lines[#lines + 1] = { txt, Unpack(C_DR) }
-    end
-    if #list > shown then
-        lines[#lines + 1] = { format(L["…等 %d 处"], #list - shown), Unpack(C_DR) }
-    end
+    local tt = getTT()
+    if tt and tt.DropBlockLines then return tt.DropBlockLines(lines, itemID) end
 end
 
 function PD.MatPriceOn()
-    local tf = getFrom("TipCfg")
-    local cfg = type(tf) == "function" and tf() or nil
-    if type(cfg) ~= "table" then return true end
-    return cfg.matPrice ~= false
+    local ex = getEX()
+    if ex and type(ex.MatPriceOn) == "function" then return ex.MatPriceOn() end
+    return true
 end
-
-local patternIdx
 
 function PD.PatternIndex()
-    if patternIdx then return patternIdx end
-    patternIdx = {}
-    local ds = getDS()
-    if not (ds and ds.RecipeProfessions and ds.EnsureRecipes) then return patternIdx end
-    local slugs = ds.RecipeProfessions() or {}
-    for i = 1, #slugs do
-        local slug = slugs[i]
-        local bucket = ds.EnsureRecipes(slug)
-        if type(bucket) == "table" and type(bucket.recipes) == "table" then
-            local spellIDs = {}
-            for spellID, recipe in pairs(bucket.recipes) do
-                if type(spellID) == "number" and type(recipe) == "table" and recipe.availability == "live" then
-                    spellIDs[#spellIDs + 1] = spellID
-                end
-            end
-            table.sort(spellIDs)
-            for j = 1, #spellIDs do
-                local spellID = spellIDs[j]
-                local recipe = bucket.recipes[spellID]
-                local tids = {}
-                local lr = ds.LearningRoutes and ds.LearningRoutes(spellID)
-                local routes = (type(lr) == "table" and lr.routes) or lr
-                if type(routes) == "table" then
-                    local seenTid = {}
-                    for k = 1, #routes do
-                        local rt = routes[k]
-                        if type(rt) == "table" and rt.kind == "item" and type(rt.teachingItemID) == "number" and not seenTid[rt.teachingItemID] then
-                            seenTid[rt.teachingItemID] = true
-                            tids[#tids + 1] = rt.teachingItemID
-                        end
-                    end
-                end
-                local compatMats = reagentsToMats(recipe.reagents)
-                local primaryTid = tids[1]
-                local e = {
-                    spellID = spellID,
-                    itemID = recipe.outputItemID,
-                    outputItemID = recipe.outputItemID,
-                    profession = slug,
-                    recipe = recipe,
-                    teachingItemID = primaryTid,
-                    teachingItemIDs = tids,
-                    pid = primaryTid,
-                    r = {
-                        [1] = spellID,
-                        [2] = recipe.outputItemID,
-                        [3] = recipe.outputCountMin or 1,
-                        [7] = recipe.learnedAt,
-                        [12] = compatMats,
-                        [13] = primaryTid,
-                    },
-                }
-                for k = 1, #tids do
-                    local tid = tids[k]
-                    if not patternIdx[tid] then
-                        patternIdx[tid] = e
-                    end
-                end
-                if type(recipe.outputItemID) == "number" and not patternIdx[recipe.outputItemID] then
-                    patternIdx[recipe.outputItemID] = e
-                end
-                if not patternIdx[spellID] then
-                    patternIdx[spellID] = e
-                end
-            end
-        end
-    end
-    return patternIdx
+    local ex = getEX()
+    return ex and ex.PatternIndex and ex.PatternIndex() or {}
 end
 
-do
-    local crateNeedSet
+function PD.WritZoneOf(targetId)
+    local ex = getEX()
+    if ex and ex.WritZoneOf then return ex.WritZoneOf(targetId) end
+    return nil
+end
 
-    local function CrateMats()
-        if crateNeedSet then return crateNeedSet end
-        crateNeedSet = {}
-        local ds = getDS()
-        for _, c in pairs((ds and ds.Crates and ds.Crates()) or {}) do
-            if type(c) == "table" and type(c.options) == "table" then
-                for _, o in ipairs(c.options) do
-                    if type(o) == "table" and type(o.itemID) == "number" then
-                        crateNeedSet[o.itemID] = true
-                    end
-                end
-            end
-        end
-        return crateNeedSet
-    end
+function PD.ZoneNameOf(zone)
+    local ex = getEX()
+    if ex and ex.ZoneNameOf then return ex.ZoneNameOf(zone) end
+    return nil
+end
 
-    local zoneNames
+function PD.WritNeedOf(id, title)
+    local ex = getEX()
+    if ex and ex.WritNeedOf then return ex.WritNeedOf(id, title) end
+    return nil
+end
 
-    function PD.WritZoneOf(targetId)
-        if type(targetId) ~= "number" then return nil end
-        local ds = getDS()
-        if not ds then return nil end
-        local writ = (ds.WritByTarget and ds.WritByTarget(targetId))
-            or (ds.WritByItem and ds.WritByItem(targetId))
-            or (ds.Writ and ds.Writ(targetId))
-        if not writ or type(writ.questID) ~= "number" then return nil end
-        local q = ds.Quest and ds.Quest(writ.questID)
-        if not q then return nil end
-        return q.areaID or q.uiMapID, q.uiMapID
-    end
+function PD.WritNeedLines(id, title)
+    local tt = getTT()
+    return tt and tt.WritNeedLines and tt.WritNeedLines(id, title) or nil
+end
 
-    function PD.ZoneNameOf(zone)
-        if type(zone) ~= "number" then return nil end
-        local ds = getDS()
-        local raw = ds and ds.RawText and ds.RawText("zone", zone)
-        if type(raw) == "string" and raw ~= "" then return raw end
-        zoneNames = zoneNames or {}
-        local nm = zoneNames[zone]
-        if nm == nil then
-            local mi = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(zone)
-            if type(mi) == "table" and type(mi.name) == "string" and mi.name ~= "" then
-                nm = mi.name
-            else
-                nm = false
-            end
-            zoneNames[zone] = nm
-        end
-        if nm == false then return nil end
-        return nm
-    end
+function PD.CrateNeedOf(id, title)
+    local ex = getEX()
+    if ex and ex.CrateNeedOf then return ex.CrateNeedOf(id, title) end
+    return nil
+end
 
-    local function isTeachingItem(e, id)
-        if id == e.pid or id == e.teachingItemID then return true end
-        local tids = type(e.teachingItemIDs) == "table" and e.teachingItemIDs or nil
-        if tids then
-            for i = 1, #tids do
-                if tids[i] == id then return true end
-            end
-        end
-        return false
-    end
-
-    function PD.WritNeedOf(id, title)
-        if type(id) ~= "number" then return nil end
-        local ds = getDS()
-        if not ds then return nil end
-        if ds.WritByTarget and ds.WritByTarget(id) then
-            return id, false
-        end
-        local byItem = ds.WritByItem and ds.WritByItem(id)
-        if type(byItem) == "table" and type(byItem.targetItemID) == "number" then
-            return byItem.targetItemID, true
-        end
-        local e = PD.PatternIndex()[id]
-        if not (e and e.pid) then return nil end
-        if not isTeachingItem(e, id) then
-            local pname = PD.ItemName(e.pid)
-            if title ~= nil and title ~= "" and title ~= pname then return nil end
-        end
-        local prod = e.itemID
-        if type(prod) == "number" and prod ~= id and ds.WritByTarget and ds.WritByTarget(prod) then
-            return prod, false
-        end
-        return nil
-    end
-
-    function PD.WritNeedLines(id, title)
-        local tid, isItem = PD.WritNeedOf(id, title)
-        if not tid then return nil end
-        local areaOrMap, mapFallback = PD.WritZoneOf(tid)
-        local nm = PD.ZoneNameOf(areaOrMap) or (mapFallback and PD.ZoneNameOf(mapFallback))
-        if isItem then
-            if not nm then return nil end
-            return { { L["上交地点"] .. ": " .. nm, 1, 0.82, 0.4 } }
-        end
-        local txt = L["需求"] .. ": " .. L["工匠文书"]
-        if nm then txt = txt .. " | " .. nm end
-        return { { txt, 1, 0.82, 0.4 } }
-    end
-
-    function PD.CrateNeedOf(id, title)
-        if type(id) ~= "number" then return nil end
-        local set = CrateMats()
-        if set[id] then return id end
-        local e = PD.PatternIndex()[id]
-        if not (e and e.pid) then return nil end
-        if not isTeachingItem(e, id) then
-            local pname = PD.ItemName(e.pid)
-            if title ~= nil and title ~= "" and title ~= pname then return nil end
-        end
-        local prod = e.itemID
-        if type(prod) == "number" and prod ~= id and set[prod] then return prod end
-        return nil
-    end
-
-    function PD.CrateNeedLines(id, title)
-        if not PD.CrateNeedOf(id, title) then return nil end
-        return { { L["需求"] .. ": " .. L["板条箱"], 1, 0.82, 0.4 } }
-    end
+function PD.CrateNeedLines(id, title)
+    local tt = getTT()
+    return tt and tt.CrateNeedLines and tt.CrateNeedLines(id, title) or nil
 end
 
 function PD.MatsCostText(mats)
-    local ra = getRA()
-    if not (ra and mats and #mats > 0) then return "—" end
-    local total, unpriced = ra.MatListCost(mats)
-    unpriced = unpriced or 0
-    if not total or total <= 0 or unpriced >= #mats then return "—" end
-    return (unpriced > 0 and "≈" or "") .. ra.MoneyStr(total, "copper")
+    local tt = getTT()
+    return tt and tt.MatsCostText and tt.MatsCostText(mats) or "—"
 end
 
 function PD.MatsCostTextC(mats)
-    local ra = getRA()
-    if not (ra and mats and #mats > 0) then return "—" end
-    local total, unpriced = ra.MatListCost(mats)
-    unpriced = unpriced or 0
-    if not total or total <= 0 or unpriced >= #mats then return "—" end
-    return (unpriced > 0 and "≈" or "") .. ra.MoneyStrTip(total)
+    local tt = getTT()
+    return tt and tt.MatsCostTextC and tt.MatsCostTextC(mats) or "—"
 end
 
 function PD.PatternTipLines(id, title)
-    if type(id) ~= "number" then return nil end
-    local e = PD.PatternIndex()[id]
-    if not (e and e.pid) then return nil end
-    local isTeach = (id == e.pid or id == e.teachingItemID)
-    if not isTeach and type(e.teachingItemIDs) == "table" then
-        for i = 1, #e.teachingItemIDs do
-            if e.teachingItemIDs[i] == id then isTeach = true; break end
-        end
-    end
-    if not isTeach then
-        local pname = PD.ItemName(e.pid)
-        if title ~= nil and title ~= "" and title ~= pname then return nil end
-    end
-    local mats = e.r and e.r[12]
-    if not (mats and #mats > 0) then return nil end
-    return PD.MatPriceLines(mats, PD.MatsCostTextC(mats), e.itemID)
-end
-
-local productIdx
-
-local function lookupCraftedItem(id)
-    local ds = getDS()
-    local spells = type(id) == "number" and ds and ds.CraftIndex and ds.CraftIndex(id)
-    if type(spells) == "table" and #spells > 0 then
-        local fallbackRec, fallbackSlug
-        for _, sid in ipairs(spells) do
-            local rec = ds.Recipe and ds.Recipe(sid)
-            local slug = ds.RecipeProfession and ds.RecipeProfession(sid)
-            if rec then
-                if rec.availability == "live" then
-                    return { rec = rec, slug = slug, r = v2ToCompatRow(rec) }
-                end
-                if not fallbackRec then fallbackRec, fallbackSlug = rec, slug end
-            end
-        end
-        if fallbackRec then
-            return { rec = fallbackRec, slug = fallbackSlug, r = v2ToCompatRow(fallbackRec) }
-        end
-    end
-    return productIdx and productIdx[id] or nil
+    local tt = getTT()
+    return tt and tt.PatternTipLines and tt.PatternTipLines(id, title) or nil
 end
 
 function PD.ProductIndex()
-    if productIdx then return productIdx end
-    productIdx = {}
-    local ds = getDS()
-    if not (ds and ds.RecipeProfessions and ds.EnsureRecipes) then return productIdx end
-    for _, slug in ipairs(ds.RecipeProfessions() or {}) do
-        local bucket = ds.EnsureRecipes(slug)
-        for _, rec in pairs((type(bucket) == "table" and bucket.recipes) or {}) do
-            local pid = rec.outputItemID
-            if type(pid) == "number" and rec.availability == "live" and not productIdx[pid] then
-                productIdx[pid] = { rec = rec, r = v2ToCompatRow(rec), slug = slug }
-            end
-        end
-    end
-    return productIdx
+    local ex = getEX()
+    return ex and ex.ProductIndex and ex.ProductIndex() or {}
 end
 
 function PD.ProductCraftTitle(id)
-    if type(id) ~= "number" then return nil end
-    local e = lookupCraftedItem(id)
-    if not e then return nil end
-    local p = profEntryOf(e.slug)
-    local nm = tostring((p and p.name) or e.slug or "?")
-    local sk = (e.rec and e.rec.learnedAt) or (e.r and e.r[7])
-    if type(sk) == "number" and sk > 0 then
-        return format(L["专业制造（%s%d）"], nm, sk)
-    end
-    return format(L["专业制造（%s）"], nm)
+    local ex = getEX()
+    return ex and ex.ProductCraftTitle and ex.ProductCraftTitle(id) or nil
 end
 
 function PD.ProfKnows(id)
-    if type(id) ~= "number" then return false end
-    local e = lookupCraftedItem(id)
-    if not e or not e.slug then return false end
-    return PD.ProfLearned()[e.slug] and true or false
+    local ex = getEX()
+    return ex and ex.ProfKnows and ex.ProfKnows(id) or false
 end
 
 function PD.ProductTipLines(id, title)
-    if type(id) ~= "number" then return nil end
-    local e = lookupCraftedItem(id)
-    if not e then return nil end
-    local mats = (e.rec and reagentsToMats(e.rec.reagents)) or (e.r and e.r[12])
-    if not (type(mats) == "table" and #mats > 0) then return nil end
-    local nm = PD.ItemName(id)
-    if title and nm and title ~= nm then return nil end
-    local tf = getFrom("TipCfg")
-    local cfg = type(tf) == "function" and tf() or nil
-    local lines = {}
-    if not (type(cfg) == "table" and cfg.src) then
-        lines[#lines + 1] = { PD.ProductCraftTitle(id), 1, 0.82, 0 }
-    end
-    local mp = PD.MatPriceLines(mats, PD.MatsCostTextC(mats), id)
-    for i = 1, #mp do lines[#lines + 1] = mp[i] end
-    return lines
+    local tt = getTT()
+    return tt and tt.ProductTipLines and tt.ProductTipLines(id, title) or nil
 end
 
 function PD.MatPriceLines(mats, costTxt, productID)
-    local lines = {}
-    if not (mats and #mats > 0) then return lines end
-    PD.PrimeNames(mats)
-    local ra = raMod()
-    local MAX = 8
-    local showN = math.min(#mats, MAX)
-    for i = 1, showN do
-        local m = mats[i]
-        local n = m[2] or 1
-        local p = ra and ra.MatPriceOf and ra.MatPriceOf(m[1]) or nil
-        local sub = p and ra and ra.MoneyStrTip and ra.MoneyStrTip(p * n) or "—"
-        lines[#lines + 1] = { format("%s ×%d", tostring(PD.ItemName(m[1]) or "?"), n),
-                              1, 1, 1, nil, nil, sub, 1, 1, 1 }
-    end
-    if #mats > showN then
-        lines[#lines + 1] = { format("… +%d", #mats - showN), 0.6, 0.6, 0.6 }
-    end
-    lines[#lines + 1] = { L["制造总成本"], 1, 1, 1, nil, nil,
-                          costTxt or "—", 1, 1, 1 }
-    if productID then
-        local ah = ra and ra.AHPriceOf and ra.AHPriceOf(productID) or nil
-        local sell = ra and ra.NPCSellPriceOf and ra.NPCSellPriceOf(productID) or nil
-        lines[#lines + 1] = { L["卖商人价格"], 1, 1, 1, nil, nil,
-                              sell and ra and ra.MoneyStrTip and ra.MoneyStrTip(sell) or "—", 1, 1, 1 }
-        lines[#lines + 1] = { L["拍卖行价格"], 1, 1, 1, nil, nil,
-                              ah and ra and ra.MoneyStrTip and ra.MoneyStrTip(ah) or "—", 1, 1, 1 }
-        local costVal = ra and ra.MatListCost and select(1, ra.MatListCost(mats)) or nil
-        if ah and costVal and costVal > 0 then
-            local net = math.floor(ah * 0.95) - costVal
-            lines[#lines + 1] = { L["收益（扣除5%）"], 1, 1, 1, nil, nil,
-                                  ra and ra.MoneyStrTip and ra.MoneyStrTip(net) or "—", 1, 1, 1 }
-        end
-    end
-    return lines
+    local tt = getTT()
+    return tt and tt.MatPriceLines and tt.MatPriceLines(mats, costTxt, productID) or {}
 end
 
 function PD.PatternVendorCost(resolved)
@@ -13248,79 +12824,8 @@ function PD.PatternVendorCost(resolved)
 end
 
 function PD.PriceTipLines(itemID, mats, opts)
-    local lines = {}
-    if not itemID then return lines end
-    PD.PrimeNames(mats)
-    local ra = raMod()
-    local ah = ra and ra.AHPriceOf and ra.AHPriceOf(itemID) or nil
-    local sell = ra and ra.NPCSellPriceOf and ra.NPCSellPriceOf(itemID) or nil
-    local cost, unpriced, nMats
-    if mats and #mats > 0 and ra and ra.MatListCost then
-        cost, unpriced = ra.MatListCost(mats)
-        nMats = #mats
-    end
-    local costTxt, approx = "—", false
-    if cost and nMats then
-        if cost <= 0 or unpriced >= nMats then
-            costTxt = "—"
-        else
-            approx = unpriced > 0
-            costTxt = (approx and "≈" or "") .. (ra and ra.MoneyStr and ra.MoneyStr(cost, "copper") or tostring(cost))
-        end
-    end
-    local o = type(opts) == "table" and opts or nil
-    if o and o.recipe then
-        lines[#lines + 1] = { L["材料成本"], 1, 1, 1, false, nil, costTxt, 1, 1, 1 }
-        if o.matDetail and nMats then
-            local showN = math.min(nMats, 8)
-            for i = 1, showN do
-                local m = mats[i]
-                local n = m[2] or 1
-                local p = ra and ra.MatPriceOf and ra.MatPriceOf(m[1]) or nil
-                lines[#lines + 1] = { format("  %s ×%d", tostring(PD.ItemName(m[1]) or "?"), n),
-                                      0.85, 0.85, 0.85, false, nil,
-                                      (p and ra and ra.MoneyStrTip and ra.MoneyStrTip(p * n)) or "—", 0.9, 0.9, 0.9 }
-            end
-            if nMats > showN then
-                lines[#lines + 1] = { format("  … +%d", nMats - showN), 0.6, 0.6, 0.6 }
-            end
-        end
-        if type(o.patternCost) == "string" and o.patternCost ~= "" then
-            lines[#lines + 1] = { L["NPC 配方价格"], 0.92, 0.94, 0.98, false, nil,
-                                  o.patternCost, 1, 1, 1 }
-        end
-        lines[#lines + 1] = { format(L["卖店: %s"], sell and ra and ra.MoneyStr and ra.MoneyStr(sell, "copper") or "—") }
-    else
-        lines[#lines + 1] = { format(L["拍卖: %s"], ah and ra and ra.MoneyStr and ra.MoneyStr(ah, "copper") or "—") }
-        PD.VendorBlockLines(lines, itemID)
-        PD.DropBlockLines(lines, itemID)
-        lines[#lines + 1] = { format(L["卖店: %s"], sell and ra and ra.MoneyStr and ra.MoneyStr(sell, "copper") or "—") }
-        if o and o.matDetail and nMats then
-            local mp = PD.MatPriceLines(mats, PD.MatsCostTextC(mats))
-            for i = 1, #mp do lines[#lines + 1] = mp[i] end
-        else
-            lines[#lines + 1] = { format(L["成本: %s"], costTxt) }
-        end
-    end
-    if ah and cost and nMats and cost > 0 then
-        local pre = approx and "≈" or ""
-        local diff = ah - cost
-        local net = math.floor(ah * 0.95) - cost
-        local l4 = format(L["差价: %s"], pre .. (diff > 0 and "+" or "") .. (ra and ra.MoneyStr and ra.MoneyStr(diff, "copper") or tostring(diff)))
-        local l5 = format(L["净赚（扣 5%% 拍卖费）: %s"],
-                          pre .. (net > 0 and "+" or "") .. (ra and ra.MoneyStr and ra.MoneyStr(net, "copper") or tostring(net)))
-        if diff < 0 then
-            lines[#lines + 1] = { l4, unpack(TIP_RED) }
-        else
-            lines[#lines + 1] = { l4 }
-        end
-        if net < 0 then
-            lines[#lines + 1] = { l5, unpack(TIP_RED) }
-        else
-            lines[#lines + 1] = { l5 }
-        end
-    end
-    return lines
+    local tt = getTT()
+    return tt and tt.PriceTipLines and tt.PriceTipLines(itemID, mats, opts) or {}
 end
 
 local AH_PCT_RED = { 1, 0.32, 0.28 }
@@ -13337,6 +12842,23 @@ local function stationLabel(stationKey, slug, withTier)
     return PD.StationLabel(stationKey, slug, withTier)
 end
 
+local function recipeSpecLabel(r)
+    local req = type(r) == "table" and tonumber(r.requiredAbilityID) or 0
+    if not req or req <= 0 then return nil end
+    local G = getGates()
+    local lbl = (G and G.AbilityLabel and G.AbilityLabel(req)) or SpellName(req)
+    if type(lbl) == "string" and lbl ~= "" then return lbl end
+    return nil
+end
+
+local function recipeSubText(r, station)
+    local spec = recipeSpecLabel(r)
+    if station and station ~= "" and spec then
+        return station .. " · " .. spec
+    end
+    return (station and station ~= "" and station) or spec or ""
+end
+
 function PD.RecipeSpec(r)
     local isV2 = isV2Recipe(r)
     local spell = isV2 and r.spellID or r[1]
@@ -13347,6 +12869,8 @@ function PD.RecipeSpec(r)
     local colors = PD.RecipeColors(orange, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local station = isV2 and stationLabel(r.stationKey, r.profession or PD.cur, true) or nil
+    local specLabel = isV2 and recipeSpecLabel(r) or nil
+    local subText = isV2 and recipeSubText(r, station) or (station or "")
     local ra = getRA()
     local learningCard = PD.RecipeLearningCard(resolved, false)
     local src = learningCard and learningCard.source
@@ -13440,13 +12964,14 @@ function PD.RecipeSpec(r)
             local lines = outItem and PD.PriceTipLines(outItem, mats,
                 { recipe = true, matDetail = PD.MatPriceOn(), patternCost = PD.PatternVendorCost(resolved) }) or {}
             lines = PD.RecipeSourceLines(lines, resolved)
+            if specLabel then lines[#lines + 1] = { format(L["需要专精：%s"], specLabel), 0.88, 0.78, 0.50 } end
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
             if dtip then
                 for i = 1, #dtip do lines[#lines + 1] = dtip[i] end
             end
             return lines
         end,
-        sub = station or "",
+        sub = subText,
         mats = clientPending and L["客户端数据待读取"] or nil,
         right = not colors and format(L["学 %s"], tostring(resolved.learn or "—")) or nil,
         right2 = (not dval) and base or nil,
@@ -13565,6 +13090,9 @@ PD.COST_ITEM_PREFIX = "__item:"
 PD.NO_SELL_KEY = "__none"
 PD.DD_TYPE = "__ddtype"
 PD.DD_MONEY = "__ddmoney"
+PD.DD_SPEC = "__ddspec"
+PD.SPEC_NONE_KEY = "__nospec"
+PD.SPEC_ANY_KEY = "__anyspec"
 PD.DD_WRIT_ZONE = "__ddwritzone"
 
 PD.__curOfFid = {}
@@ -14088,10 +13616,87 @@ function PD.RecipeMenu(items, owner, cur, pick)
     hui.ShowMenu(list, { owner = owner, anchor = owner })
 end
 
+function PD.RowSpecHit(r, sk)
+    if sk == nil then sk = PD.specKey end
+    if sk == nil then return true end
+    local req = type(r) == "table" and tonumber(r.requiredAbilityID) or 0
+    if not req or req <= 0 then req = 0 end
+    if sk == PD.SPEC_NONE_KEY then return req == 0 end
+    if sk == PD.SPEC_ANY_KEY then return req > 0 end
+    return req == sk
+end
+
+function PD.RecipeSpecItems(d)
+    local items = {}
+    if not d then return items end
+    local rows, enchants = sortedRecipesOf(d)
+    local counts, noSpecCnt, anySpecCnt = {}, 0, 0
+    local function tally(list)
+        for _, r in ipairs(list) do
+            local req = tonumber(r.requiredAbilityID) or 0
+            if req > 0 then
+                counts[req] = (counts[req] or 0) + 1
+                anySpecCnt = anySpecCnt + 1
+            else
+                noSpecCnt = noSpecCnt + 1
+            end
+        end
+    end
+    tally(rows)
+    tally(enchants)
+    if anySpecCnt == 0 then return items end
+    items[#items + 1] = { v = nil, text = L["不限"] }
+    if noSpecCnt > 0 then
+        items[#items + 1] = { v = PD.SPEC_NONE_KEY, text = format("%s %d", L["无专精要求"], noSpecCnt) }
+    end
+    items[#items + 1] = { v = PD.SPEC_ANY_KEY, text = format("%s %d", L["仅专精配方"], anySpecCnt) }
+    local G = getGates()
+    local specs = (G and type(G.SpecsForProfession) == "function" and G.SpecsForProfession(PD.cur)) or {}
+    if PD.cur == "blacksmithing" and #specs > 1 then
+        local reordered, ws = {}, nil
+        for _, sp in ipairs(specs) do
+            if sp.specKey == "weaponsmith" then
+                ws = sp
+            elseif sp.specKey == "armorsmith" then
+                table.insert(reordered, 1, sp)
+            else
+                if ws then
+                    reordered[#reordered + 1] = ws
+                    ws = nil
+                end
+                reordered[#reordered + 1] = sp
+            end
+        end
+        if ws then reordered[#reordered + 1] = ws end
+        specs = reordered
+    end
+    local seen = {}
+    for _, sp in ipairs(specs) do
+        local aid = sp.abilitySpellID
+        local cnt = aid and counts[aid] or 0
+        if cnt > 0 then
+            seen[aid] = true
+            local lbl = (G and G.AbilityLabel and G.AbilityLabel(aid)) or SpellName(aid) or tostring(aid)
+            items[#items + 1] = { v = aid, text = format("%s %d", tostring(lbl), cnt) }
+        end
+    end
+    local extra = {}
+    for aid in pairs(counts) do
+        if not seen[aid] then extra[#extra + 1] = aid end
+    end
+    table.sort(extra)
+    for _, aid in ipairs(extra) do
+        local lbl = (G and G.AbilityLabel and G.AbilityLabel(aid)) or SpellName(aid) or tostring(aid)
+        items[#items + 1] = { v = aid, text = format("%s %d", tostring(lbl), counts[aid]) }
+    end
+    return items
+end
+
 function PD.RecipeTool(d)
     if not d then return {}, nil end
     local tItems = PD.RecipeTypeItems(d)
     local cItems = PD.RecipeCurItems(d)
+    local sItems = PD.RecipeSpecItems(d)
     local showType = (#tItems > 2) or (
         #tItems == 2
         and type(tItems[2].v) == "string"
@@ -14109,11 +13714,20 @@ function PD.RecipeTool(d)
         if not ok then PD.toolKey = "all" end
     end
     if not showType then PD.toolKey = "all" end
+    if #sItems <= 1 then
+        PD.specKey = nil
+    elseif PD.specKey ~= nil then
+        local ok = false
+        for i = 1, #sItems do
+            if sItems[i].v == PD.specKey then ok = true end
+        end
+        if not ok then PD.specKey = nil end
+    end
     local rows, enchants = sortedRecipesOf(d)
     local scrolls = sortedCatalogOf(d, "scroll")
     local total = #rows + #enchants + #scrolls
     local tool = {}
-    local allOn = (PD.moneyKey == nil and PD.toolKey == "all") or false
+    local allOn = (PD.moneyKey == nil and PD.toolKey == "all" and PD.specKey == nil) or false
     tool[#tool + 1] = { key = "all", text = format(L["全部 %d"], total), on = allOn }
     if showType then
         local txt = L["类型"]
@@ -14133,6 +13747,16 @@ function PD.RecipeTool(d)
         end
         local mOn = (PD.moneyKey ~= nil)
         local def = { key = PD.DD_MONEY, text = PD.RecipeChipText(txt, L["货币"]), on = mOn, dd = true }
+        tool[#tool + 1] = def
+    end
+    if #sItems > 1 then
+        local txt = L["专精"]
+        if PD.specKey ~= nil then
+            local cur = PD.RecipeItemText(sItems, PD.specKey)
+            if cur then txt = cur end
+        end
+        local sOn = (PD.specKey ~= nil)
+        local def = { key = PD.DD_SPEC, text = PD.RecipeChipText(txt, L["专精"]), on = sOn, dd = true }
         tool[#tool + 1] = def
     end
     return tool, function(k)
@@ -14156,8 +13780,18 @@ function PD.RecipeTool(d)
             end)
             return
         end
+        if k == PD.DD_SPEC then
+            PD.RecipeMenu(sItems, PD.RecipeChip(PD.DD_SPEC), PD.specKey, function(v)
+                PD.specKey = v
+                if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+                playSoundSafe(1)
+                PD.RequestRender()
+            end)
+            return
+        end
         PD.toolKey = k
         PD.moneyKey = nil
+        PD.specKey = nil
         if PD.scroll then PD.scroll:SetVerticalScroll(0) end
         PD.RequestRender()
     end
@@ -14174,6 +13808,7 @@ function PD.RecipeList(limit, q)
     local rows, enchants = sortedRecipesOf(d)
     local scrolls = sortedCatalogOf(d, "scroll")
     local favors = sortedCatalogOf(d, "favor_exchange")
+    local allowNoSpecCatalog = (PD.specKey == nil or PD.specKey == PD.SPEC_NONE_KEY)
     if PD.moneyKey ~= nil then
         for _, r in ipairs(rows) do
             if PD.RowCurHit(r) and PD.RawHit(r, q) then
@@ -14182,13 +13817,13 @@ function PD.RecipeList(limit, q)
             end
         end
         for _, e in ipairs(enchants) do
-            if PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+            if PD.EnchCurHit(e, PD.moneyKey) and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                 local sp = PD.EnchantSpec(e)
                 if PD.SearchHit(sp, q) then out[#out + 1] = sp end
                 if #out >= cap then return out end
             end
         end
-        if PD.moneyKey == PD.FAVOR_CURID then
+        if PD.moneyKey == PD.FAVOR_CURID and allowNoSpecCatalog then
             for _, f in ipairs(favors) do
                 if #out < cap then
                     local sp = PD.FavorSpec(f, d.recipes)
@@ -14207,7 +13842,7 @@ function PD.RecipeList(limit, q)
             end
         end
         for _, e in ipairs(enchants) do
-            if e.stationKey == wantSt and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+            if e.stationKey == wantSt and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                 local sp = PD.EnchantSpec(e)
                 if (not q) or PD.SearchHit(sp, q) then
                     out[#out + 1] = sp
@@ -14219,7 +13854,7 @@ function PD.RecipeList(limit, q)
     end
     if key == "__enchant" then
         for _, e in ipairs(enchants) do
-            if PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+            if PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                 local sp = PD.EnchantSpec(e)
                 if PD.SearchHit(sp, q) then
                     out[#out + 1] = sp
@@ -14246,7 +13881,7 @@ function PD.RecipeList(limit, q)
         if (not want) or hasSlot then
             for _, e in ipairs(enchants) do
                 local g = (type(e.enchantSlot) == "string" and e.enchantSlot ~= "") and e.enchantSlot or "other"
-                if ((not want) or g == want) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                if ((not want) or g == want) and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                     local sp = PD.EnchantSpec(e)
                     if PD.SearchHit(sp, q) then
                         out[#out + 1] = sp
@@ -14274,7 +13909,7 @@ function PD.RecipeList(limit, q)
     end
     if #enchants > 0 and (not fk) and #out < cap then
         for _, e in ipairs(enchants) do
-            if PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+            if PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                 local sp = PD.EnchantSpec(e)
                 if (not q) or PD.SearchHit(sp, q) then
                     out[#out + 1] = sp
@@ -14283,7 +13918,7 @@ function PD.RecipeList(limit, q)
             end
         end
     end
-    if #scrolls > 0 and #out < cap then
+    if #scrolls > 0 and allowNoSpecCatalog and #out < cap then
         local want = (fk and fk ~= "all" and fk ~= "__rest") and tostring(fk) or nil
         for _, sc in ipairs(scrolls) do
             local tk = (type(sc.categoryKey) == "string" and sc.categoryKey ~= "") and sc.categoryKey or "__other"
@@ -14319,6 +13954,7 @@ end
 
 function PD.RawHit(r, q)
     if not PD.RecipeVisible(r.spellID) then return false end
+    if not PD.RowSpecHit(r) then return false end
     if not PD.LvRowHit(r) then return false end
     if not q or q == "" then return true end
     local nm = r.outputItemID and PD.ItemName(r.outputItemID) or SpellName(r.spellID)
@@ -14331,6 +13967,8 @@ function PD.RawHit(r, q)
     if st ~= "" and string.find(string.lower(st), q, 1, true) then return true end
     local stBase = stationLabel(r.stationKey, r.profession or PD.cur, false) or ""
     if stBase ~= "" and stBase ~= st and string.find(string.lower(stBase), q, 1, true) then return true end
+    local spLbl = recipeSpecLabel(r) or ""
+    if spLbl ~= "" and string.find(string.lower(spLbl), q, 1, true) then return true end
     for _, m in ipairs(r.reagents or {}) do
         local iid = m.itemID or m[1]
         local mn = iid and PD.ItemName(iid)
@@ -14396,17 +14034,18 @@ function PD.ScanRecipe()
         return nil
     end
     local q = (PD.searchQ and PD.searchQ ~= "") and PD.searchQ or nil
+    local allowNoSpecCatalog = (PD.specKey == nil or PD.specKey == PD.SPEC_NONE_KEY)
     if PD.moneyKey ~= nil then
         local cn = 0
         for _, r in ipairs(rows) do
             if PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
         end
         for _, e in ipairs(enchants) do
-            if PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+            if PD.EnchCurHit(e, PD.moneyKey) and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                 if not q or PD.SearchHit(PD.EnchantSpec(e), q) then cn = cn + 1 end
             end
         end
-        if PD.moneyKey == PD.FAVOR_CURID then
+        if PD.moneyKey == PD.FAVOR_CURID and allowNoSpecCatalog then
             for _, f in ipairs(favors) do
                 if PD.LvStartHit(f.reqSkill) and PD.SearchHit(PD.FavorSpec(f, d.recipes), q) then cn = cn + 1 end
             end
@@ -14423,7 +14062,7 @@ function PD.ScanRecipe()
                 if n <= cap then
                     local nm = r.outputItemID and PD.ItemName(r.outputItemID) or SpellName(r.spellID)
                     local w = (nm and nm ~= "" and PD.TextW(nm, 13)) or 0
-                    local st = stationLabel(r.stationKey, r.profession or PD.cur, true) or ""
+                    local st = recipeSubText(r, stationLabel(r.stationKey, r.profession or PD.cur, true))
                     local sw = (st ~= "" and PD.TextW(st, 11) or 0) + (r.isNew and PD.RECIPE_BADGE_W or 0)
                     if sw > w then w = sw end
                     if w > maxW then maxW = w end
@@ -14431,7 +14070,7 @@ function PD.ScanRecipe()
             end
         end
         for _, e in ipairs(enchants) do
-            if e.stationKey == wantSt and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+            if e.stationKey == wantSt and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
                 local sp = PD.EnchantSpec(e)
                 if (not q) or PD.SearchHit(sp, q) then
                     n = n + 1
@@ -14461,14 +14100,14 @@ function PD.ScanRecipe()
             if n <= cap then
                 local nm = r.outputItemID and PD.ItemName(r.outputItemID) or SpellName(r.spellID)
                 local w = (nm and nm ~= "" and PD.TextW(nm, 13)) or 0
-                local st = stationLabel(r.stationKey, r.profession or PD.cur, true) or ""
+                local st = recipeSubText(r, stationLabel(r.stationKey, r.profession or PD.cur, true))
                 local sw = (st ~= "" and PD.TextW(st, 11) or 0) + (r.isNew and PD.RECIPE_BADGE_W or 0)
                 if sw > w then w = sw end
                 if w > maxW then maxW = w end
             end
         end
     end
-    if #scrolls > 0 then
+    if #scrolls > 0 and allowNoSpecCatalog then
         local want = (fk and fk ~= "all" and fk ~= "__rest") and tostring(fk) or nil
         for _, sc in ipairs(scrolls) do
             local tk = (type(sc.categoryKey) == "string" and sc.categoryKey ~= "") and sc.categoryKey or "__other"
@@ -14561,9 +14200,9 @@ function PD.RowsRecipe(rows)
         return
     end
     if realN == 0 and (not PD.searchQ or PD.searchQ == "")
-       and (PD.toolKey ~= "all" or PD.moneyKey ~= nil) then
+       and (PD.toolKey ~= "all" or PD.moneyKey ~= nil or PD.specKey ~= nil) then
         PushGap(rows)
-        PushText(rows, L["当前筛选没有配方 —— 换一个类型或货币，或点「全部」。"], 12, C_GOLD)
+        PushText(rows, L["当前筛选没有配方 —— 换一个类型、货币或专精，或点「全部」。"], 12, C_GOLD)
         return
     end
     local trunc = 0
@@ -14582,27 +14221,34 @@ end
 
 function PD.ZoneText(list, maxN)
     if not list or #list == 0 then return L["无数据"] end
-    local d = getDG()
+    local hb = getHostBridge()
     local t = {}
     for i, z in ipairs(list) do
         if maxN and i > maxN then t[#t + 1] = "…"; break end
-        local zn = (d and d.ZoneName and d.ZoneName(z[1])) or zoneNameFn(z[1])
+        local zn = (hb and hb.ZoneName and hb.ZoneName(z[1])) or zoneNameFn(z[1])
         t[#t + 1] = format("%s(%d)", tostring(zn or ""), z[2] or 0)
     end
     return table.concat(t, "  ")
 end
 
-DG.FISH_FIELD_LABEL = {
+PD.FISH_FIELD_LABEL = {
     L["所需技能"], L["技能加成"], L["持续（分钟）"], L["等级"],
     L["学会后解锁"], L["标注新增"], L["可作为钓具"], L["需求"],
 }
-DG.FISH_GROUPS = {
+PD.FISH_GROUPS = {
     { key = "spells", text = L["钓鱼法术"] },
     { key = "lures",  text = L["鱼饵"] },
     { key = "food",   text = L["钓鱼食物"] },
     { key = "items",  text = L["钓鱼物品"] },
     { key = "titles", text = L["钓鱼称号"] },
 }
+do
+    local hb = getHostBridge()
+    if hb and type(hb.PublishDGContract) == "function" then
+        hb.PublishDGContract("FISH_FIELD_LABEL", PD.FISH_FIELD_LABEL)
+        hb.PublishDGContract("FISH_GROUPS", PD.FISH_GROUPS)
+    end
+end
 
 local function areaMapIDOf(area)
     if not area then return nil end
@@ -14824,7 +14470,10 @@ function PD.FishingAreaName(area)
     local zid = area.areaID or area.zoneID
     local name = area.name
     if (not name or name == "") and zid and ds and ds.RawText then name = ds.RawText("zone", zid) end
-    if (not name or name == "") and zid and DG and DG.ZoneName then name = DG.ZoneName(zid) end
+    if (not name or name == "") and zid then
+        local hb = getHostBridge()
+        if hb and hb.ZoneName then name = hb.ZoneName(zid) end
+    end
     name = name and (L[name] or name) or L["无数据"]
     return name
 end
@@ -15178,7 +14827,8 @@ end
 local function FixedShopData(target)
     local ra = getRA()
     if ra and ra.FixedPlan then
-        local opts = PD.BuildLvOpts(PD.cur)
+        local learned = PD.ProfLearned and PD.ProfLearned() or {}
+        local opts = PD.BuildLvOpts(PD.cur, learned[PD.cur] and learned[PD.cur].cur)
         opts.target = target
         local summary = ra.FixedPlan(PD.cur, opts)
         if summary then return summary end
@@ -15219,7 +14869,7 @@ function PD.MarketLineText(sec, days)
 end
 
 function PD.PlanStatusParts(plan)
-    if not plan then return L["正在计算升级路线…"] end
+    if not plan then return L["尚未计算升级路线，点击「开始计算」生成。"] end
     if plan.manualActivityPending then return L["先完成指南中的手动步骤，再按当前技能重新查看路线。"] end
     if plan.bagInventoryUnknown then return L["背包材料读取失败，请稍后重新计算。"] end
     local hasProgress=PD.PlanHasSteps(plan) or (tonumber(plan.plannedTo) or 0)>(tonumber(plan.start) or 1)
@@ -15274,7 +14924,7 @@ function PD.PlanStatusParts(plan)
     end
     if plan.scheme == "fishing" and not plan.partial and plan.status == "complete" then return L["纯钓鱼路线已生成"] end
     if plan.inputModelOptimal and plan.catalogueCoverageComplete == false then return L["已知输入模型内最优；配方覆盖未确认"] end
-    if plan.optimal and plan.supplyComplete ~= false then return L["当前价格与期望模型内最优"] end
+    if plan.optimal and plan.supplyComplete ~= false then return L["已按当前价格找到最优路线"] end
     if plan.partial then
         return format(L["已计算至%d"], plan.plannedTo or plan.start or 1), L["后续路线待补全"]
     end
@@ -15296,8 +14946,9 @@ function PD.PlanStatusParts(plan)
         error = L["计算发生错误，请重新计算。"], interrupted = L["优化已中断；执行计划已保存，可重新计算。"],
         selection_required = L["请选择搭配的主专业"],
         recalculate_required = L["搭配专业已更改，点击重新计算应用。"],
+        not_calculated = L["尚未计算升级路线，点击「开始计算」生成。"],
     }
-    return status[plan.status] or L["正在计算升级路线…"]
+    return status[plan.status] or L["尚未计算升级路线，点击「开始计算」生成。"]
 end
 
 function PD.PlanStatusText(plan)
@@ -15309,16 +14960,7 @@ end
 function PD.PlanProgressText(plan)
     plan = plan and (plan.searchState or plan)
     if plan and not plan.running and plan.status ~= "searching" then return nil end
-    if not plan or plan.expanded == nil then return nil end
-    if (plan.expanded or 0) <= 0 then return nil end
-    if plan.initialTotal == nil then return format(L["仍在优化 · 已比较 %d 种组合"], plan.expanded or 0) end
-    local savings = plan.savings
-    if savings == nil and plan.initialTotal and plan.total then
-        savings = math.max(0, plan.initialTotal - plan.total)
-    end
-    if (savings or 0) <= 0 then return format(L["仍在优化 · 已比较 %d 种组合"], plan.expanded or 0) end
-    local ra = raMod()
-    return format(L["仍在优化 · 已比较 %d 种组合 · 省 %s"], plan.expanded or 0, ra and ra.MoneyStr and ra.MoneyStr(savings or 0) or tostring(savings or 0))
+    return L["正在计算升级路线…"]
 end
 
 function PD.PlanCacheText(plan)
@@ -15441,27 +15083,21 @@ function PD.AuctionSupplyLines(entry)
         if text then add(text) end
         if tonumber(entry.availableCount) then
             add(format(L["数量观测：%s"], PD.AuctionObservationText(entry.supplyObservedAt)))
-            if entry.supplyMethod=="easyauction-db" then
-                add(L["数量来源：EasyAuction 完整扫描"])
-            elseif entry.supplyMethod=="auctionator-full-scan" and entry.supplyOwnerExcluded==true then
-                add(L["数量来源：Auctionator 完整扫描（已排除本人拍卖）"])
+            if entry.supplyMethod=="native-replicate-scan" and entry.supplyOwnerExcluded==true then
+                add(L["数量来源：自建拍卖行完整扫描（已排除本人拍卖）"])
             elseif entry.supplySource == "client-auction-results" then
-                add(L["数量来源：客户端拍卖结果"])
-            elseif entry.supplySource == "auctionator-update" then
-                add(L["数量来源：Auctionator 最近更新（扫描汇总估计）"])
+                add(L["数量来源：自建拍卖行完整扫描"])
             else
-                add(L["请打开拍卖行完成一次完整扫描，再重新计算路线。"])
+                add(L["请打开拍卖行点击「扫描行情」，再重新计算路线。"])
             end
             if entry.supplyComplete == true then
                 add(L["扫描范围：完整结果"])
-            elseif entry.supplyComplete == false and entry.supplySource ~= "auctionator-update" then
+            elseif entry.supplyComplete == false then
                 add(L["扫描范围：部分结果，仅代表已读取数量"])
             else
-                add(L["请打开拍卖行完成一次完整扫描，再重新计算路线。"])
+                add(L["请打开拍卖行点击「扫描行情」，再重新计算路线。"])
             end
-            if entry.supplyMethod=="easyauction-db" then
-                add(L["统计含本人挂单"])
-            elseif entry.supplyOwnerExcluded==true then add(L["已排除本人拍卖"]) end
+            if entry.supplyOwnerExcluded==true then add(L["已排除本人拍卖"]) end
             local stamp = tonumber(entry.supplyObservedAt)
             local now = type(time) == "function" and time() or nil
             if stamp and now and now - stamp > PD.SNAP_STALE_SEC then
@@ -15506,8 +15142,6 @@ function PD.CopyRecoverySummary(src)
     s.recoveryOptimized = src.recoveryOptimized
     s.recoveryAssumesAllSold = src.recoveryAssumesAllSold
     s.recoveryEstimated = src.recoveryEstimated
-    s.residualMass = src.residualMass
-    s.profitPriorityLimit = src.profitPriorityLimit
     s.recoveryFeePercent = src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
     s.saleOutputs = src.saleOutputs
     s.purchaseTotal = src.purchaseTotal or src.total
@@ -15532,7 +15166,7 @@ function PD.StepRecoveryText(st)
     return format(L["本步回血 %s · 净 %s"], PD.RecoveryMoney(rec), PD.RecoveryMoney(net))
 end
 
-function PD.StepCostLines(st)
+function PD.StepCostLines(st, showRecovery)
     if type(st) ~= "table" then return nil end
     local lines = {}
     if type(st.productionCost) == "number" then
@@ -15544,27 +15178,29 @@ function PD.StepCostLines(st)
     if type(st.attributedCost) == "number" then
         lines[#lines + 1] = { format(L["最终归属成本：%s"], PD.RecoveryMoney(st.attributedCost)), 0.85, 0.85, 0.85 }
     end
-    if (st.recoveryTotal or 0) > 0 then
-        lines[#lines + 1] = { format(L["自身剩余产物预计回血：%s"], PD.RecoveryMoney(st.recoveryTotal)), 0.55, 0.85, 0.6 }
-    end
-    if (st.transferredCost or 0) > 0 then
-        lines[#lines + 1] = { L["已投入下游的中间产物不重复计算销售收入。"], 0.7, 0.7, 0.7 }
-    end
-    if type(st.saleCount) == "number" and st.saleCount > 0 then
-        lines[#lines + 1] = { format(L["最终可出售 %d 件：制材自然余量 %d；额外升级产物 %d。"],
-            st.saleCount, st.naturalRemainder or 0, st.levelingRemainder or 0), 0.75, 0.75, 0.75 }
-    end
-    local outs = st.recoveryOutputs
-    if type(outs) == "table" then
-        for _, o in ipairs(outs) do
-            local n = tonumber(o.count) or 0
-            if n > 0 then
-                local channel = o.missing and L["售价缺失，未计回血"]
-                    or (o.source == "ah" and L["推荐拍卖（扣手续费）"] or L["推荐卖给 NPC"])
-                lines[#lines + 1] = { format(L["%s ×%d · %s · 净单价 %s · 预计回血 %s"],
-                    tostring(PD.ItemName(o.id) or ("#" .. tostring(o.id))), n, channel,
-                    o.missing and L["请核对价格"] or PD.RecoveryMoney(o.unit or 0),
-                    o.missing and L["请核对价格"] or PD.RecoveryMoney(o.revenue or 0)), 0.7, 0.7, 0.7 }
+    if showRecovery then
+        if (st.recoveryTotal or 0) > 0 then
+            lines[#lines + 1] = { format(L["自身剩余产物预计回血：%s"], PD.RecoveryMoney(st.recoveryTotal)), 0.55, 0.85, 0.6 }
+        end
+        if (st.transferredCost or 0) > 0 then
+            lines[#lines + 1] = { L["已投入下游的中间产物不重复计算销售收入。"], 0.7, 0.7, 0.7 }
+        end
+        if type(st.saleCount) == "number" and st.saleCount > 0 then
+            lines[#lines + 1] = { format(L["最终可出售 %d 件：制材自然余量 %d；额外升级产物 %d。"],
+                st.saleCount, st.naturalRemainder or 0, st.levelingRemainder or 0), 0.75, 0.75, 0.75 }
+        end
+        local outs = st.recoveryOutputs
+        if type(outs) == "table" then
+            for _, o in ipairs(outs) do
+                local n = tonumber(o.count) or 0
+                if n > 0 then
+                    local channel = o.missing and L["售价缺失，未计回血"]
+                        or (o.source == "ah" and L["推荐拍卖（扣手续费）"] or L["推荐卖给 NPC"])
+                    lines[#lines + 1] = { format(L["%s ×%d · %s · 净单价 %s · 预计回血 %s"],
+                        tostring(PD.ItemName(o.id) or ("#" .. tostring(o.id))), n, channel,
+                        o.missing and L["请核对价格"] or PD.RecoveryMoney(o.unit or 0),
+                        o.missing and L["请核对价格"] or PD.RecoveryMoney(o.revenue or 0)), 0.7, 0.7, 0.7 }
+                end
             end
         end
     end
@@ -15593,10 +15229,10 @@ function PD.CopyPlanSummary(plan)
                            "revision", "partial", "plannedTo", "targetReached", "alreadyAtTarget", "start", "target",
                            "expanded", "improvements", "initialTotal", "savings", "searchComplete", "budgetLimited",
                            "inputModelOptimal", "catalogueCoverageComplete", "quoteComplete", "searchTermination", "searchState",
-                           "costSearchPerformed", "costSearchStatus", "greenBudget", "greenLevelCrafts", "priorityTotal", "useBagMaterials", "bagInventoryChanged", "bagInventoryUnknown",
+                           "costSearchPerformed", "costSearchStatus", "routeRiskMode", "reserveMode", "safeTotal", "safeNetTotal", "safePrepTotal", "auctionRecoveryEnabled", "priorityTotal", "useBagMaterials", "bagInventoryChanged", "bagInventoryUnknown",
                            "bagInventory", "bagInventoryStamp", "bagInventoryFingerprint", "bagInventoryVersion", "bagMaterialQuotes", "seedInventory", "seedAllocations",
                            "stale", "staleReason", "cached", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
-                           "considerAuctionSupply", "allowBindOnPickupFormulas", "allowCurrencyFormulas", "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete", "auctionSupplyShortages", "purchaseVerified", "auctionDepthRevision", "auctionDepthComplete", "auctionDepthInputs", "auctionDepthFallbackItems", "pricingPolicyStale",
+                           "considerAuctionSupply", "allowBindOnPickupFormulas", "allowCurrencyFormulas", "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete", "auctionSupplyShortages", "purchaseVerified", "auctionDepthRevision", "auctionDepthComplete", "auctionDepthInputs", "auctionDepthFallbackItems", "vendorDiscountSig", "pricingPolicyStale",
                            "formulasTotal", "formulaTotal", "formulaComplete", "formulaBlocked", "procurementPolicyVersion",
                            "learningGaps","learningCoverageComplete","learningBlocked","learningBlockReason",
                            "blockingLearningGaps","blockingDiagnostics","diagnostics",
@@ -15691,22 +15327,14 @@ function PD.ChangeRecipePolicy(profession, spell, forceBan, apply)
     elseif mode == "ban" then nextMode = nil end
     E.SetPolicy(PD.cur, profession, spell, nextMode, true)
     PD.policyDirty = PD.policyDirty or {}
-    if apply then
-        PD.policyDirty[PD.cur] = nil
-        if E.ApplyPolicies then E.ApplyPolicies(PD.cur) end
-        PD.LvRecalc()
-    else
-        PD.policyDirty[PD.cur] = true
-    end
-    PD.RequestRender()
+    PD.policyDirty[PD.cur] = true
+    PD.MarkRouteStale(PD.cur, "settings")
 end
 
 function PD.FlushPolicies()
-    local E = getEco()
+    -- 仅手动点击「开始计算 / 重新计算」时应用排除并重算，切页签或关闭排除抽屉不自动触发计算
     if PD.policyDirty and PD.policyDirty[PD.cur] then
-        PD.policyDirty[PD.cur] = nil
-        if E and E.ApplyPolicies then E.ApplyPolicies(PD.cur) end
-        PD.LvRecalc()
+        PD.MarkRouteStale(PD.cur, "settings")
     end
 end
 
@@ -15841,6 +15469,7 @@ local function SetMatBan(itemId, ban)
     end
     PD.policyDirty = PD.policyDirty or {}
     PD.policyDirty[PD.cur] = true
+    PD.MarkRouteStale(PD.cur, "settings")
 end
 
 function PD.RowsExclusions(rows)
@@ -16020,22 +15649,45 @@ function PD.RoutePairContext(slug)
     return E.RouteContext(slug, opts, E.Professions and E.Professions() or nil)
 end
 
-function PD.SpecQuestGoal(slug)
+function PD.SpecQuestGoals(slug)
     local G = getGates()
-    if not (G and G.SpecializationContext) then return nil end
+    if not (G and G.SpecializationContext) then return {}, nil end
     local slot = slug or PD.cur
-    if slot ~= "engineering" then return nil end
+    if not (G.HasSpecializations and G.HasSpecializations(slot)) then return {}, nil end
     local target = (PD.LvTarget and PD.LvTarget()) or 0
     local ok, ctx = pcall(G.SpecializationContext, { profession = slot, target = target })
-    if not ok or type(ctx) ~= "table" then return nil end
-    local goal = ctx.goals and ctx.goals[1]
-    if goal and goal.level == nil and type(ctx.level) == "number" then goal.level = ctx.level end
-    return goal, ctx
+    if not ok or type(ctx) ~= "table" then return {}, nil end
+    local goals = {}
+    for _, goal in ipairs(ctx.goals or {}) do
+        if type(goal) == "table" then
+            if goal.level == nil and type(ctx.level) == "number" then goal.level = ctx.level end
+            if ctx.abilities and goal.abilityID and ctx.abilities[goal.abilityID] == true then
+                goal.abilityKnown = true
+            end
+            goals[#goals + 1] = goal
+        end
+    end
+    return goals, ctx
+end
+
+function PD.SpecQuestGoal(slug)
+    local goals, ctx = PD.SpecQuestGoals(slug)
+    return goals[1], ctx
 end
 
 function PD.SpecQuestBranch(goal)
-    if goal and goal.choice == "goblin" then return L["地精工程学"] end
-    return L["侏儒工程学"]
+    local G = getGates()
+    if type(goal) == "table" then
+        local aid = tonumber(goal.abilityID or goal.abilitySpellID)
+        if aid and aid > 0 and G and type(G.AbilityLabel) == "function" then
+            local lbl = G.AbilityLabel(aid)
+            if type(lbl) == "string" and lbl ~= "" then return lbl end
+        end
+        if type(goal.choice) == "string" and goal.choice ~= "" and goal.choice ~= "none" then
+            return PD.SpecChoiceLabel(goal.choice, goal.exclusiveGroup or goal.profession)
+        end
+    end
+    return L["专精"]
 end
 
 function PD.SpecQuestWhere(goal)
@@ -16054,6 +15706,7 @@ end
 
 function PD.SpecQuestState(goal)
     local p = (goal and goal.questProgress) or {}
+    if goal and goal.abilityKnown and not p.completed then return L["已学会"], 0.45, 0.92, 0.55 end
     if p.completed then return L["任务已完成"], 0.62, 0.62, 0.62 end
     if p.readyForTurnIn then return L["任务可交付"], 0.45, 0.92, 0.55 end
     if p.inLog then return L["任务已接取"], 0.98, 0.82, 0.42 end
@@ -16083,34 +15736,43 @@ function PD.SpecQuestLines(goal)
     local state, r, g, b = PD.SpecQuestState(goal)
     out[#out + 1] = { state, r, g, b }
     if goal.blockedReason == "specializationLevelRequired" then
-        out[#out + 1] = { format(L["专业点数达到 %d 后才能接取（当前 %d）。"],
-            goal.minSkill or 0, goal.level or 0), 0.98, 0.62, 0.4 }
+        out[#out + 1] = { format(L["角色等级达到 %d 后才能接取（当前 %d）。"],
+            goal.minLevel or 0, goal.level or 0), 0.98, 0.62, 0.4 }
     elseif goal.blockedReason == "specializationQuestAlreadyCompleted" then
         out[#out + 1] = { L["本分支入门任务已完成，但专精能力尚未学会。"], 0.98, 0.62, 0.4 }
     elseif goal.blockedReason == "specializationQuestDisabled" then
         out[#out + 1] = { L["该任务当前不可用。"], 0.98, 0.62, 0.4 }
-    elseif not (goal.questProgress and (goal.questProgress.completed or goal.questProgress.inLog)) then
+    elseif not (goal.abilityKnown or (goal.questProgress and (goal.questProgress.completed or goal.questProgress.inLog))) then
         out[#out + 1] = { L["先在对应导师处完成前置任务，再接取本任务。"], 0.7, 0.7, 0.7 }
     end
     return out
 end
 
 function PD.RowsSpecQuest(rows)
-    local goal = PD.SpecQuestGoal(PD.cur)
-    if not goal then return end
-    local branch = PD.SpecQuestBranch(goal)
-    local state, r, g, b = PD.SpecQuestState(goal)
-    local primary = goal.questName and goal.questName ~= ""
-                    and ("《" .. tostring(goal.questName) .. "》") or branch
-    rows[#rows + 1] = {
-        kind = "row", h = PD.ROW_H, col = 1,
-        text = format(L["专精入门任务：%s"], primary),
-        sub = PD.SpecQuestWhere(goal),
-        lines = PD.SpecQuestLines(goal),
-        right = state,
-        rightColor = { r, g, b },
-        act = function() PD.MarkMapPoint(goal.mapID, goal.x, goal.y) end,
-    }
+    local goals = PD.SpecQuestGoals(PD.cur)
+    if type(goals) ~= "table" or #goals == 0 then return end
+    for _, goal in ipairs(goals) do
+        local branch = PD.SpecQuestBranch(goal)
+        local state, r, g, b = PD.SpecQuestState(goal)
+        local qn = (type(goal.questName) == "string" and goal.questName ~= "") and goal.questName or nil
+        local primary
+        if qn and qn ~= branch then
+            primary = branch .. " · 《" .. qn .. "》"
+        elseif qn then
+            primary = "《" .. qn .. "》"
+        else
+            primary = branch
+        end
+        rows[#rows + 1] = {
+            kind = "row", h = PD.ROW_H, col = 1,
+            text = format(L["专精入门任务：%s"], primary),
+            sub = PD.SpecQuestWhere(goal),
+            lines = PD.SpecQuestLines(goal),
+            right = state,
+            rightColor = { r, g, b },
+            act = function() PD.MarkMapPoint(goal.mapID, goal.x, goal.y) end,
+        }
+    end
     PushGap(rows, 4)
 end
 
@@ -16163,9 +15825,7 @@ function PD.RowsRoutePartner(rows, context)
                     PD.partnerPicker = nil
                     PD.exclusionsOpen = false
                     PD.solverSig = nil
-                    PD.autoSnapshot = nil
-                    PD.FlushPolicies()
-                    PD.RequestRender()
+                    PD.MarkRouteStale(target, "settings")
                 end,
             }
         end
@@ -16262,7 +15922,8 @@ function PD.SolverText()
 end
 
 function PD.WindowShown()
-    local mf = _G.DungeonsForever_MainFrame
+    local hb = getHostBridge()
+    local mf = hb and hb.MainFrame and hb.MainFrame() or nil
     return (mf and mf.IsShown and mf:IsShown()) and true or false
 end
 
@@ -16492,19 +16153,47 @@ function PD.ClearPlanCache(slug)
     PD.solverPaintRes, PD.solverFrac = nil, nil
 end
 
+function PD.HasExistingRoute(slug)
+    slug = slug or PD.cur
+    if not slug or slug == "__index" then return false end
+    local wantAuto = PD.AutoRouteEnabled(slug)
+    local function usablePlan(p)
+        if type(p) ~= "table" then return false end
+        if wantAuto and p.mode == "fixed" then return false end
+        if p.status == "recalculate_required" or p.status == "selection_required"
+           or p.status == "searching" or p.status == "infeasible" then
+            return false
+        end
+        return PD.PlanHasSteps(p) or PD.PlanNoUpgradeNeeded(p)
+    end
+    local xp = getExec()
+    if xp and xp.GetPlan then
+        local ok, frozen = pcall(xp.GetPlan, slug)
+        if ok and usablePlan(frozen) then return true end
+    end
+    local ra = raMod()
+    if ra and ra.Peek and usablePlan(ra.Peek(slug)) then return true end
+    if PD.autoSnapshotSlug == slug and usablePlan(PD.autoSnapshot) then return true end
+    return false
+end
+
 function PD.RecalcNeeded()
     local slug = PD.cur
     if not slug or slug == "__index" or PD.FixedOnly(slug) then return false end
     if PD.IsGatherRoute(slug) then return false end
+    if not PD.AutoRouteEnabled(slug) then return false end
     local SR = getSolverRun()
-    if SR and SR.Running and SR.Running(PD.cur) then return false end
-    if not PD.Setting("autoRoute") and not PD.autoSnapshot then return false end
+    if SR and SR.Running and SR.Running(slug) then return false end
+    local ra = raMod()
+    if ra and ra.HasWork and ra.HasWork(slug) then return false end
+    if not PD.HasExistingRoute(slug) then return true end
+    if PD.policyDirty and PD.policyDirty[slug] then return true end
     local learned = PD.ProfLearned and PD.ProfLearned(true) or {}
     local key = PD.PlanKeyOf(slug, PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur))
     if not key then return false end
     if PD.autoSnapshotSlug ~= slug or not PD.autoSnapshot then return true end
     if PD.autoKey and PD.autoKey ~= key then return true end
-    return PD.autoSnapshot.stale == true
+    return PD.autoSnapshot.stale == true or PD.autoSnapshot.settingsChanged == true
 end
 
 local GLOW_PERIOD = 2.2
@@ -16617,20 +16306,17 @@ function PD.GlowBorder(bt, on)
 end
 
 function PD.LvRecalc()
-    if not PD.cur or PD.cur == "__index" or PD.FixedOnly() then return end
+    if not PD.cur or PD.cur == "__index" then return end
     if PD.IsGatherRoute() then return end
-    PD.ClearPlanCache()
     local ra = raMod()
-    if ra then
-        if ra.Recalculate then
-            local learned = PD.ProfLearned and PD.ProfLearned() or {}
-            local lv = learned[PD.cur] and learned[PD.cur].cur
-            ra.Recalculate(PD.cur, ra.OptionsFor and ra.OptionsFor(PD.cur, lv) or nil)
-        elseif ra.Invalidate then
-            ra.Invalidate()
-        end
+    if not PD.AutoRouteEnabled() then
+        PD.ClearPlanCache()
+        if ra and ra.ResetPrices then ra.ResetPrices() end
+        if ra and ra.Invalidate then ra.Invalidate("prices") end
+        if PD.RequestRender then PD.RequestRender() end
+        return
     end
-    if PD.RequestRender then PD.RequestRender() end
+    PD.MarkRouteStale(PD.cur, "settings")
 end
 
 function PD.UnpriceHours(age)
@@ -16660,13 +16346,14 @@ function PD.UnpriceMatsText(entry)
     local mats = entry and entry.unpricedMats
     if not mats or #mats == 0 then return nil end
     local sep = L["、"] or "、"
+    local hb = getHostBridge()
     local names, shown = {}, 0
     for i = 1, #mats do
         if shown >= 3 then break end
         local id = mats[i]
-        local nm, ok = DG.ItemName(id)
+        local nm, ok = hb and hb.ItemName and hb.ItemName(id)
         if not ok then
-            if DG.RequestItem then DG.RequestItem(id) end
+            if hb and hb.RequestItem then hb.RequestItem(id) end
             nm = format(L["物品 %d"], id)
         end
         names[#names + 1] = nm
@@ -16990,15 +16677,8 @@ function PD.RowsRankReminder(rows, target)
 end
 
 function PD.RankReminderTip()
-    local ranks = getRanks()
-    local rank = ranks and ranks.NextStep and ranks.NextStep(PD.cur, PD.LvTarget())
-    if not (rank and rank.due) then return nil end
-    local tip = { { (ranks.Title and ranks.Title(rank)) or "", 1, 1, 1 } }
-    if ranks.Lines then
-        for _, line in ipairs(ranks.Lines(rank) or {}) do tip[#tip + 1] = { line, 0.88, 0.88, 0.88 } end
-        for _, line in ipairs(ranks.Lines(rank, 3) or {}) do tip[#tip + 1] = { line, 0.7, 0.7, 0.7 } end
-    end
-    return tip
+    local tt = getTT()
+    return tt and tt.RankReminderTip and tt.RankReminderTip(PD.cur, PD.LvTarget()) or nil
 end
 
 PD.HISTORY_MAX = 5
@@ -17021,7 +16701,7 @@ function PD.RouteHistorySig(plan)
     return table.concat({ tostring(steps), tostring(total and math.floor(total + 0.5) or -1),
         tostring(plan.completeCost ~= false), tostring(plan.scheme or ""),
         tostring(plan.start or 0), tostring(plan.target or 0), tostring(plan.useBagMaterials==true),
-        tostring(plan.bagInventoryFingerprint or ""), tostring(plan.greenBudget or "optimistic") }, "|")
+        tostring(plan.bagInventoryFingerprint or ""), tostring(plan.routeRiskMode or "expected"), tostring(plan.auctionRecoveryEnabled == true) }, "|")
 end
 
 function PD.RecordRouteHistory(plan, slug)
@@ -17362,6 +17042,9 @@ function PD.RowsLeveling(rows)
         PD.RowsCraftLog(rows)
         return
     end
+    if PD.autoPage == "recovery" and not PD.RecoveryModeActive(PD.cur) then
+        PD.autoPage = "route"
+    end
     if unreadable then
         PushText(rows, L["执行计划缺失或无法读取；请结束追踪后重新计算。"], 14, C_GREY)
         return
@@ -17383,9 +17066,16 @@ function PD.RowsLeveling(rows)
         end
     end
     PD.warnNotes = notes
+    local onRecoveryManage = PD.autoPage == "recovery"
+        and PD.RecoveryModeActive(PD.cur)
+        and PD.recSub == "manage"
     local scanWarning,_,scanFix=PD.ReplicateScanWarning()
     local scanAdvice=PD.ScanModeAdvice()
-    if scanWarning then
+    if scanWarning and onRecoveryManage then
+        warningSeen[scanWarning]=true
+        PushText(rows,L["尚未扫描拍卖行（拍卖价暂显示为 —），可先预览或配置本周易卖清单，扫描后再重新计算路线。"],12,{0.95,0.75,0.42},1)
+        PushGap(rows,4,1)
+    elseif scanWarning then
         warningSeen[scanWarning]=true
         PushText(rows,PD.ScanHeadline() or scanWarning,14,{0.98,0.6,0.46},1)
         if scanFix then
@@ -17476,13 +17166,15 @@ function PD.RowsLeveling(rows)
         res = ra.Get and ra.Get(PD.cur, opts) or nil
         if res and res.slug and res.slug~=PD.cur then res=nil end
         if res and res.planVersion==2 then res.exact=true end
-        if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
+        if res and res.planVersion ~= 2 and not res.priced then res = nil end
     end
     local auto = (autoOn and res) and true or false
     if res then
         PD.autoSnapshot, PD.autoSnapshotSlug = res, PD.cur
         PD.autoKey = planKey
         PD.autoExact = res.exact == true
+    elseif autoOn and PD.autoSnapshotSlug == PD.cur then
+        PD.autoSnapshot, PD.autoSnapshotSlug, PD.autoKey = nil, nil, nil
     end
     PD.RowsRoutePartner(rows, pairContext)
     PD.RowsSpecQuest(rows)
@@ -17494,9 +17186,16 @@ function PD.RowsLeveling(rows)
     if res and (res.status == "selection_required" or res.status == "recalculate_required") then
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true}
         PD.CopyPlanSummary(res)
+        if PD.autoPage == "recovery" and PD.RecoveryModeActive(PD.cur) then
+            PD.RowsRecoveryDetail(rows, res)
+            return
+        end
         local statusText = PD.PlanStatusText(res)
         if statusText ~= scanWarning then
             PushText(rows, statusText, 14, {0.95, 0.75, 0.4})
+        end
+        if res.status == "recalculate_required" and not scanWarning then
+            PushText(rows, L["点击右上角「开始计算」按钮，按当前设置与拍卖行行情生成升级路线。"], 14, C_GREY)
         end
         return
     end
@@ -17511,18 +17210,29 @@ function PD.RowsLeveling(rows)
         PD.RowsExclusions(rows)
         return
     end
-    if autoOn and (scheme == "cheapest" or fishRoute) and not PD.PlanHasSteps(res) then
+    if autoOn and not PD.PlanHasSteps(res) then
+        local notCalc = (res == nil) and not (ra and ra.HasWork and ra.HasWork(PD.cur))
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true,
-                        total = res and res.total, priced = res and res.total ~= nil}
+                        total = res and res.total, priced = res and res.total ~= nil,
+                        notCalculated = notCalc or nil}
         PD.CopyPlanSummary(res)
-        PushHead(rows, res and PD.PlanStatusText(res) or L["正在计算升级路线…"])
-        if PD.PlanNoUpgradeNeeded(res) then
-            PushText(rows,L["如需查看全程路线，可在设置中关闭「从当前技能开始计算」。"],14,C_GREY)
+        if PD.autoPage == "recovery" and PD.RecoveryModeActive(PD.cur) then
+            PD.RowsRecoveryDetail(rows, res)
+            return
         end
-        local progress = PD.PlanProgressText(res)
-        if progress then PushText(rows, progress, 14, C_GREY) end
-        PD.lvRouteHead = { progress = (ra and ra.HasWork and ra.HasWork(PD.cur)) and L["正在计算升级路线…"] or nil }
-        if res then PD.PlanDiagnostics(note, res) end
+        if notCalc then
+            PushHead(rows, L["尚未计算升级路线"])
+            PushText(rows, L["点击右上角「开始计算」按钮，按当前设置与拍卖行行情生成升级路线。"], 14, C_GREY)
+        else
+            PushHead(rows, res and PD.PlanStatusText(res) or L["正在计算升级路线…"])
+            if PD.PlanNoUpgradeNeeded(res) then
+                PushText(rows,L["如需查看全程路线，可在设置中关闭「从当前技能开始」。"],14,C_GREY)
+            end
+            local progress = PD.PlanProgressText(res)
+            if progress then PushText(rows, progress, 14, C_GREY) end
+            PD.lvRouteHead = { progress = (ra and ra.HasWork and ra.HasWork(PD.cur)) and L["正在计算升级路线…"] or nil }
+            if res then PD.PlanDiagnostics(note, res) end
+        end
         return
     end
 
@@ -17540,8 +17250,14 @@ function PD.RowsLeveling(rows)
             priced = (data.priced and true) or false,
             total = data.total, snapshotAge = data.snapshotAge,
             snapshotDays = data.snapshotDays,
+            recipes = #(data.steps or {}),
+            crafts = data.crafts or 0,
+            vendorTotal = data.vendorTotal,
             matsN = PD.MaterialKindCount(data.mats), np = CountUnpriced(data),
         }
+        if PD.RecoveryModeActive(PD.cur, data) then
+            PD.CopyRecoverySummary(data)
+        end
         PD.CopyPlanSummary(data)
         PD.lvShopData = data
         PD.RowsAutoShop(rows, data)
@@ -17591,29 +17307,24 @@ function PD.RowsLeveling(rows)
         total = auto and res.total or (fixedSum and fixedSum.total),
         snapshotAge = auto and res.snapshotAge or (fixedSum and fixedSum.snapshotAge),
         snapshotDays = auto and res.snapshotDays or (fixedSum and fixedSum.snapshotDays),
-        recipes = auto and #res.steps or nil,
-        crafts = auto and (res.crafts or 0) or nil,
+        recipes = auto and #res.steps or (fixedSum and #(fixedSum.steps or {})) or nil,
+        crafts = auto and (res.crafts or 0) or (fixedSum and (fixedSum.crafts or 0)) or nil,
         vendorTotal = auto and res.vendorTotal or (fixedSum and fixedSum.vendorTotal),
         referencePrices = auto and res.referencePrices or (fixedSum and fixedSum.referencePrices),
         matsN = (not auto) and fixedSum and PD.MaterialKindCount(fixedSum.mats) or nil,
         np = auto and CountUnpriced(res) or (fixedSum and CountUnpriced(fixedSum)) or 0,
     }
-    PD.CopyRecoverySummary(auto and res or fixedSum)
-    if fixedSum and fixedSum.referenceOnly then PD.CopyPlanSummary(fixedSum) end
-    if PD.autoPage == "recovery" then
+    local recMode = PD.RecoveryModeActive(PD.cur, auto and res or nil)
+    if recMode then
+        PD.CopyRecoverySummary(auto and res or fixedSum)
+    end
+    PD.CopyPlanSummary(auto and res or fixedSum)
+    if PD.autoPage == "recovery" and PD.RecoveryModeActive(PD.cur) then
         PD.RowsRecoveryDetail(rows, auto and res or fixedSum)
         return
     end
-    PD.CopyPlanSummary(auto and res or fixedSum)
     local shownSum = auto and res or fixedSum
     notes.plan = shownSum
-    if shownSum and shownSum.scheme=="stable" and shownSum.stability then
-        local risk=shownSum.stability
-        note(format(L["模型估计：无需补做达标 %.1f%%；后续配方技能门槛通过 %.1f%%"],100*risk.completionProbability,100*risk.unlockProbability),0.72,0.82,0.9)
-        if risk.completionProbability<1-1e-9 then
-            warning(format(L["无法沿用已备配方补足技能的风险 %.1f%%；补做需另备材料。"],100*risk.unrepairableProbability),0.95,0.75,0.4)
-        end
-    end
     if shownSum and (shownSum.specBlocked or 0) > 0 and not (shownSum.blockedSteps and #shownSum.blockedSteps > 0) then
         note(format(L["已按本角色专精过滤 %d 个无法学习的配方"], shownSum.specBlocked), 0.72, 0.72, 0.72)
     end
@@ -17638,9 +17349,13 @@ function PD.RowsLeveling(rows)
     end
     do
         local G = getGates()
-        local goal = G and G.SpecGoal(PD.cur, target)
-        if goal and not PD.SpecQuestGoal(PD.cur) then
-            warning(format(L["工程学 200 级起需先完成地精/侏儒专精任务：%s（%s）"],
+        local goals = (G and type(G.SpecGoals) == "function" and G.SpecGoals(PD.cur, target)) or {}
+        if #goals > 0 and #(PD.SpecQuestGoals(PD.cur) or {}) == 0 then
+            local goal = goals[1]
+            local prof = profEntryOf(PD.cur)
+            local pname = (prof and prof.name) or PD.cur
+            warning(format(L["%s %d 级起需先完成%s专精任务：%s（%s）"],
+                tostring(pname), tonumber(goal.minSkill) or 200, PD.SpecQuestBranch(goal),
                 tostring(goal.questName or ""), tostring(goal.zone or "")), 0.95, 0.75, 0.4)
         end
     end
@@ -17755,15 +17470,15 @@ function PD.RowsLeveling(rows)
             cardNeed = math.max(cardNeed, PD.TextW(cd.text, 11) + 2 * PD.CARD_PAD)
         end
         if PD.StepIsMaterial(st) then
-            roleChipOf[st] = { text = L["中间产物"], bg = DG.Q_BADGE_MID_BG }
+            roleChipOf[st] = { text = L["中间产物"], bg = hostConst("Q_BADGE_MID_BG") }
             if cd then
                 cd.lines[#cd.lines + 1] = { PD.StepRole(st), 0.62, 0.80, 0.95 }
             end
         end
         if st.tool and st.toolItem then
             local owned = PD.ToolOwned(st.toolItem)
-            chipOf[st] = owned and { text = L["已拥有"], bg = DG.Q_BADGE_SHARE_BG }
-                or st.toolBop and { text = L["BoP 制作"], bg = DG.Q_BADGE_PRE_BG }
+            chipOf[st] = owned and { text = L["已拥有"], bg = hostConst("Q_BADGE_SHARE_BG") }
+                or st.toolBop and { text = L["BoP 制作"], bg = hostConst("Q_BADGE_PRE_BG") }
             if cd then
                 cd.lines[#cd.lines + 1] = {
                     owned and L["工具：已在背包或银行中，无需再次制作。"]
@@ -17832,18 +17547,10 @@ function PD.RowsLeveling(rows)
                 warning(w[1], w[2], w[3], w[4])
             end
             local progress
-            if res.planVersion == 2 then
-                if ra and ra.HasWork and ra.HasWork(PD.cur) then
-                    progress = PD.SolverText() or PD.PlanProgressText(res) or L["正在计算升级路线…"]
-                elseif (res.status == "complete" or res.optimal) and res.expanded then
-                    progress = res.expanded==0 and L["路线已生成，尚未进行降本搜索。"]
-                        or format(L["优化结束：已比较 %d 种组合"], res.expanded)
-                else
-                    progress = PD.PlanStatusText(res)
-                end
+            if res.planVersion == 2 and ra and ra.HasWork and ra.HasWork(PD.cur) then
+                progress = PD.SolverText() or PD.PlanProgressText(res) or L["正在计算升级路线…"]
             end
-            if activePlan==res and progress then progress=format(L["已保存路线 · %s"],progress) end
-            PD.lvRouteHead = { progress = progress }
+            PD.lvRouteHead = progress and { progress = progress } or nil
             if PD.solverFallback and not (res and res.exact) then
                 PushText(rows, PD.SolverFallbackText(), 14, { 0.95, 0.75, 0.4 })
                 PushGap(rows, 2)
@@ -17981,8 +17688,8 @@ function PD.RowsLeveling(rows)
                     else PD.exclusionsOpen = true; PD.RequestRender() end
                 end or nil,
             }
-            local recText = PD.StepRecoveryText(st)
-            local costLines = PD.StepCostLines(st)
+            local recText = recMode and PD.StepRecoveryText(st) or nil
+            local costLines = PD.StepCostLines(st, recMode)
             if recText or costLines then
                 local baseTip = rows[#rows].tipExtra
                 rows[#rows].tipExtra = function()
@@ -18078,7 +17785,7 @@ function PD.FormulaBlockedText(entry)
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
         return L["资料待补"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
     elseif reason=="formulaLimited" or reason=="limitedFormulaDisabled" then
-        return L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"]
+        return L["限量商人图纸未开启；可在设置中开启「允许限量商人图纸」，或使用拍卖行图纸。"]
     end
     local E=getEco()
     local text=E and E.DiagnosticText and E.DiagnosticText(reason)
@@ -18500,24 +18207,378 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
     end
 end
 
+local function RecoveryPricePair(itemID, fee)
+    local rec = getRec()
+    local ra = raMod()
+    local npc = rec and rec.NPCSellPriceOf and rec.NPCSellPriceOf(itemID) or nil
+    local ahGross = ra and ra.AHPriceOf and ra.AHPriceOf(itemID) or nil
+    local ahNet = (type(ahGross) == "number" and ahGross > 0)
+        and math.floor(ahGross * (100 - (tonumber(fee) or 5)) / 100 + 1e-9)
+        or nil
+    return npc, ahGross, ahNet
+end
+
+local function RecoveryItemBound(itemID)
+    if type(itemID) ~= "number" or itemID <= 0 then return true end
+    local ds = getDS()
+    if ds and ds.Item then
+        local it = ds.Item(itemID)
+        if type(it) == "table" then
+            if it.nonAuctionable == true or it.bindType == 1 or it.bindType == 4 then return true end
+            if it.bindType ~= nil or it.nonAuctionable == false then return false end
+        end
+    end
+    local ci = C_Item
+    local fn = (type(ci) == "table" and ci.GetItemInfo) or GetItemInfo
+    if type(fn) == "function" then
+        local ok, _, _, _, _, _, _, _, _, _, _, _, _, _, bindType = pcall(fn, itemID)
+        if ok and (bindType == 1 or bindType == 4) then return true end
+    end
+    return false
+end
+
+function PD.RowsRecoveryHeader(rows, src)
+    local rec = getRec()
+    local slug = PD.cur
+    local onManage = PD.recSub == "manage"
+    local ahRecOn = PD.Setting("auctionRecoveryEnabled", slug)
+    local fee = tonumber(PD.SettingRaw("recoveryFeePercent", slug)) or 5
+    local customMap = (rec and rec.GetCustomRecipes and rec.GetCustomRecipes(slug)) or {}
+    local excludedMap = (rec and rec.GetExcludedItems and rec.GetExcludedItems(slug)) or {}
+    local customN, excludedN = 0, 0
+    for _ in pairs(customMap) do customN = customN + 1 end
+    for _ in pairs(excludedMap) do excludedN = excludedN + 1 end
+    local overrideN = customN + excludedN
+
+    PushHead(rows, onManage and L["易卖清单管理"] or L["路线回血明细"])
+    rows[#rows].noHover = true
+    local segs = {
+        { key = "rec_sub_detail", text = L["路线回血明细"], on = not onManage },
+        { key = "rec_sub_manage",
+          text = overrideN > 0 and format(L["易卖清单管理 (%d)"], overrideN) or L["易卖清单管理"],
+          on = onManage },
+        { key = "rec_toggle_ah",
+          text = ahRecOn and L["拍卖行回血：开"] or L["拍卖行回血：关"],
+          on = ahRecOn },
+    }
+    if ahRecOn then
+        segs[#segs + 1] = { key = "rec_fee", text = format(L["手续费 %d%%"], fee) }
+    end
+    rows[#rows].segs = segs
+    if not ahRecOn then
+        PushText(rows, L["当前未开启「拍卖行回血」，所有产物按卖商人估算；可提前查看或配置易卖清单，开启并点击「重新计算」后生效。"],
+            12, { 0.95, 0.78, 0.42 })
+        PushGap(rows, 4)
+    end
+    return ahRecOn, fee, customMap, excludedMap, customN, excludedN
+end
+
+function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, customN, excludedN)
+    local ds = getDS()
+    local rec = getRec()
+    local ra = raMod()
+    local slug = PD.cur
+    local lw = PD.GRID_LW or PD.COL_LW
+    local rw = PD.GRID_RW or PD.COL_RW
+    local marketCode = rec and rec.ResolveMarketCode and rec.ResolveMarketCode(nil, nil) or nil
+    local marketLabel = (rec and rec.MarketCodeLabel and rec.MarketCodeLabel(marketCode)) or L["当前市场"]
+    local updatedAt = ds and ds.MarketWatchlistUpdatedAt and ds.MarketWatchlistUpdatedAt() or nil
+    local weeklyMap = (ds and marketCode and ds.MarketWatchlist and ds.MarketWatchlist(marketCode)) or {}
+
+    local function fmtM(v)
+        if type(v) ~= "number" then return L["—"] end
+        return (ra and ra.MoneyStr and ra.MoneyStr(v, "copper")) or tostring(v)
+    end
+    local function fmtBrief(v)
+        if type(v) ~= "number" then return L["—"] end
+        return PD.MoneyBrief(v)
+    end
+    local function pushTextCol(text, fs, color, col)
+        for _, ln in ipairs(PD.Wrap(text, fs, (col == 2 and rw or lw) - 16)) do
+            rows[#rows + 1] = { kind = "text", text = ln, fs = fs, color = color,
+                                col = col, fcol = col, noSpan = true }
+        end
+    end
+
+    local routeSpells = {}
+    for _, st in ipairs((src and src.steps) or {}) do
+        if type(st[3]) == "number" and st[3] > 0 then routeSpells[st[3]] = true end
+    end
+
+    local rr = ds and ds.Recipes and ds.Recipes(slug)
+    local profRecipes = {}
+    local profItems = {}
+    for spellID, r in pairs((rr and rr.recipes) or {}) do
+        if type(r) == "table" and r.availability == "live" then
+            local itemID = r.outputItemID or r.item or r[2]
+            if type(itemID) == "number" and itemID > 0 and not RecoveryItemBound(itemID) then
+                local learn = tonumber(r.learnedAt or r.orange or r.learn or r[7]) or 999
+                local entry = {
+                    spell = spellID,
+                    item = itemID,
+                    learn = learn,
+                    recipeName = SpellName(spellID),
+                    itemName = PD.ItemName(itemID),
+                }
+                profRecipes[#profRecipes + 1] = entry
+                profItems[itemID] = profItems[itemID] or {}
+                profItems[itemID][#profItems[itemID] + 1] = entry
+            end
+        end
+    end
+
+    local flt = PD.recFilter or "all"
+    local q = string.lower(tostring(PD.searchQ or ""))
+    local filtered = {}
+    for _, e in ipairs(profRecipes) do
+        local npc, _, ahNet = RecoveryPricePair(e.item, fee)
+        e.npc, e.ahNet = npc, ahNet
+        local matchFlt = true
+        if flt == "route" then
+            matchFlt = routeSpells[e.spell] == true
+        elseif flt == "profit" then
+            matchFlt = (type(ahNet) == "number" and ahNet > (tonumber(npc) or 0))
+        end
+        local matchQ = (q == "")
+            or string.find(string.lower(tostring(e.recipeName or "")), q, 1, true) ~= nil
+            or string.find(string.lower(tostring(e.itemName or "")), q, 1, true) ~= nil
+        if matchFlt and matchQ then
+            filtered[#filtered + 1] = e
+        end
+    end
+    table.sort(filtered, function(a, b)
+        local ca = customMap[a.spell] and 1 or 0
+        local cb = customMap[b.spell] and 1 or 0
+        if ca ~= cb then return ca > cb end
+        if a.learn ~= b.learn then return a.learn < b.learn end
+        return a.spell < b.spell
+    end)
+
+    -- Left column (col = 1): Browse & add custom recovery recipes
+    PushGap(rows, 4, 1)
+    rows[#rows + 1] = {
+        kind = "head", h = PD.HEAD_H, col = 1, fcol = 1, noSpan = true, noHover = true,
+        text = format(L["添加自定义回血配方（%d）"], #filtered),
+        segs = {
+            { key = "rec_flt_all", text = L["全部可交易"], on = flt == "all" },
+            { key = "rec_flt_route", text = L["当前路线"], on = flt == "route" },
+            { key = "rec_flt_profit", text = L["拍卖高于卖店"], on = flt == "profit" },
+        },
+    }
+    if #filtered == 0 then
+        pushTextCol((q ~= "") and L["没有匹配的配方，可清空搜索词重试。"]
+            or (flt == "route" and L["当前路线暂无可交易产物，可切到「全部可交易」查看。"])
+            or (flt == "profit" and L["暂无拍卖行净价高于卖店的配方，请先完整扫描拍卖行或查看「全部可交易」。"])
+            or L["当前专业没有可拍卖产物配方。"], 12, C_GREY, 1)
+    else
+        local cap = math.min(#filtered, 120)
+        for i = 1, cap do
+            local e = filtered[i]
+            local isCustom = customMap[e.spell] == true
+            local isWeekly = weeklyMap[e.item] ~= nil
+            local isExcluded = excludedMap[e.item] == true
+            local tagText, tagColor
+            if isCustom then
+                tagText, tagColor = L["已自选"], { 0.45, 0.78, 1.0 }
+            elseif isWeekly and not isExcluded then
+                tagText, tagColor = L["本周推荐"], { 0.42, 0.90, 0.58 }
+            elseif isWeekly and isExcluded then
+                tagText, tagColor = L["已屏蔽"], { 0.92, 0.48, 0.45 }
+            else
+                tagText, tagColor = L["添加"], C_GREY
+            end
+            local priceSub = format(L["卖店 %s · 拍卖 %s"], fmtBrief(e.npc), fmtBrief(e.ahNet))
+            local tipLines = {
+                { e.recipeName, 1, 0.82, 0 },
+                { format(L["产物：%s"], tostring(e.itemName or ("#" .. tostring(e.item)))), 0.85, 0.85, 0.85 },
+                { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(e.npc), fee, fmtM(e.ahNet)), 0.8, 0.9, 0.8 },
+                { isCustom and L["点击从自定义回血清单中移出（需点「重新计算」生效）"]
+                    or L["点击加入自定义回血清单（需点「重新计算」生效）"], 0.7, 0.7, 0.7 },
+            }
+            local spellID = e.spell
+            rows[#rows + 1] = {
+                kind = "row", h = PD.ROW_H2, col = 1, fcol = 1, noSpan = true,
+                it = { e.item },
+                fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
+                text = PD.Fit(e.recipeName, PD.ROW2_FS, lw - 118),
+                sub = priceSub,
+                tag = { text = tagText, color = tagColor },
+                lines = tipLines,
+                act = function()
+                    if rec and rec.ToggleCustomRecipe then
+                        rec.ToggleCustomRecipe(slug, spellID)
+                        PD.MarkRecoveryDirty(slug)
+                        playSoundSafe(1)
+                    end
+                end,
+            }
+        end
+        if #filtered > cap then
+            pushTextCol(format(L["共 %d 条，仅展示前 %d 条；可在上方搜索框输入关键词筛选。"], #filtered, cap), 12, C_GREY, 1)
+        end
+    end
+
+    -- Right column (col = 2): Section A (Weekly Recommended Easy-Sell List) + Section B (My Custom Recovery Recipes)
+    local gradeRank = { S = 1, A = 2, B = 3, C = 4, D = 5 }
+    local weeklyList = {}
+    for iid, meta in pairs(weeklyMap) do
+        local numId = tonumber(iid)
+        if numId and profItems[numId] then
+            local m = type(meta) == "table" and meta or { status = "recommended" }
+            local npc, _, ahNet = RecoveryPricePair(numId, fee)
+            weeklyList[#weeklyList + 1] = {
+                item = numId,
+                name = PD.ItemName(numId),
+                status = m.status or "recommended",
+                grade = m.grade,
+                avgDailySold = tonumber(m.avgDailySold),
+                npc = npc,
+                ahNet = ahNet,
+            }
+        end
+    end
+    table.sort(weeklyList, function(a, b)
+        local ga = gradeRank[a.grade or ""] or 9
+        local gb = gradeRank[b.grade or ""] or 9
+        if ga ~= gb then return ga < gb end
+        local sa = a.avgDailySold or -1
+        local sb = b.avgDailySold or -1
+        if sa ~= sb then return sa > sb end
+        return a.item < b.item
+    end)
+
+    PushGap(rows, 4, 2)
+    local wkHead = {
+        kind = "head", h = PD.HEAD_H, col = 2, fcol = 2, noSpan = true, noHover = true,
+        text = format(L["本周推荐易卖清单（%d）"], #weeklyList),
+    }
+    if customN > 0 or excludedN > 0 then
+        wkHead.segs = { { key = "rec_reset_overrides", text = L["恢复默认"] } }
+    end
+    rows[#rows + 1] = wkHead
+    pushTextCol(updatedAt
+        and format(L["当前市场：%s · 清单更新于 %s"], marketLabel, updatedAt)
+        or format(L["当前市场：%s · 暂未生成本周清单"], marketLabel),
+        12, C_GREY, 2)
+
+    if #weeklyList == 0 then
+        local hasAnyMarketData = next(weeklyMap) ~= nil
+        if not hasAnyMarketData then
+            pushTextCol(format(L["本周推荐易卖清单暂未生成数据。数据表生成后将按「%s」自动展示易卖产物，并支持单项屏蔽。您现在可直接在左侧搜索添加自定义回血配方。"], marketLabel),
+                12, C_GREY, 2)
+        else
+            pushTextCol(format(L["本周「%s」推荐易卖清单中暂无当前专业产物，可在左侧自行添加自定义回血配方。"], marketLabel),
+                12, C_GREY, 2)
+        end
+    else
+        for _, w in ipairs(weeklyList) do
+            local isExcluded = excludedMap[w.item] == true
+            local parts = {}
+            if w.grade then parts[#parts + 1] = format(L["评级 %s"], w.grade) end
+            if w.avgDailySold and w.avgDailySold > 0 then
+                parts[#parts + 1] = format(L["日均 ~%.1f 件"], w.avgDailySold)
+            end
+            parts[#parts + 1] = format(L["卖店 %s · 拍卖 %s"], fmtBrief(w.npc), fmtBrief(w.ahNet))
+            local subText = table.concat(parts, " · ")
+            local itemID = w.item
+            local tipLines = {
+                { w.name, 1, 0.82, 0 },
+                { format(L["所属市场：%s%s"], marketLabel, updatedAt and (" · 更新于 " .. updatedAt) or ""), 0.7, 0.7, 0.7 },
+                { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(w.npc), fee, fmtM(w.ahNet)), 0.8, 0.9, 0.8 },
+                { isExcluded and L["当前已屏蔽：该物品改按卖商人算；点击恢复参与拍卖行回血。"]
+                    or L["当前已启用：开启拍卖行回血后将按拍卖行净价估算；点击可单独屏蔽。"],
+                  isExcluded and 0.95 or 0.7, isExcluded and 0.65 or 0.7, isExcluded and 0.55 or 0.7 },
+            }
+            rows[#rows + 1] = {
+                kind = "row", h = PD.ROW_H2, col = 2, fcol = 2, noSpan = true,
+                it = { itemID },
+                fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
+                text = PD.Fit(w.name, PD.ROW2_FS, rw - 108),
+                sub = subText,
+                tag = isExcluded
+                    and { text = L["已屏蔽"], color = { 0.92, 0.48, 0.45 } }
+                    or { text = L["已启用"], color = { 0.42, 0.90, 0.58 } },
+                lines = tipLines,
+                act = function()
+                    if rec and rec.ToggleExcludedItem then
+                        rec.ToggleExcludedItem(slug, itemID)
+                        PD.MarkRecoveryDirty(slug)
+                        playSoundSafe(1)
+                    end
+                end,
+            }
+        end
+    end
+
+    PushGap(rows, 10, 2)
+    local customList = {}
+    for sid in pairs(customMap) do
+        local r = rr and rr.recipes and rr.recipes[sid] or nil
+        local iid = r and (r.outputItemID or r.item or r[2]) or nil
+        local npc, _, ahNet = iid and RecoveryPricePair(iid, fee) or nil, nil, nil
+        customList[#customList + 1] = {
+            spell = sid,
+            item = iid,
+            name = SpellName(sid),
+            itemName = iid and PD.ItemName(iid) or nil,
+            npc = npc,
+            ahNet = ahNet,
+        }
+    end
+    table.sort(customList, function(a, b) return a.spell < b.spell end)
+
+    rows[#rows + 1] = {
+        kind = "head", h = PD.HEAD_H, col = 2, fcol = 2, noSpan = true, noHover = true,
+        text = format(L["我的自定义回血配方（%d）"], #customList),
+    }
+    if #customList == 0 then
+        pushTextCol(L["尚未添加自定义回血配方；在左侧点击任意可交易配方即可加入。"], 12, C_GREY, 2)
+    else
+        for _, c in ipairs(customList) do
+            local sid = c.spell
+            local subText = format(L["卖店 %s · 拍卖 %s"], fmtBrief(c.npc), fmtBrief(c.ahNet))
+            rows[#rows + 1] = {
+                kind = "row", h = PD.ROW_H2, col = 2, fcol = 2, noSpan = true,
+                it = c.item and { c.item } or nil,
+                fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
+                text = PD.Fit(c.name, PD.ROW2_FS, rw - 108),
+                sub = subText,
+                tag = { text = L["移出"], color = { 0.92, 0.58, 0.45 } },
+                lines = {
+                    { c.name, 1, 0.82, 0 },
+                    { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(c.npc), fee, fmtM(c.ahNet)), 0.8, 0.9, 0.8 },
+                    { L["点击从自定义回血清单中移出（需点「重新计算」生效）"], 0.7, 0.7, 0.7 },
+                },
+                act = function()
+                    if rec and rec.SetCustomRecipe then
+                        rec.SetCustomRecipe(slug, sid, false)
+                        PD.MarkRecoveryDirty(slug)
+                        playSoundSafe(1)
+                    end
+                end,
+            }
+        end
+    end
+end
+
 function PD.RowsRecoveryDetail(rows, src)
-    local lw = PD.COL_LW
+    local ahRecOn, feeSetting, customMap, excludedMap, customN, excludedN = PD.RowsRecoveryHeader(rows, src)
+    if PD.recSub == "manage" then
+        PD.RowsRecoveryManage(rows, src, ahRecOn, feeSetting, customMap, excludedMap, customN, excludedN)
+        return
+    end
+    local lw = PD.GRID_W or PD.COL_LW
     local outs = (src and src.saleOutputs) or {}
     PD.recDetailSrc = src
     local rec = tonumber(src and src.recoveryTotal) or 0
-    local fee = src and src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
+    local fee = (src and src.recoverySnapshot and src.recoverySnapshot.feePercent) or feeSetting
     local net = src and (tonumber(src.netTotal) or ((src.purchaseTotal or src.total or 0) - rec)) or 0
-    PushHead(rows, L["预计回血明细"], 1)
-    rows[#rows].segs = { { key = "rec_fee", text = format(L["手续费 %d%%"], fee or 5) } }
+    local planAhRec = src and src.auctionRecoveryEnabled == true
     PushText(rows, format(L["预计回血 %s · 净成本 %s"], PD.RecoveryMoney(rec), PD.RecoveryMoney(net)), 16, C_GOLD, 1)
-    if fee then
-        if src.recoveryAssumesAllSold then
-            PushText(rows, format(L["按 %d%% 手续费折算，剩余产物假设全部成交"], fee), 12, C_GREY, 1)
-        else
-            PushText(rows, format(L["按 %d%% 手续费折算，未采用拍卖行估值的产物按卖店价计"], fee), 12, C_GREY, 1)
-        end
+    if planAhRec then
+        PushText(rows, format(L["按「本周推荐易卖清单 + 自定义配方」估价（拍卖行扣 %d%% 手续费），其余产物按卖商人计。"], fee or 5), 12, C_GREY, 1)
     else
-        PushText(rows, L["请设置回血手续费，当前按卖店价估算"], 12, C_GREY, 1)
+        PushText(rows, L["本次路线按全部剩余产物卖给商人计算回血。"], 12, C_GREY, 1)
     end
     if src and src.recoveryEstimated then
         PushText(rows, L["回血暂按历史数据估算；请打开拍卖行完成一次完整扫描，再重新计算路线。"], 12, {0.95, 0.75, 0.4}, 1)
@@ -18538,7 +18599,7 @@ function PD.RowsRecoveryDetail(rows, src)
     end
     if #outs == 0 then
         PushGap(rows, 6, 1)
-        PushText(rows, L["当前路线没有可出售的剩余产物。"], 12, C_GREY, 1)
+        PushText(rows, src and L["当前路线没有可出售的剩余产物。"] or L["请先点击「重新计算」生成回血路线。"], 12, C_GREY, 1)
         return
     end
     local sell, unknown = {}, {}
@@ -18568,18 +18629,28 @@ function PD.RowsRecoveryDetail(rows, src)
                 local ra = raMod()
                 local unitStr = ra and ra.MoneyStr and ra.MoneyStr(unit, "copper") or tostring(unit)
                 local revStr = ra and ra.MoneyStr and ra.MoneyStr(revenue, "copper") or tostring(revenue)
+                local tagText = ah and (o.eligibilitySource == "custom" and L["拍卖·自选"] or L["拍卖·推荐"]) or L["卖店"]
+                local reasonLine
+                if ah then
+                    reasonLine = o.eligibilitySource == "custom"
+                        and { L["来源：玩家自定义回血配方（按拍卖行净价估算，已扣手续费）"], 0.45, 0.80, 1.0 }
+                        or { L["来源：本周推荐易卖清单（按拍卖行净价估算，已扣手续费）"], 0.42, 0.94, 0.62 }
+                elseif planAhRec then
+                    reasonLine = { L["未在易卖/自选清单内（或拍卖净价不高于卖店），按卖商人价估算"], 0.7, 0.7, 0.7 }
+                else
+                    reasonLine = { L["未开启拍卖行回血，按卖商人价估算"], 0.7, 0.7, 0.7 }
+                end
                 rows[#rows + 1] = {
                     kind = "row", h = PD.ROW_H2, col = 1, it = { o.id },
                     fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
-                    text = PD.Fit(PD.ItemName(o.id), PD.ROW2_FS, lw - 150),
+                    text = PD.Fit(PD.ItemName(o.id), PD.ROW2_FS, lw - 170),
                     sub = format(L["×%d · 单价 %s"], n, unitStr),
-                    tag = { text = ah and L["拍卖行"] or L["卖店"],
+                    tag = { text = tagText,
                             color = ah and PD.TAG_INK.ah or PD.TAG_INK.shop },
                     right = revStr,
                     lines = {
                         { format(L["%d 件 · 单价 %s"], n, unitStr) },
-                        ah and { L["按拍卖行净价估算（已扣手续费）"], 0.42, 0.94, 0.62 }
-                           or { L["按卖店价估算"], 0.7, 0.7, 0.7 },
+                        reasonLine,
                         { format(L["收入 %s"], revStr), 1, 0.82, 0 },
                     },
                 }
@@ -18602,7 +18673,7 @@ function PD.RowsRecoveryDetail(rows, src)
                 rows[#rows + 1] = {
                     kind = "row", h = PD.ROW_H2, col = 1, it = { o.id },
                     fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
-                    text = PD.Fit(PD.ItemName(o.id), PD.ROW2_FS, lw - 150),
+                    text = PD.Fit(PD.ItemName(o.id), PD.ROW2_FS, lw - 170),
                     sub = format(L["×%d"], n),
                     tag = { text = L["请扫描拍卖行"], color = PD.TAG_INK.unknown },
                     right = L["—"],
@@ -18871,27 +18942,33 @@ function PD.RowsAutoShop(rows, data)
     end
     PD.secCount = goldSec
 
-    if priced then
+    if priced and PD.RecoveryModeActive(PD.cur, data) then
+        local recTotal = tonumber(data.recoveryTotal)
+        local useRealRec = recTotal ~= nil
+        local shownRec = useRealRec and recTotal or (data.productAH or 0)
+        local ahRecOn = data.auctionRecoveryEnabled == true
         PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
-        PushHead(rows, L["产物收益"], 2)
+        PushHead(rows, L["产物回血"], 2)
         rows[#rows + 1] = { kind = "row", h = PD.ROW_H1, col = 2,
-                            text = L["产物丢拍卖行收益"],
-                            right = ra and ra.MoneyStr and ra.MoneyStr(data.productAH or 0, "copper") or tostring(data.productAH or 0) }
-        rows[#rows + 1] = { kind = "row", h = PD.ROW_H1, col = 2,
-                            text = L["直接卖给NPC收益"],
-                            right = ra and ra.MoneyStr and ra.MoneyStr(data.productNPC or 0, "copper") or tostring(data.productNPC or 0) }
-        local net = (total or 0) - (data.productAH or 0)
+                            text = ahRecOn and L["预计回血（拍卖行+卖店）"] or L["预计回血（全部卖商人）"],
+                            right = ra and ra.MoneyStr and ra.MoneyStr(shownRec, "copper") or tostring(shownRec) }
+        if ahRecOn then
+            rows[#rows + 1] = { kind = "row", h = PD.ROW_H1, col = 2,
+                                text = L["直接卖商人保底"],
+                                right = ra and ra.MoneyStr and ra.MoneyStr(data.productNPC or 0, "copper") or tostring(data.productNPC or 0) }
+        end
+        local net = useRealRec and (tonumber(data.netTotal) or ((total or 0) - shownRec)) or ((total or 0) - shownRec)
         if net >= 0 then
             rows[#rows + 1] = { kind = "row", h = PD.ROW_H1, col = 2,
-                                text = L["净花费（产物丢拍卖行）"],
+                                text = L["预计净花费"],
                                 right = ra and ra.MoneyStr and ra.MoneyStr(net, "copper") or tostring(net) }
         else
             rows[#rows + 1] = { kind = "row", h = PD.ROW_H1, col = 2,
-                                text = L["净花费（产物丢拍卖行）"],
+                                text = L["预计净花费"],
                                 right = format(L["净赚 %s"], ra and ra.MoneyStr and ra.MoneyStr(-net, "copper") or tostring(-net)) }
         end
-        if data.productPartial then
-            PushText(rows, L["部分产物无拍卖行价格：收益为估算下限"], 11,
+        if (data.recoveryMissing or 0) > 0 or (not useRealRec and data.productPartial) then
+            PushText(rows, L["部分产物暂缺价格：回血为估算下限"], 11,
                      { 0.95, 0.75, 0.4 }, 2)
         end
         PushGap(rows, 2, 2)
@@ -18942,14 +19019,20 @@ end
 function PD.LevelTool()
     local routeSlug = PD.cur
     local fishRoute = PD.CookingFishingMode and PD.CookingFishingMode() or false
+    local recMode = PD.RecoveryModeActive(routeSlug)
+    if not recMode and PD.autoPage == "recovery" then
+        PD.autoPage = "route"
+    end
     local onLog = PD.autoPage == "log"
-    local onRec = PD.autoPage == "recovery"
+    local onRec = recMode and PD.autoPage == "recovery" or false
     local list = {
         { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" and not onLog and not onRec },
         { key = "page_shop",  text = L["购物清单"], on = PD.autoPage == "shop" },
         { key = "page_log",   text = L["制作记录"], on = onLog },
-        { key = "page_rec",   text = L["回血"],     on = onRec },
     }
+    if recMode then
+        list[#list + 1] = { key = "page_rec", text = L["回血"], on = onRec }
+    end
     if not onLog and not onRec and PD.autoPage ~= "shop" then
         local snap = (PD.autoSnapshotSlug == PD.cur) and PD.autoSnapshot or nil
         local notes = PD.warnNotes
@@ -18966,13 +19049,13 @@ function PD.LevelTool()
         if notes and #notes > 0 then list[1].tip = notes end
         if #tip > 0 then
             list[#list + 1] = { key = "supply_warn",
-                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri",
+                                icon = hostMedia("WarnTri"),
                                 iconColor = { 1, 1, 1 }, tip = tip }
         end
         local rankTip = PD.RankReminderTip()
         if rankTip then
             list[#list + 1] = { key = "rank_warn",
-                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri",
+                                icon = hostMedia("WarnTri"),
                                 iconColor = { 1, 1, 1 }, tip = rankTip }
         end
     end
@@ -19012,24 +19095,39 @@ function PD.LevelTool()
         end
     end
     if not PD.FixedOnly() then
-        local automatic = PD.AutoRouteEnabled()
-        local need = PD.RecalcNeeded()
         local hist = { key = "route_history", align = "right",
                        text = L["历史路线"], on = (PD.histOpenSlug == PD.cur),
                        tip = { { L["历史路线"], 1, 0.82, 0 },
                            { format(L["最近 %d 次计算的时间、起始与目标等级、步数与总花费。"], PD.HISTORY_MAX), 0.85, 0.85, 0.85 } } }
         list[#list + 1] = hist
-        local rec = { key = "recalc", align = "right", primary = true, glow = need,
-                      text = automatic and L["重新计算"] or L["刷新费用"] }
-        if automatic and PD.policyDirty and PD.policyDirty[PD.cur] then
-            rec.text = L["重新计算（应用排除）"]
+    end
+    do
+        local automatic = PD.AutoRouteEnabled()
+        local hasRoute = automatic and PD.HasExistingRoute(routeSlug) or false
+        local need = PD.RecalcNeeded()
+        local recText
+        if not automatic then
+            recText = L["刷新费用"]
+        elseif not hasRoute then
+            recText = L["开始计算"]
+        elseif PD.policyDirty and PD.policyDirty[PD.cur] then
+            recText = L["重新计算（应用排除）"]
+        else
+            recText = L["重新计算"]
         end
+        local rec = { key = "recalc", align = "right", primary = need, glow = need, text = recText }
         if not automatic then
             rec.tip = { { rec.text, 1, 0.82, 0 },
                 { L["按最新报价刷新固定参考路线的采购费用，配方顺序不变。"], 0.85, 0.85, 0.85 } }
+        elseif not hasRoute then
+            rec.tip = { { rec.text, 1, 0.82, 0 },
+                { L["按当前设置与拍卖行行情计算升级路线。"], 0.85, 0.85, 0.85 } }
         elseif need then
-            local why = L["按当前价格与设置重新计算，后台计算预算为 8 秒；结果不保证最优。"]
-            rec.tip = { { rec.text, 1, 0.82, 0 }, { why, 0.85, 0.85, 0.85 } }
+            rec.tip = { { rec.text, 1, 0.82, 0 },
+                { L["设置、排除或拍卖行行情已变化，点击重新计算更新路线。"], 0.85, 0.85, 0.85 } }
+        else
+            rec.tip = { { rec.text, 1, 0.82, 0 },
+                { L["手动按当前价格与设置重新计算升级路线。"], 0.85, 0.85, 0.85 } }
         end
         list[#list + 1] = rec
     end
@@ -19048,16 +19146,37 @@ function PD.LevelTool()
             PD.FlushPolicies()
         elseif k == "page_rec" then
             PD.autoPage = "recovery"
+            if not PD.PlanHasSteps(PD.autoSnapshot) then
+                PD.recSub = "manage"
+            end
             PD.exclusionsOpen = false
             PD.FlushPolicies()
         elseif k == "eng_spec" then
-            PD.ShowEngChoiceMenu(PD.RecipeChip("eng_spec"))
+            PD.ShowSpecChoiceMenu(PD.RecipeChip("eng_spec"), PD.cur)
         elseif k == "supply_warn" then
             PD.autoPage = "shop"
             PD.exclusionsOpen = false
             PD.FlushPolicies()
         elseif k == "rec_fee" then
-            PD.ShowRecoveryFeeInput()
+            PD.ShowRecoveryFeeMenu(PD.RecipeChip("rec_fee") or PD.lvTiles and PD.lvTiles.cost)
+        elseif k == "rec_sub_detail" then
+            PD.recSub = "detail"
+        elseif k == "rec_sub_manage" then
+            PD.recSub = "manage"
+        elseif k == "rec_toggle_ah" then
+            local nextOn = not PD.Setting("auctionRecoveryEnabled", PD.cur)
+            PD.ChangeRouteSetting("auctionRecoveryEnabled", nextOn, PD.cur)
+            PD.MarkRecoveryDirty(PD.cur)
+        elseif k == "rec_flt_all" then
+            PD.recFilter = "all"
+        elseif k == "rec_flt_route" then
+            PD.recFilter = "route"
+        elseif k == "rec_flt_profit" then
+            PD.recFilter = "profit"
+        elseif k == "rec_reset_overrides" then
+            local rec = getRec()
+            if rec and rec.ResetOverrides then rec.ResetOverrides(PD.cur) end
+            PD.MarkRecoveryDirty(PD.cur)
         elseif k == "shop_group" then
             PD.shopGroup = not PD.shopGroup
             PD.RequestRender()
@@ -19092,6 +19211,7 @@ function PD.LevelTool()
             PD.exReg = nil
             local mdb = ProfDB()
             if mdb.matBan then mdb.matBan[PD.cur] = nil end
+            PD.MarkRouteStale(PD.cur, "settings")
         elseif k == "stop_search" then
             local ra = raMod()
             if ra and ra.Cancel then ra.Cancel(PD.cur) end
@@ -19198,98 +19318,147 @@ PD.SET_ROW_H = 24
 PD.SET_MORE = ">"
 PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
-    { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
-    { L["路线"], { "autoRoute", "autoFromCurrent", "autoStartSkill", "autoSecondaryLeveling", "computationSpeed" }, 1 },
-    { L["采购与配方"], { "autoUseBagMaterials", "autoSkillBudget", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowDropFormulas", "autoAllowCurrencyFormulas", "autoExcludeQuestRecipes", "autoExcludeQuestTrainers", "autoExcludeQuestVendors", "autoExcludeInstanceVendors", "autoExcludeInstanceTrainers" }, 2 },
-    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
-    { L["扫描数据"], { "clearScanData" }, 1 },
+    { L["路线计算"], { "autoFromCurrent", "autoStartSkill", "autoUseBagMaterials", "autoRouteRiskMode", "autoCraftTools", "autoSecondaryLeveling" }, 1 },
+    { L["界面显示"], { "greyPassed", "hlCurrent" }, 1 },
+    { L["数据维护"], { "clearScanData" }, 1 },
+    { L["材料与配方来源"], { "autoOnlyAH", "autoBuyLimitedFormulas", "autoAllowDropFormulas", "autoAllowCurrencyFormulas", "allowQuestSources", "allowInstanceVendors", "allowInstanceTrainers" }, 2 },
+    { L["回血设置"], { "auctionRecoveryEnabled", "recoveryFee" }, 2 },
 }
 
 function PD.RowsSettings(rows)
     PD.noZebra = true
     PD.gridSepOn = true
+    local fixedOnly = PD.FixedOnly()
+    local gatherRoute = PD.IsGatherRoute()
+    local fishRoute = PD.CookingFishingMode()
+    local autoRouteOn = PD.AutoRouteEnabled() and not fixedOnly
+    local recModeOn = PD.RecoveryModeActive()
     PushHead(rows, L["升级页设置"])
     PushGap(rows, 6)
-    PushText(rows, L["这里的开关只作用于「升级」页签里的制作路线（升级路线表），不影响其他页签。"], 14, C_GREY)
+    if not autoRouteOn and not fixedOnly and not gatherRoute then
+        PushText(rows, L["当前为固定参考模式；切换顶部「模式」为「自动」后，可调整选路与配方来源设置。"], 14, C_GREY)
+    else
+        PushText(rows, L["这里的开关只作用于当前专业「升级」页的路线与显示，不影响其他页签。"], 14, C_GREY)
+    end
+    local function markRouteDirty()
+        local ra = raMod()
+        if ra and ra.Invalidate then ra.Invalidate() end
+    end
     local defs = {
         { k = "greyPassed", name = L["已过段落灰显"],
-          desc = L["上限低于当前技能的段落（如 42 级时的 1~15）整行灰显"],
-          d1 = L["开启后：段名、出处、数量文字变暗，配方与材料图标去饱和，不再作为下一个要关注的制作目标；"],
-          d2 = L["关闭后：所有段落恢复常规配色，不做灰显处理。"] },
+          desc = L["当前技能已经超过的步骤整行变暗，方便聚焦后面要做的步骤。"],
+          d1 = L["开启：已过步骤文字变暗、图标去色。"],
+          d2 = L["关闭：所有步骤保持正常亮度。"] },
         { k = "hlCurrent", name = L["当前段落高亮"],
-          desc = L["上下限跨着当前技能的段落（如下一个要练的 15~58）加一圈主题色外框"],
-          d1 = L["开启后：下一个要练的段落四周显示一圈主题绿描边，一眼定位当前制作路线；外框只是描边，不影响行内容与点击。"],
-          d2 = L["关闭后：不显示外框，该段落样式与其他行一致。"] },
-        { k = "autoRoute", name = L["自动计算路线（材料采购）"],
-          desc = L["关闭显示固定参考路线；开启比较商人、拍卖行和自制材料。"],
-          d1 = L["可选择使用背包材料，按零成本参与路线计算；不包含银行。"],
-          d2 = L["路线与购物清单在「升级」页签顶部的按钮切换。"] },
-        { k = "autoUseBagMaterials", name = L["使用背包材料（按零成本）"],
-          desc = L["按当前背包材料减少额外采购并选择路线，不包含银行。"],
-          d1 = L["已有材料按实际数量使用，缺口继续比较商人、拍卖行与自制费用。"],
-          d2 = L["切换或背包材料变化后，点击重新计算更新路线。"] },
-        { k = "autoOnlyAH", name = L["只使用拍卖行可购材料的配方"],
-          desc = L["材料在拍卖行/商人都查不到价格时，该配方不参与计算（商人直售材料不受限）"],
-          d1 = L["开启：路线更可靠，但可能出现无配方可用的缺口区间。"],
-          d2 = L["关闭：可先查看路线；请打开拍卖行完成一次完整扫描后重新计算费用。"] },
-        { k = "autoBuyLimitedFormulas", name = L["允许NPC限量销售图纸"],
-          desc = L["允许限量商人报价与拍卖行报价比较，选择更便宜的购买渠道。"],
-          d1 = L["默认关闭；关闭时仍可使用有价格且近期在售数量至少1张的拍卖行图纸。"],
-          d2 = L["开启后可能选择限量商人，到访时可能无货；非金币拾取绑定来源仍需对应许可。"] },
-        { k = "autoAllowDropFormulas", name = L["允许拾取绑定掉落图纸"],
-          desc = L["仅允许通过怪物掉落、宝箱或采集等非金币方式取得的拾取绑定图纸参与路线。"],
-          d1 = L["默认关闭；纯金币NPC购买和合格拍卖行报价不受此开关限制。"],
-          d2 = L["开启后不把未知掉落成本当作 0 金币，并在清单中单独列出获取需求。"] },
-        { k = "autoAllowCurrencyFormulas", name = L["允许通货兑换图纸"],
-          desc = L["独立允许通过通货或物品兑换获取的图纸参与路线。"],
-          d1 = L["默认关闭；与其他开关完全独立。合格拍卖行报价不受此开关限制。"],
-          d2 = L["金币加通货或物品也属于兑换；限量NPC仍受限量开关约束。"] },
-        { k = "autoExcludeQuestRecipes", name = L["排除任务直授/奖励配方"],
-          desc = L["排除任务直接学会的配方、带任务前置的配方路线及拾取绑定任务奖励图纸（无视角色是否已完成任务）。"],
-          d1 = L["默认开启；关闭后允许任务直授或任务奖励图纸参与路线。"],
-          d2 = L["若配方已学会、背包已持有图纸，或图纸有普通商人/拍卖行渠道，仍会保留可用渠道。"] },
-        { k = "autoExcludeQuestTrainers", name = L["排除需任务解锁的训练师"],
-          desc = L["排除需要完成前置任务才能学习的训练师（如炼金变色药水训练师、急救大师任务训练师）。"],
-          d1 = L["默认开启；若同一配方有其他无需任务前置的训练师或图纸渠道，仍会正常采用。"],
-          d2 = L["仅影响配方学习路径，不拦截专业 225→300 大师阶位上限提示。"] },
-        { k = "autoExcludeQuestVendors", name = L["排除需任务解锁的商人"],
-          desc = L["排除需要完成前置任务（或携带任务道具）才能购买图纸的商人（如通灵学院鬼魂商人）。"],
-          d1 = L["默认开启；若同一图纸另有无前置普通商人或拍卖行报价，仍会正常采用。"],
-          d2 = L["关闭后按当前角色任务与道具满足情况判断是否可向该商人采购。"] },
-        { k = "autoExcludeInstanceVendors", name = L["排除副本内商人"],
-          desc = L["排除位于地下城或团队副本内的图纸商人（如黑石深渊、厄运之槌、安其拉废墟、诺莫瑞根商人）。"],
-          d1 = L["默认开启；若同一图纸另有大世界普通商人或拍卖行报价，仍会正常采用。"],
-          d2 = L["按专业独立保存；如需把副本内商人纳入采购比价，可单独关闭此项。"] },
-        { k = "autoExcludeInstanceTrainers", name = L["排除副本内训练师"],
-          desc = L["排除位于地下城或团队副本内的配方训练师（如奥达曼安诺拉、黑翼之巢克里希克）。"],
-          d1 = L["默认开启，但附魔专业默认关闭（225 级必去奥达曼升上限，可顺手学安诺拉的 230–250 配方）。"],
-          d2 = L["仅影响配方学习路径，绝不拦截专业 225→300 大师阶位上限指引。"] },
-        { k = "autoFromCurrent", name = L["从当前技能开始计算"],
-          desc = L["开启 = 只算当前技能到 300 的路线；关闭 = 从 1 全量重算整条路线（预估全程花费）"],
-          d1 = L["开启：适合练级中途打开手册直接照着做。"],
-          d2 = L["关闭：查看从零开始的最优路线与总花费。"] },
-        { k = "autoSecondaryLeveling", name = L["允许联合升级另一主专业"],
-          desc = L["允许另一主专业参与材料制作和升级，以降低总支出。"],
-          d1 = L["默认关闭：只规划当前专业，其他专业制作的材料改为采购。"],
-          d2 = L["开启后计入另一专业所需的材料费用，最高 300；查看未学专业时需先选择搭配主专业。"] },
-        { k = "recoveryEnabled", name = L["回血模式"],
-          desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],
-          d1 = L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"],
-          d2 = L["关闭：只看采购支出，同时仍显示预计回血与净成本供参考。"] },
-        { k = "autoResidualMass", name = L["产物按大量上架折价"],
-          desc = L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"],
-          d1 = L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"],
-          d2 = L["回血模式下，盈利优先每配方最多20次；之后仍可为升级或材料继续制作。"] },
+          desc = L["给当前正在做的步骤加一圈绿色边框，一眼定位进度。"],
+          d1 = L["开启：当前步骤显示主题绿描边外框。"],
+          d2 = L["关闭：不显示高亮外框。"] },
+        { k = "autoFromCurrent", name = L["从当前技能开始"],
+          desc = L["决定自动路线是从角色当前技能接着算，还是从指定起点算全程。"],
+          d1 = L["开启：从当前技能算到目标等级，适合边练边看。"],
+          d2 = L["关闭：从下方自定义起始点数（默认 1）算全程，适合预估总花费。"] },
+        { k = "autoUseBagMaterials", name = L["使用背包已有材料"],
+          desc = L["优先消耗背包里现成的材料，减少额外购买（不包含银行）。"],
+          d1 = L["开启：背包已有材料按零支出参与选路与采购，缺口再去比价购买。"],
+          d2 = L["关闭：按全部材料都需要购买来计算路线与花费。"] },
+        { k = "autoRouteRiskMode", name = L["全程优先稳健配方"],
+          desc = L["控制选路时有多倾向于避开不一定涨点的黄、绿配方。"],
+          d1 = L["关闭（默认）：以更省钱为主，只在后期高价段避开看脸的黄、绿配方。"],
+          d2 = L["开启：全程尽量少选黄、绿配方，宁可多花一点金币也追求稳妥升点。"],
+          togGet = function()
+              return PD.SettingRaw("autoRouteRiskMode", PD.cur) == "quantile"
+          end,
+          togSet = function()
+              local nextOn = PD.SettingRaw("autoRouteRiskMode", PD.cur) ~= "quantile"
+              PD.ChangeRouteSetting("autoRouteRiskMode", nextOn and "quantile" or "expected", PD.cur)
+              markRouteDirty()
+              return nextOn
+          end },
         { k = "autoCraftTools", name = L["自动备齐专业工具"],
-          desc = L["自动备齐升级所需的专业工具，已有工具不重复准备。"],
-          d1 = L["开启：每种必需工具至少备齐一件；比较购买和制作，购买进入购物清单，制作进入升级路线。"],
-          d2 = L["关闭：不额外安排工具准备；工具配方仍可作为普通升级配方参与计算。"] },
+          desc = L["自动把升级必需但尚未拥有的工具（如铁匠锤、符文棒）纳入采购或制作。"],
+          d1 = L["开启：已有工具不重复准备，缺少的工具自动比较购买与自制。"],
+          d2 = L["关闭：不额外安排工具准备。"] },
+        { k = "autoSecondaryLeveling", name = L["联合升级另一主专业"],
+          desc = L["允许另一主专业一起自制中间材料并同步升级，以降低总支出。"],
+          d1 = L["关闭（默认）：只规划当前专业，其他专业产物直接购买。"],
+          d2 = L["开启：计入另一主专业所需的材料与费用，最高 300 级。"] },
+        { k = "autoOnlyAH", name = L["跳过无报价材料"],
+          desc = L["材料在商人和拍卖行都查不到价格时，是否跳过对应配方。"],
+          d1 = L["开启（默认）：跳过缺价配方，算出的路线花费更准确。"],
+          d2 = L["关闭：缺价配方也可排入路线，但总花费仅供参考。"] },
+        { k = "autoBuyLimitedFormulas", name = L["允许限量商人图纸"],
+          desc = L["允许路线选用限量刷新的 NPC 图纸参与比价。"],
+          d1 = L["关闭（默认）：不依赖限量商人；拍卖行有货时仍可正常选用。"],
+          d2 = L["开启：可能推荐限量商人出售的图纸，但到场时可能已被别人买空。"] },
+        { k = "autoAllowDropFormulas", name = L["允许掉落拾取绑定图纸"],
+          desc = L["允许通过怪物掉落、宝箱等非购买方式获得的拾取绑定图纸参与路线。"],
+          d1 = L["关闭（默认）：不选用需要自己刷的拾取绑定图纸。"],
+          d2 = L["开启：允许纳入路线，并在购物清单里单独提醒获取方式。"] },
+        { k = "autoAllowCurrencyFormulas", name = L["允许通货兑换图纸"],
+          desc = L["允许需要用声望币、物品等通货兑换的图纸参与路线。"],
+          d1 = L["关闭（默认）：不选用通货兑换图纸（拍卖行可买的图纸不受限）。"],
+          d2 = L["开启：允许将通货兑换图纸纳入路线。"] },
+        { k = "allowQuestSources", name = L["允许任务配方与任务NPC"],
+          desc = L["允许需要完成前置任务才能获取的配方、训练师或商人参与路线。"],
+          d1 = L["关闭（默认）：避开任务配方及需任务解锁的训练师和商人；已学会或背包已有的配方仍正常可用。"],
+          d2 = L["开启：允许任务奖励配方与任务解锁 NPC 参与选路。"],
+          togGet = function()
+              return not (PD.Setting("autoExcludeQuestRecipes", PD.cur)
+                  and PD.Setting("autoExcludeQuestTrainers", PD.cur)
+                  and PD.Setting("autoExcludeQuestVendors", PD.cur))
+          end,
+          togSet = function()
+              local curAllow = not (PD.Setting("autoExcludeQuestRecipes", PD.cur)
+                  and PD.Setting("autoExcludeQuestTrainers", PD.cur)
+                  and PD.Setting("autoExcludeQuestVendors", PD.cur))
+              local nextAllow = not curAllow
+              local ex = not nextAllow
+              PD.SetSettingRaw("autoExcludeQuestRecipes", ex, PD.cur)
+              PD.SetSettingRaw("autoExcludeQuestTrainers", ex, PD.cur)
+              PD.ChangeRouteSetting("autoExcludeQuestVendors", ex, PD.cur)
+              markRouteDirty()
+              return nextAllow
+          end },
+        { k = "allowInstanceVendors", name = L["允许副本内商人"],
+          desc = L["允许路线向地下城或团队副本内的图纸商人购买图纸。"],
+          d1 = L["关闭（默认）：避开副本内商人；若拍卖行或野外商人有货仍正常选用。"],
+          d2 = L["开启：允许去黑石深渊、厄运之槌等副本内商人处采购图纸。"],
+          togGet = function()
+              return not PD.Setting("autoExcludeInstanceVendors", PD.cur)
+          end,
+          togSet = function()
+              local nextAllow = PD.Setting("autoExcludeInstanceVendors", PD.cur)
+              PD.ChangeRouteSetting("autoExcludeInstanceVendors", not nextAllow, PD.cur)
+              markRouteDirty()
+              return nextAllow
+          end },
+        { k = "allowInstanceTrainers", name = L["允许副本内训练师"],
+          desc = L["允许路线向地下城或团队副本内的训练师学习配方（如奥达曼安诺拉）。"],
+          d1 = L["关闭（默认）：避开副本内训练师的配方；不影响 225 级大师上限指引。"],
+          d2 = L["开启：允许采用副本内训练师配方（附魔专业默认开启，因 225 级必去奥达曼）。"],
+          togGet = function()
+              return not PD.Setting("autoExcludeInstanceTrainers", PD.cur)
+          end,
+          togSet = function()
+              local nextAllow = PD.Setting("autoExcludeInstanceTrainers", PD.cur)
+              PD.ChangeRouteSetting("autoExcludeInstanceTrainers", not nextAllow, PD.cur)
+              markRouteDirty()
+              return nextAllow
+          end },
+        { k = "auctionRecoveryEnabled", name = L["拍卖行回血（易卖清单与自选）"],
+          desc = L["决定回血模式里剩余产物是全部卖商人，还是对易卖物品按拍卖行估价。"],
+          d1 = L["关闭（默认）：所有剩余产物统一按卖给商人价格算回血。"],
+          d2 = L["开启：易卖白名单产物与玩家自选回血配方按拍卖行净价算回血，其余仍按卖商人算。"] },
     }
     local byKey = {}
     for _, d in ipairs(defs) do byKey[d.k] = d end
     local function allowed(k)
-        if k=="autoUseBagMaterials" then return PD.BagMaterialsAvailable() end
-        if PD.FixedOnly() then return k == "greyPassed" or k == "hlCurrent" end
+        if k == "greyPassed" or k == "hlCurrent" then return true end
+        if fixedOnly or gatherRoute then return false end
+        if k == "auctionRecoveryEnabled" then return recModeOn end
+        if not autoRouteOn then return false end
+        if k == "autoUseBagMaterials" then return PD.BagMaterialsAvailable() end
+        if fishRoute and (k == "autoRouteRiskMode" or k == "autoSecondaryLeveling") then return false end
         return true
     end
     local fee = tonumber(PD.SettingRaw("recoveryFeePercent")) or 5
@@ -19307,20 +19476,21 @@ function PD.RowsSettings(rows)
         rows[#rows + 1] = {
             kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
             text = d.name,
-            togKey = d.k,
+            togKey = d.togGet and nil or d.k,
+            togGet = d.togGet,
+            togSet = d.togSet,
             help = { { d.name }, { d.desc, 0.7, 0.7, 0.7 }, { d.d1, 0.7, 0.7, 0.7 }, { d.d2, 0.7, 0.7, 0.7 } },
         }
     end
     local function pushFee(col)
         rows[#rows + 1] = {
             kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
-            text = L["回血手续费"],
+            text = L["拍卖行手续费"],
             right = format("%d%%  %s", fee, PD.SET_MORE),
             act = function(row) PD.ShowRecoveryFeeMenu(row) end,
-            help = { { L["回血手续费"], 1, 1, 1 },
-                     { L["拍卖行卖出时扣掉的佣金比例，只影响预计回血与净成本，不影响采购价。"], 0.7, 0.7, 0.7 },
-                     { format(L["当前 %d%%；点这一行选择或自定义。"], fee), 0.7, 0.7, 0.7 },
-                     { L["默认 5%，常用 0 / 5 / 10 / 15 / 20，也可输入 0–25 之间的整数。"], 0.7, 0.7, 0.7 } },
+            help = { { L["拍卖行手续费"], 1, 1, 1 },
+                     { L["开启拍卖行回血后，卖出产物时扣除的佣金比例；只影响回血与净成本，不影响采购价。"], 0.7, 0.7, 0.7 },
+                     { format(L["当前 %d%%；点击选择常用比例或自定义（0–25%%）。"], fee), 0.7, 0.7, 0.7 } },
         }
     end
     for _, grp in ipairs(PD.SET_GROUPS) do
@@ -19329,64 +19499,25 @@ function PD.RowsSettings(rows)
         for _, key in ipairs(grp[2]) do
             local kk = key
             if kk == "recoveryFee" then
-                items[#items + 1] = pushFee
-            elseif kk=="computationSpeed" and not PD.FixedOnly() then
-                items[#items + 1] = function(col)
-                    rows[#rows + 1] = { kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
-                        text = L["计算速度"], right = PD.ComputationSpeedLabel(),
-                        act = PD.CycleComputationSpeed, help = { { L["计算速度"] },
-                            { L["点击切换：流畅 / 快速（默认） / 极速。"], 0.7, 0.7, 0.7 },
-                            { L["默认快速；如遇卡顿，可在提示框中点击「切回流畅」。"], 0.7, 0.7, 0.7 },
-                            { L["快速每帧投入更多时间；极速进一步加速，可能明显掉帧或短暂卡顿。"], 0.7, 0.7, 0.7 },
-                            { L["全部专业共用；切换立即作用于进行中的计算，保留当前结果和制作进度。"], 0.7, 0.7, 0.7 } } }
+                if recModeOn and PD.Setting("auctionRecoveryEnabled") then
+                    items[#items + 1] = pushFee
                 end
-            elseif kk == "autoSkillBudget" and not PD.FixedOnly() then
-                local sc = getSolverCfg()
-                local modes = type(sc) == "table" and sc.GREEN_BUDGET_MODES or nil
-                local curMode = PD.SettingRaw("autoSkillBudget", PD.cur)
-                items[#items + 1] = function(col)
-                    rows[#rows + 1] = {
-                        kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
-                        text = L["升点预算"],
-                        right = PD.GreenBudgetShort(curMode),
-                        act = function()
-                            local cur = PD.SettingRaw("autoSkillBudget", PD.cur)
-                            local nxt = (cur == "optimistic" and "balanced")
-                                or (cur == "balanced" and "pessimistic")
-                                or "optimistic"
-                            if type(modes) == "table" and not modes[nxt] then nxt = "balanced" end
-                            PD.ChangeRouteSetting("autoSkillBudget", nxt, PD.cur)
-                            playSoundSafe(1)
-                        end,
-                        help = {
-                            { L["升点预算"] },
-                            { L["乐观按平均次数计算。均衡和悲观分别按单点 80% 和 95% 把握计算，悲观还将绿方的估算升点率减半。"], .7, .7, .7 },
-                            { PD.GreenBudgetLabel(curMode), .7, .7, .7 },
-                        },
-                    }
-                end
-            elseif kk=="autoStartSkill" and not PD.Setting("autoFromCurrent") and not PD.FixedOnly() then
+            elseif kk=="autoStartSkill" and autoRouteOn and not PD.Setting("autoFromCurrent") then
                 items[#items+1]=function(col)
                     rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
-                        text=L["自定义起始技能点数开始计算"],editKey="autoStartSkill",
-                        help={{L["自定义起始技能点数开始计算"]},
-                            {L["「从当前技能开始计算」关闭时生效：路线从该点数开始计算，而不是 1。"],.7,.7,.7},
-                            {L["1–300 之间的整数，默认 1；上方开关打开时此设置不生效。"],.7,.7,.7}}}
+                        text=L["起始技能点数"],editKey="autoStartSkill",
+                        help={{L["起始技能点数"]},
+                            {L["关闭「从当前技能开始」后生效：路线从这里输入的点数开始算，而不是 1。"],.7,.7,.7},
+                            {L["输入 1–300 之间的整数，默认 1。"],.7,.7,.7}}}
                 end
-            elseif kk=="clearScanData" and not PD.FixedOnly() then
+            elseif kk=="clearScanData" and not fixedOnly and not gatherRoute then
                 items[#items+1]=function(col)
                     rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
                         text=L["清理缓存与扫描数据"],right=L["清空"],rightColor={0.98,0.62,0.5},
                         act=PD.AskClearScanData,
                         help={{L["清理缓存与扫描数据"]},
-                            {L["删除本插件复制的行情扫描数据，同时清理旧版本路线缓存、其他角色的配方数据、已归档的路线执行记录与历史方案。"],.7,.7,.7},
-                            {L["清空后本插件的扫描状态回到「无记录」；装有行情插件时，界面仍会显示它的行情。"],.7,.7,.7},
-                            {L["清理后「升级」页的历史记录与历史路线会清空；进行中的路线与制作进度不受影响。"],.7,.7,.7},
-                            {L["需要到拍卖行重新完整扫描一次，才能按最新价格计算路线。"],.7,.7,.7},
-                            {L["只清本插件复制的那份数据；拍卖行插件自己保存的数据不受影响。"],.7,.7,.7},
-                            {L["摘要模式下，本插件不监听或保存扫描数据；仍可使用 2 天内的完整扫描快照计算。"],.7,.7,.7},
-                            {L["完整扫描快照保留 2 天，过期后自动删除；重载或切换扫描模式不会延长有效期。"],.7,.7,.7},
-                            {L["存档体积在下次重载或退出游戏后更新。"],.7,.7,.7}}}
+                            {L["清空本插件保存的拍卖行副本、旧路线缓存与历史路线；进行中的追踪不受影响。"],.7,.7,.7},
+                            {L["不会删除拍卖行插件自己保存的数据；清空后重新扫描一次拍卖行即可更新价格。"],.7,.7,.7}}}
                 end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
@@ -19413,15 +19544,19 @@ function PD.PlaceSettingsToggles(rows)
         local rr = PD.rows[i]
         if PD.setOpen and rr then
             rr.a:SetWidth(0)
-            if spec.togKey then rr.a:SetWordWrap(false) end
-            if spec.togKey then
+            if spec.togKey or spec.togGet then rr.a:SetWordWrap(false) end
+            if spec.togKey or spec.togGet then
                 ti = ti + 1
                 local tg = PD.setToggles[ti]
                 tg:ClearAllPoints()
                 tg:SetPoint("RIGHT", rr, "RIGHT", -8, 0)
                 tg:SetFrameLevel((rr:GetFrameLevel() or 0) + 10)
-                tg:SetChecked(PD.Setting(spec.togKey))
+                local checked = (type(spec.togGet) == "function")
+                    and (spec.togGet() and true or false)
+                    or PD.Setting(spec.togKey)
+                tg:SetChecked(checked)
                 tg.__key = spec.togKey
+                tg.__onToggle = spec.togSet
                 tg:Show()
             end
             if spec.editKey then
@@ -19475,7 +19610,7 @@ function PD.CrateColumns(writ)
     end
     local measure = PD.crateMeasure
     if measure and measure.SetFont then
-        measure:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        measure:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         measure:SetWidth(0)
         measure:SetWordWrap(false)
     end
@@ -19530,7 +19665,7 @@ end
 function PD.CrateRowHeight(text, cols, extraSub)
     local fs = PD.crateMeasure
     if not (fs and fs.SetFont) then return extraSub and 56 or 44 end
-    fs:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 13, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+    fs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 13, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
     fs:SetWidth(math.max(1, PD.splitLW - cols.nameR - 32))
     fs:SetWordWrap(false)
     fs:SetNonSpaceWrap(true)
@@ -19558,10 +19693,10 @@ function PD.PaintCrateColumns(r, spec, h, padL)
         local topPad = 4
         local gapAB = 2
         local gapB2 = 2
-        r.b:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 11, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        r.b:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 11, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         local b2 = r.b2
         if spec.sub2 then
-            b2:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 11, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+            b2:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 11, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
             b2:SetText(spec.sub2)
             b2:SetTextColor(Unpack(C_GREY))
             b2:SetWidth(nameW)
@@ -19607,7 +19742,7 @@ function PD.PaintCrateColumns(r, spec, h, padL)
     r.b:SetWordWrap(false)
     for _, c in ipairs(spec.priceCols) do
         local fs = r[c.fs]
-        fs:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        fs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 12, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
         fs:SetText(head and c.text or spec[c.value] or "")
         fs:SetTextColor(Unpack(head and C_GREY or c.value == "rightOwn" and C_TEXT or C_GOLD))
         fs:SetJustifyH("RIGHT")
@@ -19682,15 +19817,30 @@ local function crateTiers()
 end
 
 local CRATE_GREEN = { 0.25, 0.85, 0.25 }
+local CRATE_SHORT_COLOR = { 0.95, 0.65, 0.30 }
 CC.GREEN = CRATE_GREEN
 
 local function CrateOptCost(itemId, qty)
     local ra = getRA()
+    if ra and ra.KnownQtyCost then
+        local cost, info = ra.KnownQtyCost(itemId, qty or 1)
+        return cost, info
+    end
     local p = ra and ra.AHPriceOf and ra.AHPriceOf(itemId) or nil
     if not p then return nil end
     return p * (qty or 1)
 end
 CC.CrateOptCost = CrateOptCost
+
+local function ShortageTag(info)
+    if type(info) == "table" and info.shortage then
+        return {
+            text = format(L["缺货（仅有 %d/%d）"], math.floor(info.available or 0), math.floor(info.required or 0)),
+            color = CRATE_SHORT_COLOR,
+        }
+    end
+    return nil
+end
 
 local function CrateSnapText()
     return PD.ScanSnapshotText() or L["请扫描拍卖行"]
@@ -19779,18 +19929,27 @@ function PD.CrateRows(rows)
     local cols = PD.CrateColumns(false)
     if not PD.crateSel and list[1] then PD.crateSel = list[1].itemID end
     local sel = PD.crateSel
-    local owns, bests, units = {}, {}, {}
+    local owns, bests, units, tags = {}, {}, {}, {}
     for i, c in ipairs(list) do
-        local own = ra and ra.AHPriceOf and ra.AHPriceOf(c.itemID) or nil
-        local mat
+        local own, ownInfo = CrateOptCost(c.itemID, 1)
+        local mat, bestShortInfo
         for _, o in ipairs(c.options or {}) do
-            local v = CrateOptCost(o.itemID, o.count)
-            if v and (not mat or v < mat) then mat = v end
+            local v, oinfo = CrateOptCost(o.itemID, o.count)
+            if v then
+                if not mat or v < mat then mat = v end
+            elseif oinfo and oinfo.shortage and not bestShortInfo then
+                bestShortInfo = oinfo
+            end
         end
         owns[i] = own
         bests[i] = (own and mat) and (own + mat) or nil
         local fav = c.rewardAmount or 0
         units[i] = (bests[i] and fav > 0) and (bests[i] / fav) or nil
+        if ownInfo and ownInfo.shortage then
+            tags[i] = ShortageTag(ownInfo)
+        elseif not mat and bestShortInfo then
+            tags[i] = ShortageTag(bestShortInfo)
+        end
     end
     local mode = PD.crateSort
     local order = {}
@@ -19834,8 +19993,9 @@ function PD.CrateRows(rows)
             it = { c.itemID }, qItem = c.itemID,
             text = PD.ShortItemName(name),
             sub = tiers[c.tier] or "?",
-            right = (bests[i] and ra and ra.MoneyStr) and ra.MoneyStr(bests[i]) or "",
-            rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "",
+            tag = tags[i],
+            right = (bests[i] and ra and ra.MoneyStr) and ra.MoneyStr(bests[i]) or "—",
+            rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "—",
             rightUnit = (units[i] and ra and ra.MoneyStr) and ra.MoneyStr(units[i]) or "—",
             rightOwnColor = C_TEXT,
             cur = (c.itemID == sel),
@@ -19860,43 +20020,57 @@ function PD.CrateRows(rows)
     PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
     local secO = #rows + 1
     PushHead(rows, L["凑法（任满其一）"], 2)
-    local opts, cheapest, cheapestOpt = {}, nil, nil
+    local opts, cheapest, cheapestOpt, optCostMap, optInfoMap = {}, nil, nil, {}, {}
     for _, o in ipairs(sc.options or {}) do opts[#opts + 1] = o end
     for _, o in ipairs(opts) do
-        local v = CrateOptCost(o.itemID, o.count)
+        local v, oinfo = CrateOptCost(o.itemID, o.count)
+        optCostMap[o] = v
+        optInfoMap[o] = oinfo
         if v and (not cheapest or v < cheapest) then cheapest, cheapestOpt = v, o end
     end
     table.sort(opts, function(a, b)
-        local ca, cb = CrateOptCost(a.itemID, a.count), CrateOptCost(b.itemID, b.count)
+        local ca, cb = optCostMap[a], optCostMap[b]
         if ca and cb then return ca < cb end
         if ca or cb then return ca ~= nil end
         return (a.itemID or 0) < (b.itemID or 0)
     end)
     for _, o in ipairs(opts) do
-        local v = CrateOptCost(o.itemID, o.count)
+        local v, oinfo = optCostMap[o], optInfoMap[o]
         local isBest = cheapestOpt and o.itemID == cheapestOpt.itemID and o.count == cheapestOpt.count
+        local tag = isBest and { text = L["最省"], color = CRATE_GREEN } or ShortageTag(oinfo)
         rows[#rows + 1] = {
             kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
             it = { o.itemID }, qItem = o.itemID,
             text = PD.ItemName(o.itemID) .. " ×" .. (o.count or 1),
-            tag = isBest and { text = L["最省"], color = CRATE_GREEN } or nil,
+            tag = tag,
             right = (v and ra and ra.MoneyStr) and ra.MoneyStr(v) or "—",
             rightColor = isBest and CRATE_GREEN or (v and C_TEXT or C_GREY),
             tipExtra = function() return PD.PriceTipLines(o.itemID) end,
         }
     end
     MarkSec(rows, secO, #rows, 2)
-    local own = ra and ra.AHPriceOf and ra.AHPriceOf(sc.itemID) or nil
+    local own, ownInfo = CrateOptCost(sc.itemID, 1)
     if not cheapestOpt and opts[1] then cheapestOpt = opts[1] end
     PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
     local secS = #rows + 1
     PushHead(rows, L["总结"], 2)
-    CrateMetaRow(rows, L["自身成本"], own, own, 14)
+    if ownInfo and ownInfo.shortage then
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+            text = L["自身成本"],
+            tag = ShortageTag(ownInfo),
+            right = "—",
+            rightColor = C_GREY,
+        }
+    else
+        CrateMetaRow(rows, L["自身成本"], own, own, 14)
+    end
     rows[#rows + 1] = {
         kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
         text = cheapestOpt and format(L["购买 %s"],
                  PD.MatIconTex(cheapestOpt.itemID, 14) .. " " .. PD.ItemName(cheapestOpt.itemID)
                  .. " ×" .. (cheapestOpt.count or 1)) or "—",
+        tag = (not cheapest) and cheapestOpt and ShortageTag(optInfoMap[cheapestOpt]) or nil,
         right = (cheapest and ra and ra.MoneyStr) and ra.MoneyStr(cheapest) or "—",
         rightColor = cheapest and CRATE_GREEN or C_GREY,
         tipExtra = cheapestOpt and function() return PD.PriceTipLines(cheapestOpt.itemID) end or nil,
@@ -20138,27 +20312,42 @@ function PD.WritRows(rows)
         list = f
     end
     local ra = getRA()
+    local rowShortTags = {}
     for i = 1, #list do
         order[i] = i
         local w = list[i]
         local wid = w.writItemID or w.targetItemID
-        local own = ra and ra.AHPriceOf and wid and ra.AHPriceOf(wid) or nil
-        local mu = ra and ra.AHPriceOf and w.targetItemID and ra.AHPriceOf(w.targetItemID) or nil
+        local own, ownInfo
+        if wid then own, ownInfo = CrateOptCost(wid, 1) end
+        local buyNeed = w.qty or 1
+        local buyCost, buyInfo
+        if w.targetItemID then buyCost, buyInfo = CrateOptCost(w.targetItemID, buyNeed) end
         owns[i] = own
-        priced[i] = (own and mu) and (own + mu * (w.qty or 1)) or nil
+        priced[i] = (own and buyCost) and (own + buyCost) or nil
         local ci = w.targetItemID and craftMap[w.targetItemID]
-        local csum, ok
+        local csum, ok, craftShortInfo
         if ci and ci.rec then
             csum, ok = 0, true
+            local batches = math.ceil(buyNeed / (ci.rec[3] or 1))
             for _, m in ipairs(ci.rec[12] or {}) do
-                local p = ra and ra.AHPriceOf and ra.AHPriceOf(m[1]) or nil
-                if p then csum = csum + p * (m[2] or 1) else ok = false end
+                local mc, minfo = CrateOptCost(m[1], batches * (m[2] or 1))
+                if mc then
+                    csum = csum + mc
+                else
+                    ok = false
+                    if minfo and minfo.shortage and not craftShortInfo then craftShortInfo = minfo end
+                end
             end
         end
-        craftT[i] = (own and ok) and (own + math.floor(csum * math.ceil((w.qty or 1) / (ci.rec[3] or 1)) + 0.5)) or nil
+        craftT[i] = (own and ok) and (own + csum) or nil
         local lowest = priced[i] and craftT[i] and math.min(priced[i], craftT[i]) or priced[i] or craftT[i]
         local rep = w.repReward or 0
         units[i] = (lowest and rep > 0) and (lowest / rep) or nil
+        if ownInfo and ownInfo.shortage then
+            rowShortTags[i] = ShortageTag(ownInfo)
+        elseif not lowest then
+            rowShortTags[i] = ShortageTag(buyInfo) or ShortageTag(craftShortInfo)
+        end
         if craftT[i] and priced[i] and priced[i] > 0 then
             local d = math.floor((craftT[i] - priced[i]) / priced[i] * 100 + 0.5)
             if d > 0 then
@@ -20233,7 +20422,7 @@ function PD.WritRows(rows)
         local w = list[i]
         local wid = w.writItemID or w.targetItemID
         local craft = w.targetItemID and craftMap[w.targetItemID]
-        local tag = craft and WritBadge(craft, learned) or nil
+        local tag = rowShortTags[i] or (craft and WritBadge(craft, learned))
         local name = PD.ItemName(wid)
         local disp = PD.ShortItemName(name)
         local zone = w.targetItemID and PD.ZoneNameOf(PD.WritZoneOf(w.targetItemID))
@@ -20244,11 +20433,11 @@ function PD.WritRows(rows)
             sub = format(L["声望 +%d"], w.repReward or 0),
             sub2 = zone and format(L["地点: %s"], zone) or nil,
             tag = tag,
-            right = (priced[i] and ra and ra.MoneyStr) and ra.MoneyStr(priced[i]) or "",
-            right2 = (craftT[i] and ra and ra.MoneyStr) and ra.MoneyStr(craftT[i]) or "",
+            right = (priced[i] and ra and ra.MoneyStr) and ra.MoneyStr(priced[i]) or "—",
+            right2 = (craftT[i] and ra and ra.MoneyStr) and ra.MoneyStr(craftT[i]) or "—",
             right2Color = C_GOLD,
             pct = pcts[i],
-            rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "",
+            rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "—",
             rightUnit = (units[i] and ra and ra.MoneyStr) and ra.MoneyStr(units[i]) or "—",
             rightOwnColor = C_TEXT,
             cur = ((w.questID or w.targetItemID) == sel),
@@ -20265,19 +20454,31 @@ function PD.WritRows(rows)
     end
     if not sw then return end
     local wid = sw.writItemID or sw.targetItemID
-    local wu = ra and ra.AHPriceOf and wid and ra.AHPriceOf(wid) or nil
-    local u = ra and ra.AHPriceOf and sw.targetItemID and ra.AHPriceOf(sw.targetItemID) or nil
-    local buyAll = u and u * (sw.qty or 1) or nil
+    local wu, wuInfo
+    if wid then wu, wuInfo = CrateOptCost(wid, 1) end
+    local buyQty = sw.qty or 1
+    local buyAll, buyInfo
+    if sw.targetItemID then buyAll, buyInfo = CrateOptCost(sw.targetItemID, buyQty) end
     local cinfo = sw.targetItemID and craftMap[sw.targetItemID]
     local craft = cinfo and cinfo.rec or nil
-    local craftSum, allPriced, craftCost
+    local craftOnceSum, craftOnceOk, craftCost, allPriced, craftShortInfo
     if craft then
-        craftSum, allPriced = 0, true
+        craftOnceSum, craftOnceOk = 0, true
+        craftCost, allPriced = 0, true
+        local batches = math.ceil(buyQty / (craft[3] or 1))
         for _, m in ipairs(craft[12] or {}) do
-            local p = ra and ra.AHPriceOf and ra.AHPriceOf(m[1]) or nil
-            if p then craftSum = craftSum + p * (m[2] or 1) else allPriced = false end
+            local onceCost = CrateOptCost(m[1], m[2] or 1)
+            if onceCost then craftOnceSum = craftOnceSum + onceCost else craftOnceOk = false end
+            local batchCost, minfo = CrateOptCost(m[1], batches * (m[2] or 1))
+            if batchCost then
+                craftCost = craftCost + batchCost
+            else
+                allPriced = false
+                if minfo and minfo.shortage and not craftShortInfo then craftShortInfo = minfo end
+            end
         end
-        craftCost = allPriced and math.floor(craftSum * math.ceil((sw.qty or 1) / (craft[3] or 1)) + 0.5) or nil
+        if not craftOnceOk then craftOnceSum = nil end
+        if not allPriced then craftCost = nil end
     end
     local secH = #rows + 1
     rows[#rows + 1] = {
@@ -20289,10 +20490,16 @@ function PD.WritRows(rows)
     PushText(rows, format(L["声望 +%d · 需等级 %d"], sw.repReward or 0, sw.minLevel or 0), 12, C_GREY, 2)
     MarkSec(rows, secH, #rows, 1)
     PushGap(rows, PD.SEC_GAP + 2, 2)
+    local buyPriceText = (buyAll and ra and ra.MoneyStr) and ra.MoneyStr(buyAll)
+        or (buyInfo and buyInfo.shortage and format(L["缺货（仅有 %d/%d）"], buyInfo.available or 0, buyInfo.required or buyQty))
+        or "—"
+    local craftPriceText = (craftCost and ra and ra.MoneyStr) and ra.MoneyStr(craftCost)
+        or (craftShortInfo and format(L["缺货（仅有 %d/%d）"], craftShortInfo.available or 0, craftShortInfo.required or 0))
+        or "—"
     local cards = {
         { lab = L["直接买齐"], it = sw.targetItemID, priceOk = buyAll and true or false,
-          name = format(L["%s ×%d"], PD.ItemName(sw.targetItemID), sw.qty or 1),
-          price = (buyAll and ra and ra.MoneyStr) and ra.MoneyStr(buyAll) or "—",
+          name = format(L["%s ×%d"], PD.ItemName(sw.targetItemID), buyQty),
+          price = buyPriceText,
           tipExtra = function() return PD.PriceTipLines(sw.targetItemID) end },
         nil,
     }
@@ -20301,7 +20508,7 @@ function PD.WritRows(rows)
         cards[2] = {
             lab = L["自己制造"], it = craft[2], priceOk = craftCost and true or false,
             name = yn > 1 and format(L["%s ×%d"], PD.ItemName(craft[2]), yn) or PD.ItemName(craft[2]),
-            price = (craftCost and ra and ra.MoneyStr) and ra.MoneyStr(craftCost) or "—",
+            price = craftPriceText,
             tipExtra = function() return PD.PriceTipLines(craft[2]) end,
         }
     else
@@ -20320,24 +20527,25 @@ function PD.WritRows(rows)
         local secA = #rows + 1
         rows[#rows + 1] = { kind = "head", col = 2,
                             text = L["自己制造材料明细"], right = L["制造一次"] }
+        local batches = math.ceil(buyQty / (craft[3] or 1))
         for _, m in ipairs(craft[12]) do
-            local p = ra and ra.AHPriceOf and ra.AHPriceOf(m[1]) or nil
+            local onceCost = CrateOptCost(m[1], m[2] or 1)
+            local _, batchInfo = CrateOptCost(m[1], batches * (m[2] or 1))
             rows[#rows + 1] = {
                 kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
                 it = { m[1] }, qItem = m[1],
                 text = PD.ItemName(m[1]) .. " ×" .. (m[2] or 1),
-                right = (p and ra and ra.MoneyStr) and ra.MoneyStr(p * (m[2] or 1)) or "",
-                rightColor = p and C_TEXT or C_GREY,
+                tag = ShortageTag(batchInfo),
+                right = (onceCost and ra and ra.MoneyStr) and ra.MoneyStr(onceCost) or "—",
+                rightColor = onceCost and C_TEXT or C_GREY,
                 tipExtra = function() return PD.PriceTipLines(m[1]) end,
             }
         end
-        CrateMetaRow(rows, L["制造一次的成本"], craftSum, allPriced, 14)
-        local batches = math.ceil((sw.qty or 1) / (craft[3] or 1))
-        CrateMetaRow(rows, L["制造上交所需物的成本"],
-                     allPriced and math.floor(craftSum * batches + 0.5) or nil, allPriced, 14)
+        CrateMetaRow(rows, L["制造一次的成本"], craftOnceSum, craftOnceOk, 14)
+        CrateMetaRow(rows, L["制造上交所需物的成本"], craftCost, allPriced, 14)
         MarkSec(rows, secA, #rows, 2)
     end
-    local buyTotal = (wu and u) and (wu + u * (sw.qty or 1)) or nil
+    local buyTotal = (wu and buyAll) and (wu + buyAll) or nil
     local craftTotal = (wu and craftCost) and (wu + craftCost) or nil
     local lowest
     if buyTotal and craftTotal then
@@ -20352,7 +20560,17 @@ function PD.WritRows(rows)
     PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
     local secB = #rows + 1
     PushHead(rows, L["成本汇总"], 2)
-    CrateMetaRow(rows, L["文书自身成本"], wu, wu, 14)
+    if wuInfo and wuInfo.shortage then
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+            text = L["文书自身成本"],
+            tag = ShortageTag(wuInfo),
+            right = "—",
+            rightColor = C_GREY,
+        }
+    else
+        CrateMetaRow(rows, L["文书自身成本"], wu, wu, 14)
+    end
     rows[#rows + 1] = {
         kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
         text = L["直接买齐总成本"],
@@ -20508,7 +20726,9 @@ function PD.Render()
     PD.PickNav()
     PD.PickTabs()
     local crateTab = (PD.tab == "crate" or PD.tab == "writ")
-    if not crateTab and PD.tab ~= "recipe" and (PD.searchQ or "") ~= "" then
+    local recManage = (PD.tab == "leveling" and not PD.setOpen and PD.autoPage == "recovery"
+        and PD.recSub == "manage" and PD.RecoveryModeActive(PD.cur))
+    if not crateTab and PD.tab ~= "recipe" and not recManage and (PD.searchQ or "") ~= "" then
         PD.searchQ = ""
         if PD.searchBox then
             PD.searchBox.eb:SetText("")
@@ -20545,7 +20765,8 @@ function PD.Render()
     do
         local pk = tostring(PD.cur) .. "|" .. tostring(PD.tab) .. "|"
                    .. tostring(PD.autoPage) .. "|" .. tostring(PD.setOpen) .. "|" .. tostring(PD.exclusionsOpen)
-                   .. "|" .. tostring(PD.exSub) .. "|" .. tostring(PD.partnerPicker) .. "|" .. tostring(PD.partnerUIRevision)
+                   .. "|" .. tostring(PD.exSub) .. "|" .. tostring(PD.recSub) .. "|" .. tostring(PD.recFilter)
+                   .. "|" .. tostring(PD.partnerPicker) .. "|" .. tostring(PD.partnerUIRevision)
                    .. "|" .. tostring(PD.shopGroup) .. "|" .. tostring(PD.subTab)
         if pk ~= PD.__pageKey then
             PD.__pageKey = pk
@@ -20628,6 +20849,11 @@ function PD.Render()
             PD.splitLW = math.floor((PD.GRID_W - PD.OV_GUT) * PD.SHOP_SPLIT)
             PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW
             PD.sideFixed = true
+        elseif recManage and not PD.exclusionsOpen then
+            PD.lvSplit = false
+            PD.gridSplit = true
+            PD.gridSepOn = true
+            PD.hideDivider = true
         else
             PD.lvSplit = false
         end
@@ -20648,10 +20874,19 @@ function PD.Render()
     PD.PaintToolProgress(headText, barFrac)
     do
         local stale
-        if tool and PD.tab == "leveling" and PD.autoSnapshotSlug == PD.cur
-           and PD.autoSnapshot and PD.autoSnapshot.stale then
-            stale = PD.PlanCacheText(PD.autoSnapshot)
-            if stale==PD.ReplicateScanWarning() then stale=nil end
+        local raStale = raMod()
+        local busy = (PD.SolverText() ~= nil) or (raStale and raStale.HasWork and raStale.HasWork(PD.cur))
+        if tool and PD.tab == "leveling" and not recManage and PD.AutoRouteEnabled() and not busy then
+            if not PD.HasExistingRoute(PD.cur) then
+                stale = L["尚未计算路线，点击「开始计算」"]
+            elseif PD.policyDirty and PD.policyDirty[PD.cur] then
+                stale = L["排除项已修改，点击「重新计算」生效"]
+            elseif PD.autoSnapshotSlug == PD.cur and PD.autoSnapshot and PD.autoSnapshot.stale then
+                stale = PD.PlanCacheText(PD.autoSnapshot)
+                if stale == PD.ReplicateScanWarning() then stale = nil end
+            elseif PD.RecalcNeeded() then
+                stale = L["设置或行情已变化，点击「重新计算」更新"]
+            end
         end
         PD.PaintToolStale(stale)
     end
@@ -20663,11 +20898,14 @@ function PD.Render()
         else
             toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler)
         end
+        local lvExtra = PD.PlaceLvRange() or 0
+        if lvExtra > 0 then
+            toolH = (toolH or 0) + lvExtra
+        end
         PD.gcTopPad = (toolH and toolH > 0) and 8 or 0
         PD.Layout(toolH)
     end
     layoutTools()
-    PD.PlaceLvRange()
 
     if PD.searchBox then
         local sBox = PD.searchBox
@@ -20677,6 +20915,20 @@ function PD.Render()
                           -(PD.CARD_INSET + PD.LIST_PAD), -(PD.SUB_Y))
             sBox.label:Hide()
             sBox.eb.ph:SetText(PD.tab == "writ" and L["名称 / 地点"] or L["搜索"])
+            sBox:Show()
+            local has = (sBox.eb:GetText() or "") ~= ""
+            if not has and not sBox.eb:HasFocus() then sBox.eb.ph:Show() else sBox.eb.ph:Hide() end
+            sBox.eb.clear:SetShown(has)
+        elseif recManage then
+            sBox:ClearAllPoints()
+            if PD.setGear and PD.setGear:IsShown() then
+                sBox:SetPoint("RIGHT", PD.setGear, "LEFT", -10, 0)
+            else
+                sBox:SetPoint("TOPRIGHT", PD.page, "TOPRIGHT",
+                              -(PD.CARD_INSET + PD.LIST_PAD), -(PD.SUB_Y))
+            end
+            sBox.label:Hide()
+            sBox.eb.ph:SetText(L["搜索配方 / 产物名"])
             sBox:Show()
             local has = (sBox.eb:GetText() or "") ~= ""
             if not has and not sBox.eb:HasFocus() then sBox.eb.ph:Show() else sBox.eb.ph:Hide() end
@@ -20697,8 +20949,8 @@ function PD.Render()
     PD.curRows, PD.visMode = nil, false
     local sig = table.concat({
         tostring(PD.tab), tostring(PD.cur), tostring(PD.exclusionsOpen),
-        tostring(PD.exSub), tostring(PD.autoPage), tostring(PD.setOpen),
-        tostring(PD.splitLW),
+        tostring(PD.exSub), tostring(PD.autoPage), tostring(PD.recSub), tostring(PD.recFilter),
+        tostring(PD.setOpen), tostring(PD.splitLW),
         PD.searchBox and PD.searchBox:IsShown() and PD.searchBox.eb
         and PD.searchBox.eb:GetText() or "",
     }, "|")
@@ -20722,10 +20974,6 @@ end
 do
 local _warmTok = 0
 local PD_WARM_PER_FRAME = 96
-local function turboCalculationRunning()
-    local ra = raMod()
-    return PD.SettingRaw("computationSpeed") == "turbo" and ra and ra.HasWork and ra.HasWork(PD.cur)
-end
 function PD.WarmId(id)
     if not id then return end
     local _, got = PD.ItemName(id)
@@ -20737,7 +20985,6 @@ function PD.WarmId(id)
     if type(gi) == "function" then pcall(gi, id) end
 end
 function PD.WarmNames()
-    if turboCalculationRunning() then _warmTok = _warmTok + 1; return end
     local ds = getDS()
     local d = ds and ds.Recipes and ds.Recipes(PD.cur)
     local recMap = d and d.recipes
@@ -20752,8 +20999,9 @@ function PD.WarmNames()
     local tok = _warmTok
     local i, n = 0, math.min(#all, PD.capNow or PD.ROW_CAP)
     local function feed()
-        if tok ~= _warmTok or turboCalculationRunning() then return end
-        if DG and DG.stepping then C_Timer.After(0, feed) return end
+        if tok ~= _warmTok then return end
+        local hb = getHostBridge()
+        if hb and hb.Stepping and hb.Stepping() then C_Timer.After(0, feed) return end
         local ok = pcall(function()
             local budget = PD_WARM_PER_FRAME
             local t0 = debugprofilestop and debugprofilestop() or 0
@@ -20776,7 +21024,8 @@ end
 end
 
 function PD.RequestRows(rows)
-    if not DG.ItemName then return end
+    local hb = getHostBridge()
+    if not (hb and hb.ItemName) then return end
     local wait = {}
     local seen = {}
     local function want(id)
@@ -20812,6 +21061,7 @@ function PD.Show(slug)
         PD.cur = slug
         PD.toolKey = nil
         PD.moneyKey = nil
+        PD.specKey = nil
         PD.campView = "a"
         PD.tab = "overview"
         PD.setOpen = false
@@ -20871,6 +21121,7 @@ function PD.EnsureCur()
         PD.cur = slug
         PD.toolKey = nil
         PD.moneyKey = nil
+        PD.specKey = nil
         PD.tab = (type(db.lastTab) == "string") and db.lastTab or "overview"
         PD.setOpen = false
     end
@@ -20958,14 +21209,15 @@ PD.DEMO_SAVE = nil
 
 function PD.StartGateDemo()
     if PD.DEMO_SAVE then PD.EndGateDemo() end
+    local hb = getHostBridge()
     PD.DEMO_SAVE = {
         syncMax  = PD.ROW_SYNC_MAX,
-        minSteps = DG.Gate.minSteps,
-        rowCap   = DG.LOOT_ROW_FRAME_CAP,
+        minSteps = hb and hb.GetGateMinSteps and hb.GetGateMinSteps(),
+        rowCap   = hostConst("LOOT_ROW_FRAME_CAP"),
     }
-    PD.ROW_SYNC_MAX       = 0
-    DG.Gate.minSteps      = 0
-    DG.LOOT_ROW_FRAME_CAP = 2
+    PD.ROW_SYNC_MAX = 0
+    if hb and hb.SetGateMinSteps then hb.SetGateMinSteps(0) end
+    if hb and hb.SetLootRowFrameCap then hb.SetLootRowFrameCap(2) end
     for i = #PD.rows, 1, -1 do PD.rows[i]:Hide() end
     PD.rows = {}
     PD.RequestRender()
@@ -20975,9 +21227,10 @@ function PD.EndGateDemo()
     local s = PD.DEMO_SAVE
     PD.DEMO_SAVE = nil
     if not s then return end
-    PD.ROW_SYNC_MAX       = s.syncMax
-    DG.Gate.minSteps      = s.minSteps
-    DG.LOOT_ROW_FRAME_CAP = s.rowCap
+    local hb = getHostBridge()
+    PD.ROW_SYNC_MAX = s.syncMax
+    if hb and hb.SetGateMinSteps then hb.SetGateMinSteps(s.minSteps) end
+    if hb and hb.SetLootRowFrameCap then hb.SetLootRowFrameCap(s.rowCap) end
 end
 
 if type(SlashCmdList) == "table" then
@@ -21422,7 +21675,7 @@ if type(SlashCmdList) == "table" then
             f:SetPoint("TOPLEFT", PD.page, "TOPLEFT", 0, 0)
             local fsb = f:CreateFontString()
             fsb:SetAllPoints()
-            fsb:SetFont((getFrom("FONT") or "Fonts\\FRIZQT__.TTF"), 12, "OUTLINE")
+            fsb:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 12, "OUTLINE")
             f:SetFontString(fsb)
             f:Show()
             local N = 400
@@ -21773,24 +22026,7 @@ if ra and ra.OnPlanChanged then
         PD.UpdateCalculationNotice()
         local visible = PD.built and pageVisible(PD.page)
         if visible and (slug == nil or slug == PD.cur) then
-            local intermediate = PD.SettingRaw("computationSpeed") == "turbo" and plan and plan.planID
-                and plan.status == "searching" and not plan.finalizing
-            local at = intermediate and debugprofilestop and debugprofilestop()
-            if intermediate and type(at) == "number" then
-                local hadSteps = #(plan.executionSteps or {}) > 0 or #(plan.steps or {}) > 0
-                local reached = plan.targetReached == true
-                local last = PD.__turboPlanPaint
-                if last and last.slug == slug and last.planID == plan.planID
-                   and (not hadSteps or last.hadSteps) and (not reached or last.reached)
-                   and at >= last.at and at - last.at < 750 then return end
-                PD.__turboPlanPaint = { slug = slug, planID = plan.planID, at = at,
-                                        hadSteps = hadSteps, reached = reached }
-            else
-                PD.__turboPlanPaint = nil
-            end
             PD.RequestRender()
-        elseif not visible then
-            PD.__turboPlanPaint = nil
         end
     end)
     if ra.OnProgress then ra.OnProgress(function(slug)
@@ -21805,8 +22041,9 @@ if ra and ra.OnPricesChanged then
     ra.OnPricesChanged(function()
         local pf = getFollow()
         if pf and pf.InvalidateRoute then pcall(pf.InvalidateRoute) end
-        if PD.autoSnapshotSlug==PD.cur and ra.Get and PD.lvOpts then
-            ra.Get(PD.cur,PD.lvOpts)
+        if PD.autoSnapshotSlug == PD.cur and type(PD.autoSnapshot) == "table" and PD.autoSnapshot.mode ~= "fixed" then
+            PD.autoSnapshot.stale = true
+            PD.autoSnapshot.staleReason = "prices"
         end
         if PD.built and pageVisible(PD.page) then
             PD.RequestRender()
@@ -21815,126 +22052,41 @@ if ra and ra.OnPricesChanged then
 end
 end
 do
-    local initFn = getFrom("Init")
-    if type(initFn) == "function" then initFn(HookRoutePlans) else HookRoutePlans() end
+    local hb = getHostBridge()
+    if hb and type(hb.OnInit) == "function" then hb.OnInit(HookRoutePlans) else HookRoutePlans() end
 end
 end
 
-do
-    function PD.CrateOf(id)
-        if type(id) ~= "number" then return nil end
-        local ds = getDS()
-        if not ds then return nil end
-        local direct = ds.Crate and ds.Crate(id)
-        if direct then return direct end
-        for _, crate in pairs((ds.Crates and ds.Crates()) or {}) do
-            if type(crate) == "table" and type(crate.options) == "table" then
-                for i = 1, #crate.options do
-                    if crate.options[i].itemID == id then return crate end
-                end
-            end
-        end
-        return nil
-    end
+function PD.CrateOf(id)
+    local ex = getEX()
+    return ex and ex.CrateOf and ex.CrateOf(id) or nil
+end
 
-    function PD.WritOf(id)
-        if type(id) ~= "number" then return nil end
-        local ds = getDS()
-        if not ds then return nil end
-        return (ds.WritByItem and ds.WritByItem(id))
-            or (ds.Writ and ds.Writ(id))
-            or (ds.WritByTarget and ds.WritByTarget(id))
-    end
+function PD.WritOf(id)
+    local ex = getEX()
+    return ex and ex.WritOf and ex.WritOf(id) or nil
+end
 
-    local favorIco
-    local function FavorIcoTex(px)
-        px = px or 14
-        if favorIco == nil then
-            local ic
-            if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
-                local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, PD.FAVOR_CURID)
-                if ok and type(info) == "table" then ic = info.iconFileID end
-            end
-            if type(ic) ~= "number" or ic <= 0 then favorIco = 0 else favorIco = ic end
-        end
-        if favorIco == 0 then return "" end
-        return format("|T%d:%d:%d|t", favorIco, px, px)
-    end
+function PD.CrateTipLines(id)
+    local tt = getTT()
+    return tt and tt.CrateTipLines and tt.CrateTipLines(id) or nil
+end
 
-    function PD.CrateTipLines(id)
-        local ds = getDS()
-        local ra = getRA()
-        local c = type(id) == "number" and ds and ds.Crate and ds.Crate(id)
-        if not c then return nil end
-        local list, best, bestOpt = {}, nil, nil
-        for _, o in ipairs(c.options or {}) do
-            local v = CC.CrateOptCost(o.itemID, o.count)
-            list[#list + 1] = { o = o, v = v }
-            if v and (not best or v < best) then best, bestOpt = v, o end
-        end
-        if not best then return nil end
-        table.sort(list, function(a, b)
-            if a.v and b.v then return a.v < b.v end
-            if a.v or b.v then return a.v ~= nil end
-            return (a.o.itemID or 0) < (b.o.itemID or 0)
-        end)
-        local rows = {}
-        for i = 1, #list do
-            local e = list[i]
-            local o = e.o
-            local isBest = bestOpt and o.itemID == bestOpt.itemID and o.count == bestOpt.count
-            local txt = PD.MatIconTex(o.itemID, 14) .. tostring(PD.ItemName(o.itemID)) .. " ×" .. tostring(o.count or 1)
-            if isBest then txt = txt .. "  " .. L["最省"] end
-            local col = isBest and CC.GREEN or C_TEXT
-            rows[#rows + 1] = { txt, col[1], col[2], col[3], nil, nil,
-                                (e.v and ra and ra.MoneyStrTip) and ra.MoneyStrTip(e.v) or "—", 1, 1, 1 }
-        end
-        local fav = tonumber(c.rewardAmount) or 0
-        local own = ra and ra.AHPriceOf and ra.AHPriceOf(c.itemID) or nil
-        local total = (own and best) and (own + best) or nil
-        if fav > 0 and total and ra and ra.MoneyStrTip then
-            rows[#rows + 1] = { FavorIcoTex(14) .. L["每点青睐"],
-                                C_TEXT[1], C_TEXT[2], C_TEXT[3], nil, nil,
-                                ra.MoneyStrTip(math.floor(total / fav + 0.5)), 1, 1, 1 }
-        end
-        return rows
-    end
+function PD.WritTipLines(id)
+    local tt = getTT()
+    return tt and tt.WritTipLines and tt.WritTipLines(id) or nil
+end
 
-    function PD.WritTipLines(id)
-        local ds = getDS()
-        local ra = getRA()
-        local w = type(id) == "number" and ds and ds.WritByItem and ds.WritByItem(id)
-        if not w then return nil end
-        local qty = w.qty or 1
-        local unit = ra and ra.AHPriceOf and w.targetItemID and ra.AHPriceOf(w.targetItemID) or nil
-        local buyAll = unit and (unit * qty) or nil
-        local craftCost
-        local ci = w.targetItemID and CC.CraftInfo(w.targetItemID)
-        local rec = ci and ci.rec or nil
-        if rec then
-            local sum, all = 0, true
-            for _, m in ipairs(rec[12] or {}) do
-                local p = ra and ra.AHPriceOf and ra.AHPriceOf(m[1]) or nil
-                if p then sum = sum + p * (m[2] or 1) else all = false end
-            end
-            if all then
-                craftCost = math.floor(sum * math.ceil(qty / (rec[3] or 1)) + 0.5)
-            end
+function PD.WrapRenderForProfile(wrapper)
+    if type(wrapper) ~= "function" or type(PD.Render) ~= "function" then return nil end
+    local orig = PD.Render
+    PD.Render = function(...)
+        return wrapper(orig, ...)
+    end
+    return function()
+        if PD.Render ~= orig then
+            PD.Render = orig
         end
-        if not buyAll and not craftCost then return nil end
-        local labBuy = L["交付物品拍卖行价格"]
-        local labCraft = L["制造交付物品价格"]
-        if qty > 1 then
-            local tag = " ×" .. tostring(qty)
-            labBuy = labBuy .. tag
-            labCraft = labCraft .. tag
-        end
-        local rows = {}
-        rows[#rows + 1] = { labBuy, C_TEXT[1], C_TEXT[2], C_TEXT[3], nil, nil,
-                            (buyAll and ra and ra.MoneyStrTip) and ra.MoneyStrTip(buyAll) or "—", 1, 1, 1 }
-        rows[#rows + 1] = { labCraft, C_GOLD[1], C_GOLD[2], C_GOLD[3], nil, nil,
-                            (craftCost and ra and ra.MoneyStrTip) and ra.MoneyStrTip(craftCost) or "—", 1, 1, 1 }
-        return rows
     end
 end
 
@@ -21949,6 +22101,7 @@ do
             OnItemData = PD.OnItemData,
             Fit = PD.Fit,
             HoverRow = function() return PD.hoverRow end,
+            WrapRenderForProfile = PD.WrapRenderForProfile,
             ProfLearned = PD.ProfLearned,
             PatternIndex = PD.PatternIndex,
             ResetItemNameMemo = PD.ResetItemNameMemo,

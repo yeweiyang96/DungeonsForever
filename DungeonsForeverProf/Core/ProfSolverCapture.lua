@@ -73,8 +73,13 @@ local function getAuctionBridge()
     return ns.AuctionBridge or (type(gns) == "table" and gns.AuctionBridge) or nil
 end
 
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+end
+
 local function getL()
-    return ns.L or (type(gns) == "table" and gns.L) or nil
+    local b = getBridge()
+    return b and type(b.LocaleRaw) == "function" and b.LocaleRaw() or nil
 end
 
 local function tr(key)
@@ -326,9 +331,9 @@ local DIAG_KEYS = {
     specializationChoiceConflict = "当前已学专精与所选目标不同；本路线不处理转修专精。",
     specializationFactionUnknown = "尚未读取角色阵营，无法确定专精任务交付地点。",
     specializationQuestAlreadyCompleted = "入门任务已经完成，但当前未确认所需专精；请先核实转修条件。",
-    specializationUnknown = "角色专精状态尚未读取，请登录角色并打开工程学面板后重试。",
-    specializationLevelRequired = "角色等级不足 30，暂时无法完成工程专精入门任务。",
-    specializationLevelUnknown = "尚未读取角色等级，无法确认工程专精任务资格。",
+    specializationUnknown = "角色专精状态尚未读取，请登录角色并打开对应专业面板后重试。",
+    specializationLevelRequired = "角色等级不足，暂时无法完成专精入门任务。",
+    specializationLevelUnknown = "尚未读取角色等级，无法确认专精任务资格。",
     specializationQuestDisabled = "客户端已确认此专精任务当前不可用。",
     professionMissing = "角色尚未学习所需专业。",
     skillRequired = "另一专业技能不足，可开启联合升级或购买材料。",
@@ -338,18 +343,18 @@ local DIAG_KEYS = {
     professionChanged = "专业学习状态或旧路线规则已变化，请重新计算路线。",
     pricingPolicyChanged = "专业学习状态或旧路线规则已变化，请重新计算路线。",
     formulaUnavailable = "未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。",
-    bindOnPickupFormulaDisabled = "拾取绑定掉落图纸未开启；此配方暂不参与路线。",
-    dropFormulaDisabled = "拾取绑定掉落图纸未开启；可在设置中开启「允许拾取绑定掉落图纸」。",
+    bindOnPickupFormulaDisabled = "掉落拾取绑定图纸未开启；此配方暂不参与路线。",
+    dropFormulaDisabled = "掉落拾取绑定图纸未开启；可在设置中开启「允许掉落拾取绑定图纸」。",
     currencyFormulaDisabled = "通货兑换图纸未开启；可在设置中开启「允许通货兑换图纸」。",
-    questRecipeExcluded = "已排除任务直授/奖励配方；可在设置中关闭「排除任务直授/奖励配方」或开启拍卖行。",
-    questTrainerExcluded = "已排除需任务解锁的训练师；可在设置中关闭「排除需任务解锁的训练师」或开启拍卖行。",
-    questVendorExcluded = "已排除需任务解锁的商人；可在设置中关闭「排除需任务解锁的商人」或使用拍卖行图纸。",
-    instanceVendorExcluded = "已排除副本内商人；可在设置中关闭「排除副本内商人」或使用拍卖行图纸。",
-    instanceTrainerExcluded = "已排除副本内训练师；可在设置中关闭「排除副本内训练师」。",
+    questRecipeExcluded = "未开启任务配方与任务NPC；可在设置中开启「允许任务配方与任务NPC」或使用拍卖行图纸。",
+    questTrainerExcluded = "未开启任务配方与任务NPC；可在设置中开启「允许任务配方与任务NPC」。",
+    questVendorExcluded = "未开启任务配方与任务NPC；可在设置中开启「允许任务配方与任务NPC」或使用拍卖行图纸。",
+    instanceVendorExcluded = "未开启副本内商人；可在设置中开启「允许副本内商人」或使用拍卖行图纸。",
+    instanceTrainerExcluded = "未开启副本内训练师；可在设置中开启「允许副本内训练师」。",
     formulaAcquisitionPending = "请先取得并学习所需图纸，再开始制作。",
     formulaAuctionSupplyUnknown = "请打开拍卖行完成一次完整扫描，确认图纸在售后重新计算路线。",
     formulaAuctionSupplyInsufficient = "本次扫描的图纸数量不够；请打开拍卖行完成一次完整扫描后重新计算，或选择其他图纸来源。",
-    limitedFormulaDisabled = "限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。",
+    limitedFormulaDisabled = "限量商人图纸未开启；可在设置中开启「允许限量商人图纸」，或使用拍卖行图纸。",
     formulaPriceUnknown = "请在购物清单核对图纸费用；拍卖行报价请在完整扫描后更新。",
     learningPriceUnknown = "请打开训练师页面核对学习费用。",
     formulaStockUnknown = "请向商人核对图纸现货；限量图纸可能需要等待刷新。",
@@ -416,6 +421,9 @@ function E.DiagnosticText(d)
         local name = itemDisplayName(d.item)
         return string.format(tr("%s：扫描记录有 %d 件，需要 %d 件；请打开拍卖行完成一次完整扫描后重新计算，或更换货源。"), name, d.available, d.required)
     end
+    if code == "specializationLevelRequired" and type(d.minLevel) == "number" and d.minLevel > 0 then
+        return string.format(tr("角色等级不足 %d，暂时无法完成专精入门任务。"), d.minLevel)
+    end
     local key = DIAG_KEYS[code]
     return key and tr(key) or code
 end
@@ -423,63 +431,21 @@ end
 function E.Gain(r, skill)
     if type(r) ~= "table" then return 0 end
     if not E.HasGainThresholds(r) then return 0 end
-    local yellow, green, grey = r.yellow, r.green, r.grey
+    local yellow, grey = r.yellow, r.grey
     if skill < r.learn or (r.orange and skill < r.orange) or skill >= grey then return 0 end
-    if skill < yellow then return 1 end
-    local cfg = getSolverCfg()
-    local dr = type(cfg) == "table" and type(cfg.DIFFICULTY_RATES) == "table" and cfg.DIFFICULTY_RATES or nil
-    local gYellow = (dr and type(dr.G_YELLOW) == "number" and dr.G_YELLOW) or 0.5
-    local gGreen = (dr and type(dr.G_GREEN) == "number" and dr.G_GREEN) or 0.05
-    if skill < green then
-        return 1 - ((skill - yellow) / max(1, green - yellow)) * (1 - gYellow)
-    end
-    return max(gGreen, gYellow - ((skill - green) / max(1, grey - green)) * (gYellow - gGreen))
+    if skill <= yellow then return 1 end
+    if grey <= yellow then return 0 end
+    return (grey - skill) / (grey - yellow)
 end
 
-local greenRates = {}
-
-function E.GreenBudgetMode(mode)
-    local cfg = getSolverCfg()
-    local modes = type(cfg) == "table" and type(cfg.GREEN_BUDGET_MODES) == "table" and cfg.GREEN_BUDGET_MODES or nil
-    if modes and modes[mode] then return mode end
-    if mode == "optimistic" or mode == "pessimistic" then return mode end
-    return "balanced"
+function E.RouteRiskMode(mode)
+    if mode == "quantile" or mode == "route_quantile" then return "quantile" end
+    return "expected"
 end
 
-function E.PlanningGain(r, skill, mode, allColors)
-    local p = E.Gain(r, skill)
-    if p <= 0 or p >= 1 then return p, 1 end
-    mode = E.GreenBudgetMode(mode)
-    local cfg = getSolverCfg()
-    local modes = type(cfg) == "table" and type(cfg.GREEN_BUDGET_MODES) == "table" and cfg.GREEN_BUDGET_MODES or nil
-    local modeCfg = modes and modes[mode] or nil
-    local expectedOnly = modeCfg and modeCfg.expectedCraftsOnly == true
-    local missLog = modeCfg and modeCfg.missLog or (mode == "balanced" and math.log(0.20) or mode == "pessimistic" and math.log(0.05) or nil)
-    if expectedOnly or not missLog then return p, 1 end
-    local green = skill >= r.green
-    if not allColors and not green then return p, 1 end
-    local factor = 1.0
-    if green then
-        if modeCfg and type(modeCfg.greenRateFactor) == "number" then
-            factor = modeCfg.greenRateFactor
-        elseif mode == "pessimistic" then
-            factor = 0.5
-        end
-    end
-    local assumed = p * factor
-    if assumed <= 0 or assumed >= 1 then return p, 1 end
-    local cache = greenRates[mode]
-    if not cache then
-        cache = {}
-        greenRates[mode] = cache
-    end
-    local gain = cache[assumed]
-    if not gain then
-        local attempts = ceil(missLog / math.log(1 - assumed) - 1e-10)
-        gain = min(p, ceil(1000000 / attempts) / 1000000)
-        cache[assumed] = gain
-    end
-    return gain, floor(gain / p * 65536 + 0.5) / 65536
+function E.ReserveMode(mode)
+    if mode == "expected" or mode == "none" then return "expected" end
+    return "safe"
 end
 
 local function isPrimarySlug(slug)
@@ -700,7 +666,18 @@ function E.RouteContext(slug, opts, professions)
         partnerValid = valid,
     }
     local G = getGates()
-    if G and type(G.EngineeringChoice) == "function" then
+    if G and type(G.SpecializationContext) == "function" and type(G.HasSpecializations) == "function" and G.HasSpecializations(slug) then
+        local okSpec, specCtx = pcall(G.SpecializationContext, { profession = slug })
+        if okSpec and type(specCtx) == "table" then
+            ctx.specializationContext = {
+                choice = specCtx.actual or specCtx.choice or "none",
+                choicesByGroup = specCtx.choicesByGroup,
+                actualByGroup = specCtx.actualByGroup,
+                abilities = specCtx.abilities or {},
+                selectionConflict = specCtx.selectionConflict == true,
+            }
+        end
+    elseif G and type(G.EngineeringChoice) == "function" then
         local choice = G.EngineeringChoice()
         ctx.specializationContext = {
             choice = choice,
@@ -1161,6 +1138,19 @@ function E.PreferredVendorOffers(offers, eligible)
 end
 
 function D.Build(rows)
+    local pe = ns.ProfPricingEngine or (type(gns) == "table" and gns.ProfPricingEngine)
+    if pe and type(pe.BuildPrefixBook) == "function" then
+        local byPrice = {}
+        for _, row in ipairs(rows or {}) do
+            local p, q = row[1], row[2]
+            assert(type(p) == "number" and p > 0 and p < huge and p == p, "invalid unit price")
+            assert(type(q) == "number" and q >= 0 and q < huge and q == floor(q), "invalid quantity")
+            if q > 0 then byPrice[p] = (byPrice[p] or 0) + q end
+        end
+        local list = {}
+        for p, q in pairs(byPrice) do list[#list + 1] = { p, q } end
+        return pe.BuildPrefixBook(list, true)
+    end
     local byPrice = {}
     for _, row in ipairs(rows or {}) do
         local p, q = row[1], row[2]
@@ -1230,6 +1220,13 @@ function E.AuctionDepthChanged(result)
 end
 
 function E.VendorPricesChanged(result)
+    if type(result) ~= "table" then return false end
+    local prevSig = result.vendorDiscountSig or (type(result.snapshot) == "table" and result.snapshot.vendorDiscountSig)
+    if type(prevSig) ~= "string" then return false end
+    local sup = getSupply()
+    if sup and type(sup.DiscountSignature) == "function" then
+        return sup.DiscountSignature() ~= prevSig
+    end
     return false
 end
 
@@ -2068,8 +2065,23 @@ function E.Index(s, tick)
         if tick then tick() end
     end
     s.auctionSupply = supply
+    local pe = ns.ProfPricingEngine or (type(gns) == "table" and gns.ProfPricingEngine)
     for id, book in pairs(s.auctionDepth or {}) do
-        if book.prices[1] then s.prices[id] = book.prices[1] end
+        if s.prices[id] == nil then
+            if pe and type(pe.RobustReferencePrice) == "function" then
+                local lvl = {}
+                local prevQ = 0
+                for idx = 1, #book.prices do
+                    local dq = (book.quantity[idx] or 0) - prevQ
+                    prevQ = book.quantity[idx] or prevQ
+                    if dq > 0 then lvl[#lvl + 1] = { book.prices[idx], dq } end
+                end
+                local robust = pe.RobustReferencePrice(lvl)
+                if robust then s.prices[id] = robust end
+            elseif book.prices[1] then
+                s.prices[id] = book.prices[1]
+            end
+        end
         s.auctionSupply[id] = s.auctionSupply[id] or { quantity = book.total, complete = true, source = "observed" }
         s.auctionSupply[id].quantity = min(s.auctionSupply[id].quantity, book.total)
         s.considerAuctionSupply = true
@@ -2149,6 +2161,7 @@ function E.CaptureSpecializations(s, opts, slug)
     local spec = G.SpecializationContext(specOpts)
     s.targetProfession, s.engineeringSpecialization = slug, spec.choice
     s.specializationContext, s.specializationAbilities = spec, spec.abilities
+    s.specializationChoices = copy(spec.choicesByGroup or {})
     s.specializationFingerprint = spec.fingerprint
     s.specializationGoals = {}
     for _, goal in ipairs(spec.goals or {}) do
@@ -2461,10 +2474,17 @@ local function baseCapture(slug, opts, tick)
         for _, m in ipairs(r.mats) do items[m[1]] = true; materials[m[1]] = true end
         tick()
     end
-    for _, goal in ipairs(s.toolGoals or {}) do if goal.item then items[goal.item] = true end end
-    for _, goal in ipairs(s.specializationGoals or {}) do for _, m in ipairs(goal.inputs or {}) do items[m[1]] = true end end
+    for _, goal in ipairs(s.toolGoals or {}) do
+        if goal.item then items[goal.item] = true; materials[goal.item] = true end
+    end
+    for _, goal in ipairs(s.specializationGoals or {}) do
+        for _, m in ipairs(goal.inputs or {}) do items[m[1]] = true; materials[m[1]] = true end
+    end
     s.essenceConversions = ess and ess.Enabled and ess.Enabled(slug, opts, s) or false
-    if s.essenceConversions and ess.ExpandItems then ess.ExpandItems(items) end
+    if s.essenceConversions and ess.ExpandItems then
+        ess.ExpandItems(items)
+        ess.ExpandItems(materials)
+    end
     local ra, bridge = getRouteAuto(), getAuctionBridge()
     local hasQuestFacts = opts.strict == true or type(opts.completedQuests or opts.quests) == "table"
     local hasItemFacts = opts.strict == true or type(opts.ownedSourceItems or opts.items) == "table"
@@ -2500,6 +2520,8 @@ local function baseCapture(slug, opts, tick)
     s.vendorPriceInputs = {}
     s.auctionDepth = {}
     s.auctionDepthInputs = {}
+    local supMod = getSupply()
+    s.vendorDiscountSig = (supMod and type(supMod.DiscountSignature) == "function") and supMod.DiscountSignature(vendorContext) or nil
     for id in pairs(items) do
         if E.NonAuctionableItem(id) then s.nonAuctionable[id] = true end
         local price = ra and ra.AHPriceOf and ra.AHPriceOf(id)

@@ -32,8 +32,13 @@ local function getEconomy()
     return ns.ProfEconomy or (type(gns) == "table" and gns.ProfEconomy) or nil
 end
 
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+end
+
 local function getL()
-    return ns.L or (type(gns) == "table" and gns.L) or nil
+    local b = getBridge()
+    return b and type(b.LocaleRaw) == "function" and b.LocaleRaw() or nil
 end
 
 local function getSettingRaw(key, slug)
@@ -41,8 +46,10 @@ local function getSettingRaw(key, slug)
     if type(settings) == "table" and type(settings.SettingRaw) == "function" then
         return settings.SettingRaw(key, slug)
     end
-    if type(ns.ProfSettingRaw) == "function" then
-        return ns.ProfSettingRaw(key, slug)
+    local b = getBridge()
+    if b and type(b.LegacySettingRaw) == "function" then
+        local lv = b.LegacySettingRaw(key, slug)
+        if lv ~= nil then return lv end
     end
     local dbFn = getProfDB()
     if dbFn then
@@ -140,6 +147,66 @@ function G.SpecAbilityIDs()
         out[i] = SPEC_ABILITIES[i]
     end
     return out
+end
+
+function G.SpecGroups(slug)
+    ensureAbilities()
+    local groups = GROUPS_BY_PROF[slug]
+    local out = {}
+    if type(groups) == "table" then
+        for i = 1, #groups do
+            out[i] = groups[i]
+        end
+    end
+    return out
+end
+
+function G.HasSpecializations(slug)
+    ensureAbilities()
+    local groups = GROUPS_BY_PROF[slug]
+    return type(groups) == "table" and #groups > 0
+end
+
+function G.SpecsForGroup(grp)
+    ensureAbilities()
+    local list = SPEC_BY_GROUP[grp]
+    local out = {}
+    if type(list) == "table" then
+        for i = 1, #list do
+            out[i] = list[i]
+        end
+    end
+    return out
+end
+
+function G.SpecsForProfession(slug)
+    ensureAbilities()
+    local groups = GROUPS_BY_PROF[slug]
+    local out = {}
+    if type(groups) == "table" then
+        for _, grp in ipairs(groups) do
+            for _, spec in ipairs(SPEC_BY_GROUP[grp] or {}) do
+                out[#out + 1] = spec
+            end
+        end
+    end
+    return out
+end
+
+function G.MinSpecSkill(slug)
+    ensureAbilities()
+    local groups = GROUPS_BY_PROF[slug]
+    if type(groups) ~= "table" or #groups == 0 then return nil end
+    local minSk = nil
+    for _, grp in ipairs(groups) do
+        for _, spec in ipairs(SPEC_BY_GROUP[grp] or {}) do
+            local sk = tonumber(spec.minSkill)
+            if sk and (minSk == nil or sk < minSk) then
+                minSk = sk
+            end
+        end
+    end
+    return minSk
 end
 
 local function spellKnown(spell)
@@ -323,6 +390,42 @@ local function findSpec(groupOrSlug, specKey)
     return nil
 end
 
+function G.SpecLabel(specKeyOrID, groupOrSlug)
+    ensureAbilities()
+    if type(specKeyOrID) == "number" and specKeyOrID > 0 then
+        return G.AbilityLabel(specKeyOrID)
+    end
+    if type(specKeyOrID) ~= "string" or specKeyOrID == "" or specKeyOrID == "none" then
+        return nil
+    end
+    local spec = groupOrSlug and findSpec(groupOrSlug, specKeyOrID) or nil
+    if not spec then
+        for _, cand in pairs(SPEC_BY_ID) do
+            if cand.specKey == specKeyOrID then
+                spec = cand
+                break
+            end
+        end
+    end
+    if spec and type(spec.abilitySpellID) == "number" then
+        return G.AbilityLabel(spec.abilitySpellID)
+    end
+    local labels = SPEC_LABELS[specKeyOrID]
+    if labels then
+        local DS = getDS()
+        local loc = (DS and type(DS.GetLocale) == "function" and DS.GetLocale()) or "enUS"
+        local L = getL()
+        if type(L) == "table" then
+            local localized = rawget(L, labels.zhCN)
+            if type(localized) == "string" and localized ~= "" and (loc == "zhCN" or localized ~= labels.zhCN) then
+                return localized
+            end
+        end
+        return labels[loc] or labels.enUS
+    end
+    return specKeyOrID
+end
+
 function G.LearnedChoice(groupOrSlug, abilitiesOpt)
     ensureAbilities()
     local grp = resolveGroup(groupOrSlug)
@@ -379,6 +482,21 @@ function G.GetPlannedChoice(groupOrSlug)
     return choice
 end
 
+local function ensureSpecChoicesTable()
+    local dbFn = getProfDB()
+    local choices = getSettingRaw("specChoices")
+    if type(choices) ~= "table" then
+        choices = {}
+        setSettingRaw("specChoices", choices)
+    elseif dbFn then
+        local db = dbFn()
+        if type(db) == "table" and type(db.prof) == "table" then
+            db.prof.specChoices = choices
+        end
+    end
+    return choices
+end
+
 function G.SetPlannedChoice(value, groupOrSlug)
     ensureAbilities()
     local grp = resolveGroup(groupOrSlug)
@@ -412,17 +530,7 @@ function G.SetPlannedChoice(value, groupOrSlug)
         if cur == spec.specKey then return true end
         setSettingRaw("engChoice", spec.specKey)
     else
-        local dbFn = getProfDB()
-        local choices = getSettingRaw("specChoices")
-        if type(choices) ~= "table" then
-            choices = {}
-            setSettingRaw("specChoices", choices)
-        elseif dbFn then
-            local db = dbFn()
-            if type(db) == "table" and type(db.prof) == "table" then
-                db.prof.specChoices = choices
-            end
-        end
+        local choices = ensureSpecChoicesTable()
         if choices[targetGrp] == spec.specKey then return true end
         choices[targetGrp] = spec.specKey
     end
@@ -430,6 +538,54 @@ function G.SetPlannedChoice(value, groupOrSlug)
     local ra = getRouteAuto()
     if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate, "specialization") end
     return true
+end
+
+function G.SetProfessionChoices(slug, choicesMap)
+    ensureAbilities()
+    local groups = GROUPS_BY_PROF[slug]
+    if type(groups) ~= "table" or #groups == 0 or type(choicesMap) ~= "table" then
+        return false, false
+    end
+    local validated = {}
+    for _, grp in ipairs(groups) do
+        local v = choicesMap[grp]
+        if v == nil or v == "" then v = "none" end
+        if v ~= "none" and not findSpec(grp, v) then
+            return false, false
+        end
+        validated[grp] = v
+    end
+    local changed = false
+    for _, grp in ipairs(groups) do
+        local v = validated[grp]
+        if grp == "engineering" then
+            local cur = G.GetChoiceSetting("engineering")
+            if cur ~= v then
+                setSettingRaw("engChoice", v)
+                changed = true
+            end
+        else
+            local cur = G.GetChoiceSetting(grp)
+            if cur ~= v then
+                if v == "none" then
+                    local choices = getSettingRaw("specChoices")
+                    if type(choices) == "table" then
+                        choices[grp] = nil
+                    end
+                else
+                    local choices = ensureSpecChoicesTable()
+                    choices[grp] = v
+                end
+                changed = true
+            end
+        end
+    end
+    if changed then
+        G.Invalidate()
+        local ra = getRouteAuto()
+        if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate, "specialization") end
+    end
+    return true, changed
 end
 
 function G.Allowed(slug, spell, opts)
@@ -890,10 +1046,11 @@ function G.SpecializationContext(opts)
     return ctx
 end
 
-function G.SpecGoal(slug, target, opts)
+function G.SpecGoals(slug, target, opts)
     ensureAbilities()
+    local out = {}
     local groups = GROUPS_BY_PROF[slug]
-    if type(groups) ~= "table" or #groups == 0 then return nil end
+    if type(groups) ~= "table" or #groups == 0 then return out end
     local solverCfg = getSolverCfg()
     local target0 = tonumber(target) or (type(solverCfg) == "table" and solverCfg.DEFAULT_TARGET) or 300
     local abilities = G.Abilities()
@@ -902,10 +1059,10 @@ function G.SpecGoal(slug, target, opts)
     for _, grp in ipairs(groups) do
         local actual = G.LearnedChoice(grp, abilities)
         local planned = G.EffectiveChoice(grp, abilities)
-        if (actual == "none" or actual == "unknown") and planned ~= "none" then
-            if grp == "blacksmithing_weaponsmith" and (G.EffectiveChoice("blacksmithing", abilities) == "armorsmith" or G.LearnedChoice("blacksmithing", abilities) == "armorsmith") then
-                return nil
-            end
+        local armorsmithBlocked = grp == "blacksmithing_weaponsmith"
+            and (G.EffectiveChoice("blacksmithing", abilities) == "armorsmith"
+                or G.LearnedChoice("blacksmithing", abilities) == "armorsmith")
+        if not armorsmithBlocked and (actual == "none" or actual == "unknown") and planned ~= "none" then
             local spec = findSpec(grp, planned)
             if spec and target0 >= (spec.minSkill or 200) then
                 local goal = buildSpecGoal(spec, faction)
@@ -913,12 +1070,17 @@ function G.SpecGoal(slug, target, opts)
                 goal.questProgress = progress
                 goal.questCompleted = progress.completed
                 if not goal.blockedReason and progress.completed ~= true and progress.disabled ~= true then
-                    return goal
+                    out[#out + 1] = goal
                 end
             end
         end
     end
-    return nil
+    return out
+end
+
+function G.SpecGoal(slug, target, opts)
+    local goals = G.SpecGoals(slug, target, opts)
+    return goals[1]
 end
 
 function G.ToolGoals(slug, target)

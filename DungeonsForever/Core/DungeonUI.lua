@@ -1562,20 +1562,20 @@ if type(SlashCmdList) == "table" then
         end
         local t0 = NOW()
         ResetCPUUsage()
-        local PD = ns.ProfModule
-        local origRender = PD and PD.Render
+        local api = ns.ProfAPI
         local renders = 0
-        if origRender and not ns.__dfcpuBusy then
-            ns.__dfcpuBusy = true
-            PD.Render = function(...)
+        local restoreRender
+        if type(api) == "table" and type(api.WrapRenderForProfile) == "function" and not ns.__dfcpuBusy then
+            restoreRender = api.WrapRenderForProfile(function(origRender, ...)
                 renders = renders + 1
                 return origRender(...)
-            end
+            end)
+            if restoreRender then ns.__dfcpuBusy = true end
         end
         print("|cff46bf72[无限副本手册]|r CPU 采样 5 秒，请停在当前页面不要操作")
         C_Timer.After(5, function()
-            if origRender and ns.__dfcpuBusy then
-                PD.Render = origRender
+            if restoreRender and ns.__dfcpuBusy then
+                restoreRender()
                 ns.__dfcpuBusy = nil
             end
             UpdateAddOnCPUUsage()
@@ -5256,8 +5256,8 @@ function DG.BroadcastItemData(itemID)
     if CQM and CQM.OnItemData then CQM.OnItemData(itemID) end
     local MM = ns.MapModule
     if MM and MM.OnItemData then MM.OnItemData(itemID) end
-    local PM = ns.ProfModule
-    if PM and PM.OnItemData then PM.OnItemData(itemID) end
+    local profApi = ns.ProfAPI
+    if type(profApi) == "table" and type(profApi.OnItemData) == "function" then profApi.OnItemData(itemID) end
 end
 
 function DG.FlushPendingItems()
@@ -5506,7 +5506,8 @@ function DG.EnsureItemListener()
                 r.__tipReshown = itemID
                 DG.ShowItemTip(r, r.__it)
             end
-            local pr = ns.ProfModule and ns.ProfModule.hoverRow
+            local profApi = ns.ProfAPI
+            local pr = type(profApi) == "table" and type(profApi.HoverRow) == "function" and profApi.HoverRow() or nil
             if pr and pr.__it and pr.__it[1] == itemID and pr:IsMouseOver()
                and pr.__tipReshown ~= itemID then
                 pr.__tipReshown = itemID
@@ -5758,8 +5759,8 @@ function DG.FitText(s, fs, maxw)
     if H and H.Fit and type(maxw) == "number" and maxw > 0 then
         return H.Fit(s, fs, maxw)
     end
-    local PD = ns.ProfModule
-    if PD and PD.Fit then return PD.Fit(s, fs, maxw) end
+    local profApi = ns.ProfAPI
+    if type(profApi) == "table" and type(profApi.Fit) == "function" then return profApi.Fit(s, fs, maxw) end
     return s
 end
 function DG.ClipTo(f, s, maxw)
@@ -11221,9 +11222,9 @@ function U:EnsureBuilt(k)
     if k == "Raids" and ns.RaidModule and U.raidPage then
         U.subBuilt[k] = true
         ns.RaidModule.Build(U.raidPage)
-    elseif k == "Professions" and ns.ProfModule and U.profPage then
+    elseif k == "Professions" and type(ns.ProfAPI) == "table" and type(ns.ProfAPI.Build) == "function" and U.profPage then
         U.subBuilt[k] = true
-        ns.ProfModule.Build(U.profPage)
+        ns.ProfAPI.Build(U.profPage)
     elseif k == "Explore" and ns.ExploreModule and U.explorePage then
         U.subBuilt[k] = true
         ns.ExploreModule.Build(U.explorePage)
@@ -11310,9 +11311,9 @@ function U:SwitchSub(key)
         end
         DG.BuildDungeons()
         U:UpdateDungeons()
-    elseif isProf and ns.ProfModule then
+    elseif isProf and type(ns.ProfAPI) == "table" and type(ns.ProfAPI.Open) == "function" then
         U:EnsureBuilt("Professions")
-        ns.ProfModule.Open()
+        ns.ProfAPI.Open()
     elseif isExpl and ns.ExploreModule then
         U:EnsureBuilt("Explore")
         ns.ExploreModule.Open()
@@ -11360,7 +11361,7 @@ end
 function U:UpdateActiveSub()
     if self.curSub == "Raids" then return end
     if self.curSub == "Professions" then
-        if ns.ProfModule then ns.ProfModule.Refresh() end
+        if type(ns.ProfAPI) == "table" and type(ns.ProfAPI.Refresh) == "function" then ns.ProfAPI.Refresh() end
         return
     end
     if self.curSub == "Explore" then

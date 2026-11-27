@@ -595,8 +595,12 @@ local function specializationAllowed(abilityID, snapshot, state, condCtx)
         local grp = spec.exclusiveGroup or spec.profession
         local choice
         if type(snapshot) == "table" then
-            if type(snapshot.specializationChoices) == "table" then
-                choice = snapshot.specializationChoices[grp]
+            local choiceMap = type(snapshot.specializationChoices) == "table" and snapshot.specializationChoices
+                or (type(snapshot.specializationContext) == "table" and type(snapshot.specializationContext.choicesByGroup) == "table"
+                    and snapshot.specializationContext.choicesByGroup)
+                or nil
+            if choiceMap then
+                choice = choiceMap[grp]
             end
             if choice == nil and spec.profession == "engineering" then
                 choice = snapshot.engineeringSpecialization
@@ -607,8 +611,14 @@ local function specializationAllowed(abilityID, snapshot, state, condCtx)
         end
         if grp == "blacksmithing_weaponsmith" then
             local parentChoice
-            if type(snapshot) == "table" and type(snapshot.specializationChoices) == "table" then
-                parentChoice = snapshot.specializationChoices.blacksmithing
+            if type(snapshot) == "table" then
+                local choiceMap = type(snapshot.specializationChoices) == "table" and snapshot.specializationChoices
+                    or (type(snapshot.specializationContext) == "table" and type(snapshot.specializationContext.choicesByGroup) == "table"
+                        and snapshot.specializationContext.choicesByGroup)
+                    or nil
+                if choiceMap then
+                    parentChoice = choiceMap.blacksmithing
+                end
             elseif not snapshot and gates and type(gates.GetPlannedChoice) == "function" then
                 parentChoice = gates.GetPlannedChoice("blacksmithing")
             end
@@ -1404,7 +1414,15 @@ local function wrappedFormulaFor(recipe, context, remaining, purchaseSource)
     local snapshot = type(context) == "table" and (context.snapshot
         or ((context.known ~= nil or context.recipes ~= nil or context.byKey ~= nil or context.prices ~= nil or context.learningSourcesRequired ~= nil) and context))
         or nil
-    local ok, reason, detail = E.SelectLearningRoute(recipe, snapshot, nil, remaining, purchaseSource, context)
+    local probeState = (type(context) == "table" and type(context.state) == "table") and context.state or nil
+    if not probeState and type(recipe.profession) == "string" and recipe.profession ~= "" then
+        probeState = {
+            skill = { [recipe.profession] = math.max(tonumber(recipe.learn) or 1, 300) },
+            learned = (snapshot and snapshot.known) or {},
+            specializationAbilities = (snapshot and snapshot.specializationAbilities) or {},
+        }
+    end
+    local ok, reason, detail = E.SelectLearningRoute(recipe, snapshot, probeState, remaining, purchaseSource, context)
     if ok and type(detail) == "table" and detail.status == "learned" then return nil end
     if ok and type(detail) == "table" and detail.quote then return detail.quote end
     if type(detail) == "table" and detail.quote then return detail.quote end
@@ -1570,7 +1588,13 @@ function E.RefreshLearningObservations(event, tick)
             if tick then tick() end
         end
     end
-    if changed then observationChanged() end
+    if changed then
+        observationChanged()
+        local api = getAPI()
+        if api and type(api.InvalidatePricing) == "function" then
+            pcall(api.InvalidatePricing)
+        end
+    end
     return changed
 end
 

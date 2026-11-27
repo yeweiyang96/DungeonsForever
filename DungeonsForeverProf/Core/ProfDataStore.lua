@@ -129,9 +129,9 @@ function DS.GetLocale()
   if type(overrideLocale) == "string" and overrideLocale ~= "" then
     return overrideLocale
   end
-  if type(_G.DF_Locale) == "function" then
-    local ok, loc = pcall(_G.DF_Locale)
-    if ok and type(loc) == "string" and loc ~= "" then return loc end
+  local b = ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+  if b and type(b.Locale) == "function" then
+    return b.Locale()
   end
   if type(_G.GetLocale) == "function" then
     local ok, loc = pcall(_G.GetLocale)
@@ -582,6 +582,99 @@ end
 function DS.Plunder(itemID)
   if type(itemID) ~= "number" then return nil end
   return DS.PlunderGoods()[itemID]
+end
+
+local MARKET_CODE_ALIASES = {
+  ["cn/pvp-horde"] = "cn/pvp-horde",
+  ["cn/pvp-alliance"] = "cn/pvp-alliance",
+  ["cn/pve-horde"] = "cn/pve-horde",
+  ["cn/pve-alliance"] = "cn/pve-alliance",
+  ["rules:1:forever:5:100:Horde"] = "cn/pvp-horde",
+  ["rules:1:forever:5:100:Alliance"] = "cn/pvp-alliance",
+  ["rules:1:forever:5:000:Horde"] = "cn/pve-horde",
+  ["rules:1:forever:5:000:Alliance"] = "cn/pve-alliance",
+}
+
+function DS.NormalizeMarketCode(marketKeyOrCode)
+  if type(marketKeyOrCode) ~= "string" or marketKeyOrCode == "" then return nil end
+  local direct = MARKET_CODE_ALIASES[marketKeyOrCode]
+  if direct then return direct end
+  local bits, side = marketKeyOrCode:match("^rules:%d+:[^:]*:%d+:(%d%d%d):(%a+)$")
+  if bits and side then
+    local isPvp = bits:sub(1, 1) == "1"
+    local f = (side == "Horde" and "horde") or (side == "Alliance" and "alliance") or nil
+    if f then
+      return "cn/" .. (isPvp and "pvp-" or "pve-") .. f
+    end
+  end
+  return nil
+end
+
+local function marketWatchlistDomain()
+  return DS.Ensure("marketWatchlist") or nil
+end
+
+function DS.MarketWatchlistMeta()
+  local mw = marketWatchlistDomain()
+  if type(mw) == "table" and type(mw.markets) == "table" then
+    return mw
+  end
+  return {
+    schemaVersion = 1,
+    windowDays = 7,
+    updatedAt = nil,
+    markets = commerce().marketWatchlist or newReadOnlyEmpty(),
+  }
+end
+
+function DS.MarketWatchlistUpdatedAt()
+  local mw = marketWatchlistDomain()
+  if type(mw) == "table" and type(mw.updatedAt) == "string" and mw.updatedAt ~= "" then
+    return mw.updatedAt
+  end
+  return nil
+end
+
+function DS.MarketWatchlists()
+  local mw = marketWatchlistDomain()
+  if type(mw) == "table" and type(mw.markets) == "table" then
+    for _, items in pairs(mw.markets) do
+      if type(items) == "table" and next(items) ~= nil then
+        return mw.markets
+      end
+    end
+    local legacy = commerce().marketWatchlist
+    if type(legacy) == "table" then
+      for _, items in pairs(legacy) do
+        if type(items) == "table" and next(items) ~= nil then
+          return legacy
+        end
+      end
+    end
+    return mw.markets
+  end
+  return commerce().marketWatchlist or newReadOnlyEmpty()
+end
+
+function DS.MarketWatchlist(marketKeyOrCode)
+  local code = DS.NormalizeMarketCode(marketKeyOrCode) or marketKeyOrCode
+  if type(code) ~= "string" or code == "" then return newReadOnlyEmpty() end
+  local t = DS.MarketWatchlists()
+  return (type(t) == "table" and t[code]) or newReadOnlyEmpty()
+end
+
+function DS.MarketEasySellEntry(itemID, marketKeyOrCode)
+  if type(itemID) ~= "number" or itemID <= 0 then return nil end
+  local wl = DS.MarketWatchlist(marketKeyOrCode)
+  if type(wl) ~= "table" then return nil end
+  local entry = wl[itemID]
+  if entry == nil or entry == false then return nil end
+  if type(entry) == "table" then return entry end
+  return { status = "recommended" }
+end
+
+function DS.IsMarketEasySell(itemID, marketKeyOrCode)
+  return DS.MarketEasySellEntry(itemID, marketKeyOrCode) ~= nil
 end
 
 local function sources()

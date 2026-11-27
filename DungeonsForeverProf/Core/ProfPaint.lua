@@ -33,6 +33,17 @@ local function inCombat()
     return false
 end
 
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
+end
+
+local function setDebugErr(kind, err)
+    local b = getBridge()
+    if b and type(b.SetDebugError) == "function" then
+        b.SetDebugError(kind, err)
+    end
+end
+
 local function stepJob(key, gen)
     local j = jobs[key]
     if not j or j.gen ~= gen or jobGen[key] ~= gen then return true end
@@ -45,7 +56,7 @@ local function stepJob(key, gen)
             return true
         end
         if not ok then
-            _G.DF_LAST_PAINT_ERR = tostring(err)
+            setDebugErr("paint", err)
             pcall(print, "|cffff5040[无限副本手册] 页面渲染出错（已停止该次渲染）：|r" .. tostring(err))
             break
         end
@@ -337,11 +348,8 @@ function Step.Run()
 end
 
 local function profGate()
-    local h = ns.ProfHost or (type(gns) == "table" and gns.ProfHost) or nil
-    if type(h) ~= "table" then return nil end
-    local dg = h.DG
-    if type(dg) ~= "table" then return nil end
-    return dg.Gate
+    local b = getBridge()
+    return b and type(b.Gate) == "function" and b.Gate() or nil
 end
 
 local function ProfPhased(total, body, onFail)
@@ -371,7 +379,7 @@ local function ProfPhased(total, body, onFail)
             local ok, err = coroutine.resume(co)
             if not ok then
                 restore()
-                _G.DF_LAST_BUILD_ERR = tostring(err)
+                setDebugErr("build", err)
                 if Gate and type(Gate.Finish) == "function" then pcall(Gate.Finish) end
                 if type(onFail) == "function" then pcall(onFail) end
                 pcall(print, "|cffff5040[无限副本手册] 分帧构建出错（已跳过该块）：|r" .. tostring(err))

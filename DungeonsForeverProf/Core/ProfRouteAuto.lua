@@ -76,11 +76,11 @@ local function getExecution()
 end
 
 local function getAuctionBridge()
-    return ns.AuctionBridge or (type(gns) == "table" and gns.AuctionBridge) or nil
+    return ns.ProfAuctionScanner or ns.AuctionBridge or (type(gns) == "table" and (gns.ProfAuctionScanner or gns.AuctionBridge)) or nil
 end
 
-local function getEasyBridge()
-    return ns.EasyBridge or (type(gns) == "table" and gns.EasyBridge) or nil
+local function getPE()
+    return ns.ProfPricingEngine or (type(gns) == "table" and gns.ProfPricingEngine) or nil
 end
 
 local function getIdle()
@@ -91,13 +91,13 @@ local function getFollow()
     return ns.ProfFollow or (type(gns) == "table" and gns.ProfFollow) or nil
 end
 
-local function getHost()
-    return ns.ProfHost or (type(gns) == "table" and gns.ProfHost) or nil
+local function getBridge()
+    return ns.ProfHostBridge or (type(gns) == "table" and gns.ProfHostBridge) or nil
 end
 
 local function tr(k)
-    local L = ns.L or (type(gns) == "table" and gns.L) or nil
-    if type(L) == "table" and L[k] ~= nil then return L[k] end
+    local b = getBridge()
+    if b and type(b.L) == "function" then return b.L(k) end
     return k
 end
 
@@ -113,13 +113,11 @@ local function nowSec()
 end
 
 local CALLER = "DungeonsForever"
-local DEFAULT_SCHEME_ORDER = { "cheapest", "matcost", "crafts", "optim" }
+local DEFAULT_SCHEME_ORDER = { "cost", "net" }
 local DEFAULT_SCHEME_LABELS = {
-    cheapest = "最省钱",
-    stable = "稳定升级",
-    matcost = "材料成本",
-    crafts = "次数最少",
-    optim = "乐观计数",
+    cost = "最低成本",
+    net = "回血净花费",
+    cheapest = "最低成本",
 }
 
 local function cfgCap()
@@ -135,14 +133,6 @@ end
 local function cfgMaxPerRecipe()
     local cfg = getSolverCfg()
     return (type(cfg) == "table" and type(cfg.MAX_PER_RECIPE) == "number" and cfg.MAX_PER_RECIPE) or 3
-end
-
-local function cfgDiffRates()
-    local cfg = getSolverCfg()
-    local dr = type(cfg) == "table" and type(cfg.DIFFICULTY_RATES) == "table" and cfg.DIFFICULTY_RATES or nil
-    local gy = (dr and type(dr.G_YELLOW) == "number" and dr.G_YELLOW) or 0.5
-    local gg = (dr and type(dr.G_GREEN) == "number" and dr.G_GREEN) or 0.05
-    return gy, gg
 end
 
 local function cfgCacheTTL()
@@ -278,10 +268,11 @@ end
 function RA.SchemeLabel(s)
     local cfg = getSolverCfg()
     local labels = type(cfg) == "table" and type(cfg.OBJECTIVES) == "table" and cfg.OBJECTIVES.LABELS
+    if s == "cheapest" then s = "cost" end
     local k = (s and type(labels) == "table" and labels[s])
         or (s and DEFAULT_SCHEME_LABELS[s])
-        or (type(labels) == "table" and labels.cheapest)
-        or DEFAULT_SCHEME_LABELS.cheapest
+        or (type(labels) == "table" and labels.cost)
+        or DEFAULT_SCHEME_LABELS.cost
     return tr(k)
 end
 
@@ -299,27 +290,9 @@ function RA.MaxAuctionSupplyAgeSeconds()
     return (type(cfg) == "table" and type(cfg.SUPPLY_MAX_AGE_SEC) == "number" and cfg.SUPPLY_MAX_AGE_SEC) or 172800
 end
 
-local function AuctionatorReady()
-    local a = _G.Auctionator
-    return type(a) == "table"
-        and type(a.API) == "table"
-        and type(a.API.v1) == "table"
-        and type(a.API.v1.GetAuctionPriceByItemID) == "function"
-end
-
 function RA.Available()
-    if AuctionatorReady() then return true end
-    local eb = getEasyBridge()
-    if eb and type(eb.Available) == "function" and eb.Available() then return true end
     local ab = getAuctionBridge()
-    if ab and type(ab.Available) == "function" and ab.Available() then return true end
-    return false
-end
-
-local function CallAPI(fn, ...)
-    local ok, v = pcall(fn, CALLER, ...)
-    if ok then return v end
-    return nil
+    return ab ~= nil
 end
 
 local priceCache = {}
@@ -336,40 +309,27 @@ local function AHPrice(id)
         if t0 and (now - t0) < cfgNegTTL() then return nil end
     end
     local p
-    local maxStale = RA.MaxStale()
-    if AuctionatorReady() then
-        local api = _G.Auctionator.API.v1
-        p = CallAPI(api.GetAuctionPriceByItemID, id)
+    local ab = getAuctionBridge()
+    if ab then
+        if type(ab.GetReferencePrice) == "function" then
+            p = ab.GetReferencePrice(id)
+        elseif type(ab.GetAuctionSupply) == "function" then
+            local sup = ab.GetAuctionSupply(id)
+            if type(sup) == "table" and (sup.quantity or 0) > 0 then
+                p = sup.market
+            end
+        end
         if type(p) ~= "number" or not (p > 0 and p < math.huge) then p = nil end
-        if p and type(api.GetAuctionAgeByItemID) == "function" then
-            local age = CallAPI(api.GetAuctionAgeByItemID, id)
-            if type(age) == "number" then
-                if age > maxStale then
-                    local bridge = getAuctionBridge()
-                    if bridge and type(bridge.ForceExpiredActive) == "function" and bridge.ForceExpiredActive() then
-                        ahAge[id] = age
-                        ahReason[id] = nil
-                    else
-                        ahReason[id], ahAge[id] = "stale", age
-                        p = nil
-                    end
-                end
-                if age < (priceCache.__minAge or math.huge) then
-                    priceCache.__minAge = age
-                end
+        if not p and type(ab.GetAuctionSupplyStatus) == "function" then
+            local st = ab.GetAuctionSupplyStatus(id)
+            if st == "expired" then
+                ahReason[id] = "stale"
+            elseif st and st ~= "verified" then
+                ahReason[id] = st
             end
         end
     else
-        local eb = getEasyBridge()
-        if eb and type(eb.Status) == "function" and eb.Status(id) == "verified" and type(eb.Price) == "function" then
-            local ep = eb.Price(id)
-            if type(ep) == "number" and ep > 0 and ep < math.huge then
-                p = ep
-            end
-        end
-        if not p then
-            ahReason[id] = RA.Available() and "norec" or "noapi"
-        end
+        ahReason[id] = "noapi"
     end
     if not p and ahReason[id] ~= "stale" and ahReason[id] ~= "noapi" then
         ahReason[id] = "norec"
@@ -468,14 +428,24 @@ local function evalStandaloneOffers(itemID, ctx, withCurrency)
                     local costItems = type(o.costItems) == "table" and o.costItems or {}
                     local mixed = (#currencies > 0 or #costItems > 0 or o.hasExtendedCost == true or (type(o.currencyID) == "number" and o.currencyID > 0))
                     if withCurrency or not mixed then
+                        local finalPrice = hasPrice and rawPrice or nil
+                        local unitCopper = hasPrice and (rawPrice / bundle) or nil
+                        local sup = getSupply()
+                        if not mixed and sup and type(sup.ApplyVendorDiscounts) == "function" then
+                            local dp, du = sup.ApplyVendorDiscounts(itemID, finalPrice, bundle, npc, o, ctx, npcFaction)
+                            if type(dp) == "number" then
+                                finalPrice, unitCopper = dp, du
+                                hasPrice = true
+                            end
+                        end
                         list[#list + 1] = {
                             npcID = npcID,
                             itemID = itemID,
                             optionIndex = o.optionIndex,
                             sourceOrder = index,
-                            priceCopper = hasPrice and rawPrice or nil,
-                            price = hasPrice and rawPrice or nil,
-                            unitCopper = hasPrice and (rawPrice / bundle) or nil,
+                            priceCopper = hasPrice and finalPrice or nil,
+                            price = hasPrice and finalPrice or nil,
+                            unitCopper = unitCopper,
                             bundleSize = bundle,
                             quantity = bundle,
                             maxStock = ms,
@@ -843,6 +813,109 @@ function RA.MaterialPurchases(id, need, opts)
     return { { id, need, id = id, count = need, need = need, cost = 0, unit = 0, vendor = false, source = "ah", unpriced = true, unavailable = true } }, 0, false, "materialUnavailable"
 end
 
+function RA.KnownQtyCost(id, need, ctx)
+    if type(id) ~= "number" or id <= 0 then
+        return nil, { complete = false, shortage = false, available = 0, required = tonumber(need) or 0, source = "unpriced" }
+    end
+    local rawNeed = tonumber(need) or 0
+    if rawNeed <= 0 then
+        return 0, { complete = true, shortage = false, available = 0, required = 0, source = "none" }
+    end
+    need = math.ceil(rawNeed)
+
+    local vendorCtx = buildVendorCtx(ctx)
+    local sup = getSupply()
+    local economy = getEconomy()
+    local bridge = getAuctionBridge()
+    local pe = getPE()
+
+    local offers = (sup and type(sup.DisplayList) == "function") and sup.DisplayList(id, vendorCtx) or evalStandaloneOffers(id, vendorCtx, true) or {}
+    local nonAuc = isNonAuctionable(id) or (economy and type(economy.NonAuctionableItem) == "function" and economy.NonAuctionableItem(id))
+    local snapStatus = bridge and type(bridge.FullScanSnapshotStatus) == "function" and bridge.FullScanSnapshotStatus() or nil
+    local snapAvailable = snapStatus and snapStatus.status == "available"
+    local refUnit = (not nonAuc) and RA.AHPriceOf(id, ctx) or nil
+    local depth = (not nonAuc and bridge and type(bridge.GetAuctionDepth) == "function") and bridge.GetAuctionDepth(id) or nil
+    local supply = (not nonAuc and bridge and type(bridge.GetAuctionSupply) == "function") and bridge.GetAuctionSupply(id) or nil
+
+    local available = nil
+    if depth and type(depth.quantity) == "number" then
+        available = depth.quantity
+    elseif supply and type(supply.quantity) == "number" then
+        available = supply.quantity
+    elseif snapAvailable and not nonAuc then
+        available = 0
+    end
+
+    local auctionAnchor = refUnit or (depth and depth.levels and depth.levels[1] and depth.levels[1][1]) or nil
+    local auctionCostFn = nil
+    if depth and type(depth.levels) == "table" and #depth.levels > 0 and pe and type(pe.ConsumeDepth) == "function" then
+        auctionCostFn = function(count)
+            local c = pe.ConsumeDepth(depth.levels, count, 0, true)
+            return c
+        end
+    end
+
+    if economy and type(economy.MaterialPurchases) == "function" then
+        local rawFaction = type(ctx) == "table" and ctx.faction or nil
+        local ok, rows, cost, complete, reason = pcall(economy.MaterialPurchases, id, need, {
+            offers = offers,
+            auction = auctionAnchor,
+            supply = supply,
+            available = available,
+            faction = normalizeFaction(rawFaction) or rawFaction,
+            auctionCost = auctionCostFn,
+        })
+        if ok then
+            if complete and type(cost) == "number" and cost >= 0 and cost < math.huge then
+                local src = "ah"
+                local hasVendor, hasAH = false, false
+                for _, r in ipairs(rows or {}) do
+                    if r.source == "vendor" then hasVendor = true end
+                    if r.source == "ah" then hasAH = true end
+                end
+                if hasVendor and hasAH then src = "mixed"
+                elseif hasVendor then src = "vendor" end
+                return cost, {
+                    complete = true,
+                    shortage = false,
+                    available = available or need,
+                    required = need,
+                    source = src,
+                    refUnit = refUnit,
+                    rows = rows,
+                }
+            end
+            if reason == "auctionSupplyLimited" or (snapAvailable and not nonAuc and (available or 0) < need) then
+                return nil, {
+                    complete = false,
+                    shortage = true,
+                    available = available or 0,
+                    required = need,
+                    source = "shortage",
+                    refUnit = refUnit,
+                }
+            end
+            return nil, {
+                complete = false,
+                shortage = false,
+                available = available or 0,
+                required = need,
+                source = "unpriced",
+                refUnit = refUnit,
+            }
+        end
+    end
+
+    return nil, {
+        complete = false,
+        shortage = snapAvailable and not nonAuc and (available or 0) < need or false,
+        available = available or 0,
+        required = need,
+        source = (snapAvailable and not nonAuc) and "shortage" or "unpriced",
+        refUnit = refUnit,
+    }
+end
+
 function RA.PreferSharedFormula(entry, materialNeed, opts)
     opts = opts or {}
     local economy = getEconomy()
@@ -922,7 +995,7 @@ function RA.StampMaterialPurchases(result)
                 required = entry.supplyRequired or entry.count or entry[2],
                 available = entry.availableCount,
             }
-            if entry.unavailable then
+            if entry.unavailable and result.scheme ~= "fixed" then
                 result.feasible = false
                 result.status = "recalculate_required"
             end
@@ -982,11 +1055,12 @@ function RA.NPCBuySupplierOf(itemID, ctx)
 end
 
 local function ClientKnown(id)
-    local h = getHost()
-    local dg = type(h) == "table" and h.DG or nil
-    if dg and type(dg.ItemInfo) == "function" then
-        local ok, info = pcall(dg.ItemInfo, id)
-        if ok then return info ~= nil end
+    local b = getBridge()
+    if b and type(b.ItemInfo) == "function" then
+        local info = b.ItemInfo(id)
+        if info ~= nil then return true end
+        local dg = type(b.DG) == "function" and b.DG() or nil
+        if dg and type(dg.ItemInfo) == "function" then return false end
     end
     local ci = _G.C_Item
     if type(ci) == "table" and type(ci.GetItemInfo) == "function" then
@@ -1028,9 +1102,8 @@ if type(RA.Cancel) ~= "function" then
 end
 
 local function RequestProduct(id)
-    local h = getHost()
-    local dg = type(h) == "table" and h.DG or nil
-    if dg and type(dg.RequestItem) == "function" then pcall(dg.RequestItem, id) end
+    local b = getBridge()
+    if b and type(b.RequestItem) == "function" then b.RequestItem(id) end
 end
 
 local function SnapshotSec()
@@ -1042,27 +1115,14 @@ local function SnapshotSec()
             return math.max(0, nowSec() - stamp)
         end
     end
-    local A = _G.Auctionator
-    local st = (type(A) == "table") and A.SavedState or nil
-    if type(st) ~= "table" then return nil end
-    local best
-    for _, k in ipairs({ "TimeOfLastGetAllScan", "TimeOfLastReplicateScan", "TimeOfLastBrowseScan" }) do
-        local v = tonumber(st[k])
-        if v and v > 0 and (not best or v > best) then best = v end
-    end
-    if not best then return nil end
-    local age = nowSec() - best
-    if age < 0 then return nil end
-    return age
+    return nil
 end
 
 function RA.HasPriceData()
     if priceCache.__any then return true end
-    local eb = getEasyBridge()
-    if eb and type(eb.Available) == "function" and eb.Available() then return true end
     local ab = getAuctionBridge()
-    if ab and type(ab.Available) == "function" and ab.Available() then
-        local snap = type(ab.FullScanSnapshotStatus) == "function" and ab.FullScanSnapshotStatus()
+    if ab and type(ab.FullScanSnapshotStatus) == "function" then
+        local snap = ab.FullScanSnapshotStatus()
         if snap and snap.status == "available" then return true end
     end
     local supply = getSupply()
@@ -1155,17 +1215,11 @@ end
 local function Gain(skill, c)
     if skill < c.learn or (c.orange and skill < c.orange) or skill >= c.grey then return nil end
     if skill < c.yellow then return 1.0 end
-    local gYellow, gGreen = cfgDiffRates()
-    if skill < c.green then
-        local span = c.green - c.yellow
-        if span <= 0 then return gYellow end
-        local t = (skill - c.yellow) / span
-        return 1.0 - t * (1.0 - gYellow)
-    end
-    local span = c.grey - c.green
-    if span <= 0 then return gGreen end
-    local t = (skill - c.green) / span
-    return gYellow - t * (gYellow - gGreen)
+    local span = c.grey - c.yellow
+    if span <= 0 then return nil end
+    local p = (c.grey - skill) / span
+    if p <= 0 then return nil end
+    return p > 1.0 and 1.0 or p
 end
 
 local function LearnKnown(spell)
@@ -1340,6 +1394,16 @@ local function FormulaQuote(rec, slug, opts)
     end
     local context = { profession = slug }
     for key, value in pairs(opts or {}) do context[key] = value end
+    if context.scheme == "fixed" then
+        context.allowLimitedFormulas = true
+        context.allowDropFormulas = true
+        context.allowCurrencyFormulas = true
+        context.excludeQuestRecipes = false
+        context.excludeQuestTrainers = false
+        context.excludeQuestVendors = false
+        context.excludeInstanceVendors = false
+        context.excludeInstanceTrainers = false
+    end
     local remaining = context.auctionRemaining and context.auctionRemaining[recipe.formula or recipe.formulaID]
     local okF, q = pcall(E.FormulaFor, recipe, context, remaining)
     if okF then return q end
@@ -1528,32 +1592,26 @@ local function Eligible(c, allowUnpriced)
     return allowUnpriced or c.learningUsable or (not c.funpriced)
 end
 
-local function CanUse(scheme, c, cur)
-    local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
-    if c.orange and lo == c.learn and c.orange > lo then lo = c.orange end
+local function CanUse(_scheme, c, cur)
+    local lo = c.learn
+    if c.orange and c.orange > lo then lo = c.orange end
     return cur >= lo and cur < c.grey
 end
 
 local function Usable(scheme, c, cur, allowUnpriced)
-    if (scheme == "optim") and (c.cd or c.unknown) then return false end
     if not Eligible(c, allowUnpriced) then return false end
     return CanUse(scheme, c, cur)
 end
 
 local function GainOf(scheme, c, cur)
     if not CanUse(scheme, c, cur) then return nil end
-    if scheme == "optim" then return 1 end
     return Gain(cur, c)
 end
 
 local function MetricOf(scheme, c, g)
-    if scheme == "cheapest" then
-        local span = math.max(1, (c.grey or 0) - (c.learn or 0))
-        return c.cost / g + (c.fcost or 0) / span
-    end
     if scheme == "crafts" then return 1 / g end
-    if scheme == "optim" then return (c.base or 0) / g end
-    return c.cost / g
+    local span = math.max(1, (c.grey or 0) - (c.learn or 0))
+    return c.cost / g + (c.fcost or 0) / span
 end
 
 local function Simulate(cands, start, cap, allowUnpriced, scheme)
@@ -1585,9 +1643,8 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced)
-                    and not ((scheme == "optim") and (c.cd or c.unknown)) then
-                    local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
+                if not banned[c.spell] and Eligible(c, allowUnpriced) then
+                    local lo = c.learn
                     if lo > cur and (not nxt or lo < nxt) then nxt = lo end
                 end
             end
@@ -1664,9 +1721,8 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced)
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced)
-                    and not ((scheme == "optim") and (c.cd or c.unknown)) then
-                    local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
+                if not banned[c.spell] and Eligible(c, allowUnpriced) then
+                    local lo = c.learn
                     if lo > cur and lo <= b and (not nxt or lo < nxt) then nxt = lo end
                 end
             end
@@ -1881,7 +1937,8 @@ local function SummarizeCore(steps, recOf, skipLearnedFormulas, specInputs, skip
         local rec = recOf[st[3]]
         if rec and not (skipLearnedFormulas and LearnKnown(st[3])) then
             local entry = FormulaQuote(rec, st.profession or slug, purchaseOpts)
-            if entry and not entry.known and not entry.automatic then
+            if entry and not entry.known and not entry.automatic
+                and not (entry.id == nil and (entry.source == "trainer" or entry.source == "quest")) then
                 local formulaID = entry.id
                 local key = formulaID or entry.recipeKey or (st.profession or slug) .. ":" .. tostring(st[3])
                 if not paidLearning[key] then
@@ -2081,12 +2138,23 @@ function RA.SummarizeSteps(steps, slug, opts)
     do
         local G = getGates()
         local cap = tonumber(opts.target) or (steps[#steps] and steps[#steps][2]) or cfgDefaultTarget()
-        local goal
-        if G and type(G.SpecGoal) == "function" then
+        local goals
+        if G and type(G.SpecGoals) == "function" then
+            local ok, v = pcall(G.SpecGoals, slug, cap)
+            if ok and type(v) == "table" then goals = v end
+        elseif G and type(G.SpecGoal) == "function" then
             local ok, v = pcall(G.SpecGoal, slug, cap)
-            if ok then goal = v end
+            if ok and type(v) == "table" then goals = { v } end
         end
-        if goal and type(goal.inputs) == "table" then specInputs = goal.inputs end
+        if type(goals) == "table" and #goals > 0 then
+            local merged = {}
+            for _, g in ipairs(goals) do
+                for _, pair in ipairs((type(g) == "table" and g.inputs) or {}) do
+                    merged[#merged + 1] = pair
+                end
+            end
+            if #merged > 0 then specInputs = merged end
+        end
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
         productAH, productNPC, productPartial =
@@ -2119,8 +2187,8 @@ function RA.SummarizeSteps(steps, slug, opts)
     for _, entry in ipairs(formulas) do
         if entry.usable == false then
             res.completeCost = false
-            res.feasible = false
-            res.status = "recalculate_required"
+            res.costComplete = false
+            res.formulaComplete = false
             res.diagnostics = res.diagnostics or {}
             res.diagnostics[#res.diagnostics + 1] = { code = entry.reason or "formulaUnavailable", item = entry.id, spell = entry.spell }
         end
@@ -2129,9 +2197,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     if blockedSteps then
         res.blockedSteps = blockedSteps
         res.specBlocked = #blockedSteps
-        res.feasible = false
-        res.status = "recalculate_required"
-        res.diagnostics = {}
+        res.diagnostics = res.diagnostics or {}
         for _, blocked in ipairs(blockedSteps) do
             local diagnostic = blocked.learningDetail or { code = blocked.reason, spell = blocked.spell, profession = slug }
             res.diagnostics[#res.diagnostics + 1] = diagnostic
@@ -2146,7 +2212,6 @@ function RA.SummarizeSteps(steps, slug, opts)
                 res.clientPending = true
                 res.completeCost = false
                 res.costComplete = false
-                res.priced = false
             end
         end
         res.blockingDiagnostics = res.diagnostics
@@ -2154,12 +2219,16 @@ function RA.SummarizeSteps(steps, slug, opts)
     local _, _, goalRequired = RA.FilterFixedSpecializations(slug, steps, opts)
     if goalRequired then
         res.specializationGoalRequired = true
-        res.feasible = false
-        res.status = "recalculate_required"
     end
     RA.StampMaterialPurchases(res)
     RA.StampSupply(res, opts)
     RA.ApplyRecovery(res, slug, opts, recOf)
+    if res.feasible == nil then res.feasible = #(steps or {}) > 0 end
+    if res.status == nil then
+        res.status = not res.feasible and "infeasible"
+            or (res.completeCost == false or not res.priced) and "incomplete"
+            or "complete"
+    end
     for _, step in ipairs(res.steps or {}) do
         if not step.clientPending and not step.unpriced and step.attributedCost ~= nil then step.cost = step.attributedCost end
     end
@@ -2362,9 +2431,9 @@ local function baseFixedPlan(slug, supplied)
                 end
                 return nil
             end
-            local rawSteps, gaps = Simulate(cands, start, target, true, "cheapest")
+            local rawSteps, gaps = Simulate(cands, start, target, true, "cost")
             if #gaps > 0 then
-                rawSteps, gaps = FillGaps(cands, rawSteps, gaps, "cheapest", true)
+                rawSteps, gaps = FillGaps(cands, rawSteps, gaps, "cost", true)
             end
             if #rawSteps == 0 then
                 local pending = fixedPendingResult(slug, start, target)
@@ -2389,7 +2458,12 @@ local function baseFixedPlan(slug, supplied)
     result.planVersion = result.planVersion or 2
     result.mode, result.scheme, result.target = "fixed", "fixed", target
     if guideSource then result.guideSource = guideSource end
-    if slug == "first-aid" and result.clientPending then result.referenceOnly = true end
+    if slug == "first-aid" and result.clientPending then
+        result.referenceOnly = true
+        result.referenceShopping = #(result.mats or {}) > 0
+        result.referenceQuoted = result.priced == true
+        result.referenceCostComplete = result.completeCost ~= false
+    end
     if slug ~= "poisons" then
         local solver = getSolver()
         result.procurementPolicyVersion = (solver and solver.ProcurementPolicyVersion) or 11
@@ -2496,22 +2570,35 @@ local function RecoveryOptions(opts, slug)
     local pcfg = getPricingCfg()
     local defFee = (type(pcfg) == "table" and type(pcfg.DEFAULT_RECOVERY_FEE_PCT) == "number" and pcfg.DEFAULT_RECOVERY_FEE_PCT) or 5
     local enabled = opts.recoveryEnabled
-    if enabled == nil then enabled = readSetting("recoveryEnabled", slug, false) end
+    if enabled == nil then
+        if opts.scheme == "net" then
+            enabled = true
+        elseif opts.scheme == "cost" or opts.scheme == "fixed" or opts.scheme == "fishing" then
+            enabled = false
+        else
+            enabled = readSetting("recoveryEnabled", slug, false)
+        end
+    end
+    local ahRecovery = opts.auctionRecoveryEnabled
+    if ahRecovery == nil then ahRecovery = readSetting("auctionRecoveryEnabled", slug, false) end
     local fee = opts.recoveryFeePercent
     if fee == nil then fee = readSettingRaw("recoveryFeePercent", slug, defFee) end
-    local residual = opts.residualMass
-    if residual == nil then residual = readSetting("autoResidualMass", slug, false) end
-    return enabled == true, fee, residual == true
+    return enabled == true, ahRecovery == true, fee
 end
 
 function RA.ApplyRecovery(res, slug, opts, recOf)
     RA.StampFormulaCosts(res)
     local R = getRecovery()
     if not res or not R or not R.Apply then return res end
-    local enabled, fee, residual = RecoveryOptions(opts, slug)
+    local enabled, ahRecovery, fee = RecoveryOptions(opts, slug)
     local snap = RecoverySnapshot(slug, res.steps, recOf, res.toolItems, opts)
     if type(R.Capture) == "function" then
-        pcall(R.Capture, snap, { recoveryEnabled = enabled, recoveryFeePercent = fee, residualMass = residual })
+        pcall(R.Capture, snap, {
+            recoveryEnabled = enabled,
+            auctionRecoveryEnabled = ahRecovery,
+            recoveryFeePercent = fee,
+            profession = slug,
+        })
     end
     res.scheme = res.scheme or (opts and opts.scheme) or "fixed"
     pcall(R.Apply, res, snap)
@@ -2632,10 +2719,16 @@ function RA.StampSpecializations(result, slug, opts, snapshot)
         local ok, v = pcall(G.SpecFingerprint, ctx.choice, ctx.abilities, ctx.profession, ctx.choicesByGroup)
         if ok then fp = v end
     end
+    local choicesByGroup
+    if type(ctx.choicesByGroup) == "table" then
+        choicesByGroup = {}
+        for k, v in pairs(ctx.choicesByGroup) do choicesByGroup[k] = v end
+    end
     result.specializationPolicy = {
         revision = 1,
         profession = slug or (type(snapshot) == "table" and snapshot.targetProfession) or ctx.profession,
         choice = ctx.choice or "none",
+        choicesByGroup = choicesByGroup,
         fingerprint = fp or "",
         actualAbilities = abilities,
         selectionConflict = ctx.selectionConflict == true,
@@ -2652,7 +2745,13 @@ function RA.SpecializationPlanChanged(result, slug, opts)
     if not prof and policy then prof = policy.profession end
     local ctx = SpecContext(prof, opts)
     if not ctx then return false end
-    if not policy then return ctx.choice ~= "none" end
+    if not policy then
+        if ctx.choice and ctx.choice ~= "none" then return true end
+        for _, v in pairs(ctx.choicesByGroup or {}) do
+            if v and v ~= "none" then return true end
+        end
+        return false
+    end
     local fp = ctx.fingerprint
     if not fp and type(G.SpecFingerprint) == "function" then
         local ok, v = pcall(G.SpecFingerprint, ctx.choice, ctx.abilities, ctx.profession, ctx.choicesByGroup)
@@ -2662,7 +2761,7 @@ function RA.SpecializationPlanChanged(result, slug, opts)
     for id in pairs(policy.actualAbilities or {}) do
         if (ctx.abilities or {})[id] ~= true then return true end
     end
-    if ctx.profession == "engineering" and ctx.selectionConflict and not policy.selectionConflict then
+    if ctx.selectionConflict and not policy.selectionConflict then
         return true
     end
     return false
@@ -2677,6 +2776,26 @@ function RA.FilterFixedSpecializations(slug, steps, opts)
         return filtered, blocked, false
     end
     local ctx = SpecContext(slug, opts)
+    local fixedCtx = {}
+    if opts and type(opts.snapshot) == "table" then
+        for k, v in pairs(opts.snapshot) do fixedCtx[k] = v end
+    end
+    if type(ctx) == "table" then
+        fixedCtx.specializationContext = ctx
+        if type(ctx.choicesByGroup) == "table" then
+            fixedCtx.specializationChoices = {}
+            for k, v in pairs(ctx.choicesByGroup) do fixedCtx.specializationChoices[k] = v end
+        end
+    end
+    fixedCtx.allowLimitedFormulas = true
+    fixedCtx.allowDropFormulas = true
+    fixedCtx.allowCurrencyFormulas = true
+    fixedCtx.excludeQuestRecipes = false
+    fixedCtx.excludeQuestTrainers = false
+    fixedCtx.excludeQuestVendors = false
+    fixedCtx.excludeInstanceVendors = false
+    fixedCtx.excludeInstanceTrainers = false
+    local capMax = cfgCap()
     for _, st in ipairs(steps or {}) do
         local spell = st[3] or st.spell
         local allowed, reason, detail, recipe = true, nil, nil, nil
@@ -2697,7 +2816,13 @@ function RA.FilterFixedSpecializations(slug, steps, opts)
                 allowed, reason = false, recipe.cooldown and "cooldown" or "cooldownUnknown"
             elseif recipe and E and E.LearningEligibility then
                 local fn = E.RouteRecipeEligibility or E.LearningEligibility
-                local okE, a, r, d = pcall(fn, recipe, opts and opts.snapshot)
+                local probeSkill = math.max(tonumber(st[2]) or 1, tonumber(st[1]) or 1, tonumber(recipe.learn) or 1, capMax)
+                local probeState = {
+                    skill = { [profession] = probeSkill },
+                    learned = {},
+                    specializationAbilities = (ctx and ctx.abilities) or {},
+                }
+                local okE, a, r, d = pcall(fn, recipe, fixedCtx, probeState)
                 if okE then
                     allowed, reason, detail = a, r, d
                 else
@@ -3061,7 +3186,7 @@ local function baseCompute(slug, opts)
     local cands, recOf, blockedCount, learningGaps = BuildCandidates(slug, opts)
     if not cands then return nil end
     local scheme = opts.scheme
-    if scheme == nil or scheme == "stable" or not DEFAULT_SCHEME_LABELS[scheme] then scheme = "cheapest" end
+    if scheme ~= "net" then scheme = "cost" end
     local capMax = cfgCap()
     local cap = tonumber(opts.target) or capMax
     cap = math.max(2, math.min(capMax, math.floor(cap)))
@@ -3080,14 +3205,6 @@ local function baseCompute(slug, opts)
         local prefix = {}
         for _, step in ipairs(steps) do if step[1] < stop then prefix[#prefix + 1] = step end end
         steps = prefix
-    end
-    if scheme == "optim" then
-        local bySpell = {}
-        for _, c in ipairs(cands) do bySpell[c.spell] = c end
-        for _, st in ipairs(steps) do
-            local c = bySpell[st[3]]
-            if c then st.cost = (c.base or 0) * (st[4] or 0) end
-        end
     end
     local stepsOut = ToReached(steps)
     local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
@@ -3256,10 +3373,13 @@ function RA.QuoteSig(slug)
     local exIV = readSetting("autoExcludeInstanceVendors", slug, true) and 1 or 0
     local exIT = readSetting("autoExcludeInstanceTrainers", slug, slug ~= "enchanting") and 1 or 0
     local rec = readSetting("recoveryEnabled", slug, false) and 1 or 0
+    local ahRec = readSetting("auctionRecoveryEnabled", slug, false) and 1 or 0
+    local R = getRecovery()
+    local wlSig = (R and type(R.WhitelistSignature) == "function") and R.WhitelistSignature(slug, nil, { auctionRecoveryEnabled = ahRec == 1 }) or ""
     local tool = readSetting("autoCraftTools", slug, true) and 1 or 0
     return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(drp) .. ":" .. tostring(currency)
         .. ":" .. tostring(exQR) .. tostring(exQT) .. tostring(exQV) .. tostring(exIV) .. tostring(exIT)
-        .. ":" .. tostring(rec) .. ":" .. tostring(tool)
+        .. ":" .. tostring(rec) .. ":" .. tostring(ahRec) .. ":" .. tostring(wlSig) .. ":" .. tostring(tool)
 end
 
 function RA.SpecSig(slug)
@@ -3309,8 +3429,8 @@ local function baseOptionsFor(slug, current, skipExecutionInventory)
         end
     end
     local target = readTargetSkill(slug)
-    local scheme = isFixedOnly(slug) and "fixed" or (fish and "fishing") or readSettingRaw("autoScheme", slug, "cheapest")
-    if scheme == "stable" then scheme = "cheapest" end
+    local rawScheme = readSettingRaw("autoScheme", slug, "cost")
+    local scheme = isFixedOnly(slug) and "fixed" or (fish and "fishing") or (rawScheme == "net" and "net" or "cost")
     local xp = getExecution()
     local execInv = nil
     if not skipExecutionInventory and xp and type(xp.GetContinuation) == "function" then
@@ -3329,6 +3449,9 @@ local function baseOptionsFor(slug, current, skipExecutionInventory)
         excludeQuestVendors = readSetting("autoExcludeQuestVendors", slug, true),
         excludeInstanceVendors = readSetting("autoExcludeInstanceVendors", slug, true),
         excludeInstanceTrainers = readSetting("autoExcludeInstanceTrainers", slug, slug ~= "enchanting"),
+        auctionRecoveryEnabled = readSetting("auctionRecoveryEnabled", slug, false),
+        routeRiskMode = readSettingRaw("autoRouteRiskMode", slug, "expected"),
+        reserveMode = readSettingRaw("autoReserveMode", slug, "safe"),
         target = target,
         scheme = scheme,
         allowSecondaryLeveling = allowSec,
@@ -3477,7 +3600,7 @@ end
 RA.RegisterDelegate = registerDelegate
 registerDelegate()
 
-local initFn = ns.Init or (type(gns) == "table" and gns.Init) or nil
-if type(initFn) == "function" then
-    initFn(registerDelegate)
+local b = getBridge()
+if b and type(b.OnInit) == "function" then
+    b.OnInit(registerDelegate)
 end
