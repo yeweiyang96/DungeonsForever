@@ -3487,3 +3487,7 @@ L["在「路线」页点「开始追踪」或打开升级 HUD 后，这里会记
 L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始追踪。"] = "Run a full scan at the auction house and check material and pattern costs in the shopping list before starting tracking."
 L["追踪中 · 已锁定当前方案（%d/%d）"] = "Tracking · Plan locked (%d/%d)"
 L["追踪中（已锁定）· 设置或行情已变，可重新计算更新"] = "Tracking (locked) · Settings or prices changed; recalculate to update"
+L["已定位配方 %s，按当前背包材料预填 %d/%d 次 —— 在专业面板点一次制造即可"] = "Selected %s and prefilled %d/%d crafts for current bag materials — click Craft in the profession pane"
+L["已定位配方 %s；当前暂不可制造（%s）"] = "Selected %s; currently unable to craft (%s)"
+L["工具：已在背包中，无需再次制作。"] = "Tool: already in your bags; no need to craft it again."
+L["请检查背包，再查看需要购买的数量。"] = "Check your bags to see how many items need to be purchased."

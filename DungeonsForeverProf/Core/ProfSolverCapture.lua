@@ -311,7 +311,7 @@ end
 E.PrimaryOrder = buildPrimaryOrder()
 
 local DIAG_KEYS = {
-    inventoryUnknown = "请打开背包和银行，再查看需要购买的数量。",
+    inventoryUnknown = "请检查背包，再查看需要购买的数量。",
     vendorEstimate = "NPC购买价格尚未配置。",
     vendorQuoteChanged = "NPC购买价格资料已更新，请重新计算路线。",
     toolPolicyChanged = "工具设置或工具列表已变化，请手动重新计算路线。",

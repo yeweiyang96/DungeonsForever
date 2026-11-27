@@ -284,10 +284,9 @@ local function evalHasItem(c, ctx)
     if isCtxStrict(ctx) then return nil end
   end
 
-  local includeBank = (type(ctx) == "table" and ctx.includeBank == true) or false
   local fn = (type(_G.C_Item) == "table" and _G.C_Item.GetItemCount) or _G.GetItemCount
   if type(fn) == "function" then
-    local ok, cnt = pcall(fn, itemID, includeBank)
+    local ok, cnt = pcall(fn, itemID, false)
     if ok and type(cnt) == "number" then
       return cnt >= need
     end

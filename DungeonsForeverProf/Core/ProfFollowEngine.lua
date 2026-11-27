@@ -245,14 +245,13 @@ function E.IsLearned(spellID)
     return false
 end
 
-function E.Have(id, includeBank)
-    local bank = includeBank ~= false
+function E.Have(id)
     if _G.C_Item and _G.C_Item.GetItemCount then
-        local ok, n = pcall(_G.C_Item.GetItemCount, id, bank, false, false)
+        local ok, n = pcall(_G.C_Item.GetItemCount, id, false, false, false)
         if ok and type(n) == "number" and n >= 0 and n < huge and n == floor(n) then return n, true end
     end
     if type(_G.GetItemCount) == "function" then
-        local ok, n = pcall(_G.GetItemCount, id, bank)
+        local ok, n = pcall(_G.GetItemCount, id, false)
         if ok and type(n) == "number" and n >= 0 and n < huge and n == floor(n) then return n, true end
     end
     return 0, false
@@ -1455,7 +1454,7 @@ function E.ShopList(s, onlyStep, bagsOnly, suppliedPlan)
     for _, id in ipairs(order) do
         local e = totals[id]
         if onlyStep or e.need > 0 then
-            e.have, e.haveKnown = E.Have(e.id, not bagsOnly)
+            e.have, e.haveKnown = E.Have(e.id)
             if s.slug == "poisons" then
                 e.vendor = E.IsVendorSold(e.id)
                 e.source = e.vendor and "vendor" or "ah"
@@ -1490,7 +1489,7 @@ function E.ShoppingSourceText(entry)
             return format(L["原计划货源还缺 %d 件，请重新计算。"], entry.purchaseUncovered or 0)
         end
         if entry.inventoryUnknown then
-            return entry.useBagMaterials and L["请检查背包"] or L["请打开背包和银行，再查看需要购买的数量。"]
+            return L["请检查背包"]
         end
         if entry.purchaseUnknown then return L["请核对价格"] end
         local parts = {}
@@ -1586,7 +1585,7 @@ function E.ShoppingSourceDetail(entry)
         parts[#parts + 1] = format(L["已竞标 %d 件，邮件待收"], pending)
     end
     if entry.inventoryUnknown then
-        parts[#parts + 1] = entry.useBagMaterials and L["请检查背包"] or L["请打开背包和银行，再查看需要购买的数量。"]
+        parts[#parts + 1] = L["请检查背包"]
     end
     return table.concat(parts, "\n")
 end

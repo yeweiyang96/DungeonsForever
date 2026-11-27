@@ -1123,11 +1123,11 @@ end
 
 local function toolItemOwned(itemID)
     if type(_G.C_Item) == "table" and type(_G.C_Item.GetItemCount) == "function" then
-        local ok, n = pcall(_G.C_Item.GetItemCount, itemID, true)
+        local ok, n = pcall(_G.C_Item.GetItemCount, itemID, false, false, false)
         if ok and type(n) == "number" and n > 0 then return true end
     end
     if type(_G.GetItemCount) == "function" then
-        local ok, n = pcall(_G.GetItemCount, itemID, true)
+        local ok, n = pcall(_G.GetItemCount, itemID, false)
         if ok and type(n) == "number" and n > 0 then return true end
     end
     return false

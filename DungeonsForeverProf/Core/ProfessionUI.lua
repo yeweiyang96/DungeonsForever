@@ -17579,7 +17579,7 @@ function PD.RowsLeveling(rows)
                 or st.toolBop and { text = L["BoP 制作"], bg = hostConst("Q_BADGE_PRE_BG") }
             if cd then
                 cd.lines[#cd.lines + 1] = {
-                    owned and L["工具：已在背包或银行中，无需再次制作。"]
+                    owned and L["工具：已在背包中，无需再次制作。"]
                     or st.toolBop and L["工具：拾取绑定，无法购买，须自行制作。"]
                     or L["工具：可购买或制作，制成后保留使用，不会消耗。"],
                     0.58, 0.86, 1 }
@@ -17706,16 +17706,13 @@ function PD.RowsLeveling(rows)
                     if producedBefore[b.id] then
                         b.tag = L["产物"]
                     else
-                        local seed = res and res.seedInventory or {}
-                        local XPe = getExec()
-                        local live = XPe and XPe.BagCount and (XPe.BagCount(b.id) or 0) or nil
-                        local bagMode=res and res.useBagMaterials
-                        local have = live or (not bagMode and tonumber(seed[b.id])) or 0
-                        if type(GetItemCount) == "function" and have <= 0 and not bagMode then
-                            local ok, n = pcall(GetItemCount, b.id)
-                            if ok and type(n) == "number" then have = n end
-                            local ok2, n2 = pcall(GetItemCount, b.id, true)
-                            if ok2 and type(n2) == "number" and n2 > have then have = n2 end
+                        local bagMode = res and res.useBagMaterials
+                        local have = 0
+                        if bagMode then
+                            local seed = res and res.seedInventory or {}
+                            local XPe = getExec()
+                            local live = XPe and XPe.BagCount and XPe.BagCount(b.id) or nil
+                            have = live or tonumber(seed[b.id]) or 0
                         end
                         if have > 0 then b.tag = L["库存"] end
                     end
@@ -18979,7 +18976,7 @@ function PD.RowsFollowShopping(rows, data)
                 row.right,row.right2=entry.inventoryUnknown and L["请检查背包"] or L["请扫描拍卖行"],L["请核对价格"]
                 row.purchaseCount,row.purchaseCost=nil,nil
                 if entry.requiresRecalculation then row.right,row.right2=L["重新计算"],nil end
-                row.lines={{summary,.7,.7,.7},{detail or (entry.inventoryUnknown and (data.useBagMaterials and L["请检查背包"] or L["请打开背包和银行确认数量"]) or L["请扫描拍卖行"]),.95,.75,.4}}
+                row.lines={{summary,.7,.7,.7},{detail or (entry.inventoryUnknown and L["请检查背包"] or L["请扫描拍卖行"]),.95,.75,.4}}
             end
         end
     end

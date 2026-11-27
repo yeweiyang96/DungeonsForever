@@ -704,35 +704,64 @@ local function CraftingEntrySpellID(index)
     return fallback
 end
 
+local function profLineMatches(info, targetLine, targetSlug)
+    if type(info) ~= "table" then return false end
+    local pid = tonumber(info.professionID)
+    local parentID = tonumber(info.parentProfessionID)
+    if targetLine and (pid == targetLine or parentID == targetLine) then return true end
+    local api = getAPI()
+    if targetSlug and api and api.SkillLineToSlug then
+        if pid and api.SkillLineToSlug(pid) == targetSlug then return true end
+        if parentID and api.SkillLineToSlug(parentID) == targetSlug then return true end
+    end
+    return not targetLine and not targetSlug
+end
+
 local function openProfPanel(slug)
     local eng = getEngine()
     local profName = eng and eng.ProfName(slug) or slug
     local api = getAPI()
-    local ids = (_G.GetProfessions and { _G.GetProfessions() }) or {}
+    local ids = {}
+    local idCount = 0
+    if type(_G.GetProfessions) == "function" then
+        ids = { _G.GetProfessions() }
+        idCount = select("#", _G.GetProfessions())
+    end
     local targetLine
+    local matchedIdx
     if type(_G.GetProfessionInfo) == "function" then
-        for _, idx in ipairs(ids) do
+        for i = 1, idCount do
+            local idx = ids[i]
             if idx then
                 local nm, _, _, _, _, _, skillLine = _G.GetProfessionInfo(idx)
                 local matched = (skillLine and api and api.SkillLineToSlug and api.SkillLineToSlug(skillLine) == slug)
                     or (profName and nm == profName)
-                if matched and skillLine then
-                    targetLine = skillLine
-                    if _G.C_TradeSkillUI and _G.C_TradeSkillUI.OpenTradeSkill
-                        and pcall(_G.C_TradeSkillUI.OpenTradeSkill, skillLine) then
-                        return true, skillLine
+                if matched then
+                    matchedIdx = idx
+                    if skillLine then
+                        targetLine = skillLine
+                        if _G.C_TradeSkillUI and _G.C_TradeSkillUI.OpenTradeSkill then
+                            local ok, opened = pcall(_G.C_TradeSkillUI.OpenTradeSkill, skillLine)
+                            if ok and opened ~= false then return true, skillLine end
+                        end
                     end
                 end
             end
         end
     end
-    for _, idx in ipairs(ids) do
-        if idx and _G.GetProfessionInfo and _G.GetProfessionInfo(idx) == profName then
-            local sid = CraftingEntrySpellID(idx)
-            local nm = sid and eng and eng.SpellName(sid)
-            if nm and _G.CastSpellByName and pcall(_G.CastSpellByName, nm) then return true, targetLine end
-            if sid and _G.C_Spell and _G.C_Spell.CastSpell and pcall(_G.C_Spell.CastSpell, sid) then return true, targetLine end
+    if not targetLine and api and api.ProfessionInfo then
+        local info = api.ProfessionInfo(slug)
+        local fallbackLine = info and (info.skillLine or info.skillLineID)
+        if fallbackLine and _G.C_TradeSkillUI and _G.C_TradeSkillUI.OpenTradeSkill then
+            local ok, opened = pcall(_G.C_TradeSkillUI.OpenTradeSkill, fallbackLine)
+            if ok and opened ~= false then return true, fallbackLine end
         end
+    end
+    if matchedIdx then
+        local sid = CraftingEntrySpellID(matchedIdx)
+        local nm = sid and eng and eng.SpellName(sid)
+        if nm and _G.CastSpellByName and pcall(_G.CastSpellByName, nm) then return true, targetLine end
+        if sid and _G.C_Spell and _G.C_Spell.CastSpell and pcall(_G.C_Spell.CastSpell, sid) then return true, targetLine end
     end
     if profName and _G.CastSpellByName then
         if pcall(_G.CastSpellByName, profName) then return true, targetLine end
@@ -740,65 +769,151 @@ local function openProfPanel(slug)
     return false
 end
 
+local function recipeInFilteredList(CUI, spellID)
+    if not (CUI and CUI.GetFilteredRecipeIDs) then return true end
+    local ok, list = pcall(CUI.GetFilteredRecipeIDs)
+    if not ok or type(list) ~= "table" then return true end
+    for i = 1, #list do
+        if list[i] == spellID then return true end
+    end
+    return false
+end
+
+local function clearBlockingRecipeFilters(cp, CUI, spellID)
+    local search = cp.RecipeList and cp.RecipeList.SearchBox
+    if search and search.GetText and search.SetText and search:GetText() ~= "" then
+        pcall(search.SetText, search, "")
+    end
+    if not recipeInFilteredList(CUI, spellID) then
+        if CUI.SetOnlyShowMakeableRecipes and CUI.GetOnlyShowMakeableRecipes and CUI.GetOnlyShowMakeableRecipes() then
+            pcall(CUI.SetOnlyShowMakeableRecipes, false)
+        end
+        if CUI.SetOnlyShowSkillUpRecipes and CUI.GetOnlyShowSkillUpRecipes and CUI.GetOnlyShowSkillUpRecipes() then
+            pcall(CUI.SetOnlyShowSkillUpRecipes, false)
+        end
+        if CUI.SetOnlyShowFirstCraftRecipes and CUI.GetOnlyShowFirstCraftRecipes and CUI.GetOnlyShowFirstCraftRecipes() then
+            pcall(CUI.SetOnlyShowFirstCraftRecipes, false)
+        end
+        if CUI.ClearRecipeCategoryFilter then pcall(CUI.ClearRecipeCategoryFilter) end
+        if CUI.ClearRecipeSourceTypeFilter then pcall(CUI.ClearRecipeSourceTypeFilter) end
+        if CUI.SetRecipeItemNameFilter then pcall(CUI.SetRecipeItemNameFilter, "") end
+    end
+end
+
+local function expandRecipeCategory(cp, spellID)
+    local rl = cp and cp.RecipeList
+    local dp = rl and rl.ScrollBox and rl.ScrollBox.GetDataProvider and rl.ScrollBox:GetDataProvider()
+    if not (dp and dp.Enumerate) then return end
+    local ok = pcall(function()
+        for _, node in dp:Enumerate(nil, nil, false) do
+            local d = node.GetData and node:GetData() or node
+            if d and d.recipeInfo and d.recipeInfo.recipeID == spellID then
+                local parent = node.GetParent and node:GetParent()
+                if parent and parent.IsCollapsed and parent:IsCollapsed() and parent.SetCollapsed then
+                    parent:SetCollapsed(false)
+                end
+                break
+            end
+        end
+    end)
+    return ok
+end
+
+local function stripColorCodes(text)
+    if type(text) ~= "string" then return nil end
+    local s = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("^%s+", ""):gsub("%s+$", "")
+    return s ~= "" and s or nil
+end
+
+local function readSelectedRecipeID(form)
+    if not form then return nil end
+    local tx = form.transaction
+    local ri = form.currentRecipeInfo
+    local tid = tx and ((type(tx.GetRecipeID) == "function" and tonumber(tx:GetRecipeID())) or tonumber(tx.recipeID))
+    return tid or (ri and tonumber(ri.recipeID)) or nil
+end
+
 local function modernJump(p)
     local frame = _G.ProfessionsFrame
     local cp = frame and frame.CraftingPage
-    if not (frame and frame.IsShown and frame:IsShown() and cp) then return false end
+    if not (frame and frame.IsShown and frame:IsShown() and cp) then return false, false, nil end
     local CUI = _G.C_TradeSkillUI
-    if p.skillLine and CUI and CUI.GetBaseProfessionInfo then
+    if (p.skillLine or p.slug) and CUI and CUI.GetBaseProfessionInfo then
         local ok, info = pcall(CUI.GetBaseProfessionInfo)
-        if not ok or type(info) ~= "table" or tonumber(info.professionID) ~= p.skillLine then return false end
+        if not ok or not profLineMatches(info, p.skillLine, p.slug) then return false, false, nil end
     end
     if cp.IsShown and not cp:IsShown() then
         if _G.EventRegistry and _G.EventRegistry.TriggerEvent then
             pcall(_G.EventRegistry.TriggerEvent, _G.EventRegistry, "Professions.ShowSelectedCraftingPage")
         end
-        if cp.IsShown and not cp:IsShown() then return false end
+        if cp.IsShown and not cp:IsShown() then return false, false, nil end
     end
     local form = cp.SchematicForm
-    if not form then return false end
-    local transaction = form.transaction
-    local recipeInfo = form.currentRecipeInfo
-    local selected = (transaction and tonumber(transaction.recipeID))
-        or (recipeInfo and tonumber(recipeInfo.recipeID))
-    if selected ~= p.spellID then
-        local search = cp.RecipeList and cp.RecipeList.SearchBox
-        if search and search.GetText and search.SetText and search:GetText() ~= "" then
-            pcall(search.SetText, search, "")
-        end
+    if not form then return false, false, nil end
+
+    local selectedID = readSelectedRecipeID(form)
+    if selectedID ~= p.spellID then
+        clearBlockingRecipeFilters(cp, CUI, p.spellID)
+        expandRecipeCategory(cp, p.spellID)
         if cp.SelectRecipe and CUI and CUI.GetRecipeInfo then
             local ok, info = pcall(CUI.GetRecipeInfo, p.spellID)
-            if ok and type(info) == "table" then pcall(cp.SelectRecipe, cp, info) end
+            if ok and type(info) == "table" then
+                pcall(cp.SelectRecipe, cp, info)
+                if cp.RecipeList and cp.RecipeList.SelectRecipe then
+                    pcall(cp.RecipeList.SelectRecipe, cp.RecipeList, info, true)
+                end
+            end
         end
-        return false
+        selectedID = readSelectedRecipeID(form)
+        if selectedID ~= p.spellID then
+            return false, false, nil
+        end
     end
+
     local box = cp.CreateMultipleInputBox
-    if not (box and box.SetValue and box.GetValue) then return false end
-    local count = p.count
-    if box.GetMaxValue then
-        local maxCount = tonumber(box:GetMaxValue())
-        if not maxCount or maxCount <= 0 then return false end
-        count = min(count, maxCount)
+    if not (box and box.SetValue and box.GetValue) then
+        return true, false, "no_input_box"
     end
+
+    local boxEnabled = (type(box.IsEnabled) ~= "function") or (box:IsEnabled() and true or false)
+    local maxCount = box.GetMaxValue and tonumber(box:GetMaxValue()) or nil
+    if (not maxCount or maxCount <= 0) and cp.GetCraftableCount then
+        local okC, cVal = pcall(cp.GetCraftableCount, cp)
+        if okC and type(cVal) == "number" and cVal > 0 then maxCount = cVal end
+    end
+    if (not maxCount or maxCount <= 0) and CUI and CUI.GetCraftableCount then
+        local okC, cVal = pcall(CUI.GetCraftableCount, p.spellID)
+        if okC and type(cVal) == "number" and cVal > 0 then maxCount = cVal end
+    end
+
+    if not boxEnabled or not maxCount or maxCount <= 0 then
+        local tipReason = cp.CreateButton and stripColorCodes(cp.CreateButton.tooltipText or cp.CreateButton.disabledTooltip)
+        return true, false, tipReason or "not_craftable"
+    end
+
+    local count = max(1, min(p.count, maxCount))
     local ok = pcall(box.SetValue, box, count)
-    if ok and tonumber(box:GetValue()) == count then
+    local curVal = tonumber(box:GetValue())
+    if not curVal and box.GetText then curVal = tonumber(box:GetText()) end
+    if ok and curVal == count then
         p.filledCount = count
-        return true
+        p.maxCraftable = maxCount
+        return true, true, nil
     end
-    return false
+    return true, false, "set_failed"
 end
 
 function jumpApply()
     local p = jumpPending
     if not p or p.applying then return end
     p.applying = true
-    local selected, counted = false, modernJump(p)
+    local selected, counted, modernReason = modernJump(p)
     local frame = _G.ProfessionsFrame
     local modern = frame and frame.CraftingPage and frame.IsShown and frame:IsShown()
     local matches = true
-    if p.skillLine and _G.C_TradeSkillUI and _G.C_TradeSkillUI.GetBaseProfessionInfo then
+    if (p.skillLine or p.slug) and _G.C_TradeSkillUI and _G.C_TradeSkillUI.GetBaseProfessionInfo then
         local ok, info = pcall(_G.C_TradeSkillUI.GetBaseProfessionInfo)
-        matches = ok and type(info) == "table" and tonumber(info.professionID) == p.skillLine
+        matches = ok and profLineMatches(info, p.skillLine, p.slug)
     end
     if not counted and not modern and matches and _G.C_TradeSkillUI then
         local verified = false
@@ -839,7 +954,20 @@ function jumpApply()
     if jumpPending ~= p then return end
     if counted then
         jumpPending = nil
-        chatNotify(format(L["已定位配方 %s，预填制造数量 %d —— 在专业面板点一次制造即可"], p.name, p.filledCount or p.count))
+        local filled = p.filledCount or p.count
+        if filled < p.count then
+            chatNotify(format(L["已定位配方 %s，按当前背包材料预填 %d/%d 次 —— 在专业面板点一次制造即可"], p.name, filled, p.count))
+        else
+            chatNotify(format(L["已定位配方 %s，预填制造数量 %d —— 在专业面板点一次制造即可"], p.name, filled))
+        end
+    elseif selected and modern and modernReason and modernReason ~= "set_failed"
+        and (p.retries or 0) >= 1 then
+        jumpPending = nil
+        if modernReason == "no_input_box" or modernReason == "not_craftable" then
+            chatNotify(format(L["已选中配方 %s，请在专业面板输入制造数量"], p.name))
+        else
+            chatNotify(format(L["已定位配方 %s；当前暂不可制造（%s）"], p.name, modernReason))
+        end
     elseif not p.scheduled then
         if (p.retries or 0) < 12 and _G.C_Timer and _G.C_Timer.After then
             p.scheduled = true
@@ -876,6 +1004,10 @@ local function jumpCraft(stepIdx)
     local spellID = seg[3]
     local rec = eng.StepRecipe(seg, eng.RecMap(s.slug)[spellID])
     local learned = eng.IsLearned(spellID)
+    if not learned and _G.C_TradeSkillUI and _G.C_TradeSkillUI.GetRecipeInfo then
+        local okR, ri = pcall(_G.C_TradeSkillUI.GetRecipeInfo, spellID)
+        if okR and type(ri) == "table" and ri.learned then learned = true end
+    end
     local eco = getEco()
     if not learned and eco and eco.LearningSource and eco.LearningSource(rec) == "trainer" then playCue("nol") end
     local learningWarning = eng.LearningWarning(s.slug, progress)
@@ -884,7 +1016,8 @@ local function jumpCraft(stepIdx)
     local mats = eng.RecMats(rec)
     if mats then
         for _, m in ipairs(mats) do
-            if (eng.Have(m[1], not (plan and plan.useBagMaterials)) or 0) < (m[2] or 1) then
+            local per = m[2] or 1
+            if (eng.Have(m[1]) or 0) < per then
                 local sup = eng.SupplementNeeds(s.slug)
                 if sup then
                     chatNotify(format(L["本步材料不足：缺 %d 种共 %d 件，先按购物清单补齐"], sup.kinds, sup.qty))
@@ -905,16 +1038,24 @@ local function jumpCraft(stepIdx)
     end
     local name = eng.SpellName(spellID)
     if not name then chatNotify(L["配方数据未就绪，稍后再试"]); return end
+    local targetSlug = seg.profession or s.slug
     jumpEvtInit()
-    local opened, skillLine = openProfPanel(seg.profession or s.slug)
+    local opened, skillLine = openProfPanel(targetSlug)
     if opened then
-        jumpPending = { spellID = spellID, count = count, name = name, skillLine = skillLine }
+        jumpPending = {
+            spellID = spellID,
+            count = count,
+            name = name,
+            skillLine = skillLine,
+            slug = targetSlug,
+        }
         chatNotify(format(L["正在打开专业面板并定位 %s（预填数量 %d）…"], name, count))
         jumpApply()
     else
         chatNotify(L["无法自动打开专业面板，请手动打开后重试"])
     end
 end
+PF.JumpCraft = jumpCraft
 
 local importTries = 0
 local function DoImport(slug, profName)
@@ -955,7 +1096,7 @@ local function DoImport(slug, profName)
         return
     end
     importTries = 0
-    if inventoryUnknown then chatNotify(L["请打开背包和银行，再查看需要购买的数量。"]) end
+    if inventoryUnknown then chatNotify(L["请检查背包，再查看需要购买的数量。"]) end
     local ab = getAuctionBridge()
     if ab and type(ab.DoImport) == "function" then
         ab.DoImport(profName, items)
@@ -1805,7 +1946,7 @@ local function paintMats(card, seg, rm, soldMemo, w, remaining, resR)
         for _, m in ipairs(mats) do
             local per = (m[2] or 1)
             if per > 0 then
-                local raw = eng.Have(m[1], not bagMode)
+                local raw = eng.Have(m[1])
                 local c = floor((raw + (bagMode and 0 or PF.BidPending(m[1], raw))) / per)
                 canCraft = (canCraft == nil) and c or min(canCraft, c)
             end
@@ -1813,7 +1954,7 @@ local function paintMats(card, seg, rm, soldMemo, w, remaining, resR)
         card.matHead:Hide()
         for i, m in ipairs(mats) do
             if i > MAT_MAX then break end
-            local raw = eng.Have(m[1], not bagMode)
+            local raw = eng.Have(m[1])
             local pend = PF.BidPending(m[1], raw)
             local have = raw + (bagMode and 0 or pend)
             local per = (m[2] or 1)
