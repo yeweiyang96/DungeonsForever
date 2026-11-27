@@ -4446,6 +4446,9 @@ function PD.BindRow(r, spec, h)
         local vs = PD.VsBlock(r)
         local W = tonumber(spec.vw) or tonumber(PD.splitRW) or 160
         local cw = math.floor((W - PD.VS_GAP) / 2)
+        local hui = getHui()
+        local fontPath = getFont() or "Fonts\\FRIZQT__.TTF"
+        local fontFlags = hui and hui.FontFlags and hui.FontFlags("OUTLINE") or "OUTLINE"
         for k = 1, 2 do
             local d = spec.cards and spec.cards[k] or nil
             local c, z = vs.cards[k], vs.zones[k]
@@ -4457,38 +4460,66 @@ function PD.BindRow(r, spec, h)
                     c:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
                 end
                 c:SetSize(cw, PD.VS_CARD_H)
-                c.lab:SetText(d.lab or "")
+                if PD.PaintTileBorder and c.__border then
+                    if d.win then
+                        PD.PaintTileBorder(c, { 0.28, 0.78, 0.48, 0.72 })
+                    else
+                        local cb = (hui and hui.CARD_BORDER) or { 1, 1, 1, 0.12 }
+                        PD.PaintTileBorder(c, cb)
+                    end
+                end
+                local badgeW = 0
+                if d.win then
+                    if c.badgeChip and hui and hui.PaintSolidChip then
+                        hui.PaintSolidChip(c.badgeChip, L["最省"], { 0.24, 0.72, 0.44 }, nil, 10)
+                        c.badgeChip:Show()
+                        badgeW = (c.badgeChip:GetWidth() or 32) + 6
+                        if c.badge then c.badge:Hide() end
+                    elseif c.badge then
+                        c.badgeFs:SetText(L["最省"])
+                        local bw = math.max(32, math.ceil(FSW(c.badgeFs)) + 10)
+                        c.badge:SetWidth(bw)
+                        c.badge:Show()
+                        badgeW = bw + 6
+                    end
+                else
+                    if c.badgeChip then c.badgeChip:Hide() end
+                    if c.badge then c.badge:Hide() end
+                end
+                local labMax = math.max(1, cw - 16 - badgeW)
+                c.lab:SetWidth(labMax)
+                c.lab:SetText(PD.Fit(d.lab or "", 12, labMax))
                 c.lab:SetTextColor(Unpack(d.win and C_WHITE or C_GREY))
-                local pc = d.win and { 0.42, 0.94, 0.62 } or (d.priceOk and C_TEXT or C_GREY)
+                local priceStr = d.price or "—"
+                local priceFs = (d.priceOk == false and priceStr ~= "—") and 11 or 15
+                if c.__priceFs ~= priceFs then
+                    c.__priceFs = priceFs
+                    c.price:SetFont(fontPath, priceFs, fontFlags)
+                end
+                local pc = d.win and { 0.42, 0.94, 0.62 } or (d.priceOk and C_WHITE or C_GREY)
                 c.price:SetTextColor(Unpack(pc))
-                c.price:SetText(d.price or "—")
                 c.price:SetWidth(math.max(1, cw - 16))
+                c.price:SetText(priceStr)
                 c.nm:SetTextColor(Unpack(d.dim and C_GREY or C_TEXT))
-                c.nm:SetText(d.name or "")
-                local nx = d.it and 35 or 8
+                local nx = d.it and 30 or 8
+                local nmMax = math.max(1, cw - nx - 6)
                 c.nm:ClearAllPoints()
-                c.nm:SetPoint("LEFT", c.host, "BOTTOMLEFT", nx, 17)
-                c.nm:SetWidth(math.max(1, cw - nx - 8))
                 if d.it then
-                    c.ic:SetSize(22, 22)
+                    c.ic:SetSize(18, 18)
                     SetIcon(c.ic, PD.ItemIcon(d.it))
-                    if getHui() and getHui().SetIconRing then
+                    if hui and hui.SetIconRing then
                         local vq = PD.QualCached(d.it)
-                        getHui().SetIconRing(c.ic, vq and getHui().QColor and { getHui().QColor(vq) } or nil)
+                        hui.SetIconRing(c.ic, vq and hui.QColor and { hui.QColor(vq) } or nil)
                     end
                     c.ic:Show()
+                    c.nm:SetPoint("LEFT", c.ic, "RIGHT", 4, 0)
                 else
                     c.ic:Hide()
-                    if getHui() and getHui().SetIconRing then getHui().SetIconRing(c.ic, nil) end
+                    if hui and hui.SetIconRing then hui.SetIconRing(c.ic, nil) end
+                    c.nm:SetPoint("BOTTOMLEFT", c.host, "BOTTOMLEFT", 8, 10)
                 end
-                if d.win then
-                    c.badgeFs:SetText(L["最省"])
-                    c.badge:SetWidth(math.max(32, math.ceil(FSW(c.badgeFs)) + 10))
-                    c.badge:Show()
-                else
-                    c.badge:Hide()
-                end
-                c.lab:SetWidth(math.max(1, cw - 16))
+                c.nm:SetWidth(nmMax)
+                c.nm:SetText(PD.Fit(d.name or "", 11, nmMax))
                 c:Show()
                 z:ClearAllPoints()
                 z:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
@@ -9911,7 +9942,7 @@ function PD.SubLink(r)
     return PD.SubLinkAt(r, 1)
 end
 
-PD.VS_CARD_H, PD.VS_GAP = 96, 8
+PD.VS_CARD_H, PD.VS_GAP = 84, 8
 function PD.VsHeight(w)
     return PD.VS_CARD_H
 end
@@ -9924,37 +9955,51 @@ function PD.VsBlock(r)
         local c = CreateFrame("Frame", nil, r)
         c:SetFrameLevel(base + 2)
         if hui and hui.BuildRoundedBG and hui.layer then
-            hui.BuildRoundedBG(c, 6, hui.layer.L2, "both", true, 1)
+            local _, border = hui.BuildRoundedBG(c, 6, hui.layer.L2, "both", true, 1)
+            c.__border = border or {}
         end
         local host = CreateFrame("Frame", nil, c)
         host:SetFrameLevel(base + 3)
         host:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
         host:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0, 0)
         local lab = MakeFS(host, 12, C_GREY, "LEFT")
-        lab:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -6)
+        lab:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -9)
         lab:SetWordWrap(false)
+        local price = MakeFS(host, 15, C_GOLD, "LEFT")
+        price:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -30)
+        price:SetWordWrap(false)
+        local div = host:CreateTexture(nil, "ARTWORK")
+        div:SetHeight(1)
+        div:SetColorTexture(1, 1, 1, 0.08)
+        div:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -52)
+        div:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -52)
         local ic = host:CreateTexture(nil, "OVERLAY", nil, 2)
-        ic:SetSize(22, 22)
-        ic:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 8, 6)
+        ic:SetSize(18, 18)
+        ic:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 8, 7)
         if hui and hui.IconRing then hui.IconRing(ic) end
         ic:Hide()
-        local nm = MakeFS(host, 12, C_TEXT, "LEFT")
+        local nm = MakeFS(host, 11, C_TEXT, "LEFT")
         nm:SetWordWrap(false)
-        local price = MakeFS(host, 14, C_GOLD, "RIGHT")
-        price:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -44)
-        price:SetWordWrap(false)
-        c.lab, c.ic, c.nm, c.price, c.host = lab, ic, nm, price, host
-        local bd = CreateFrame("Frame", nil, host)
-        bd:SetFrameLevel(base + 5)
-        if hui and hui.BuildRoundedBG and hui.layer then
-            hui.BuildRoundedBG(bd, 4, hui.layer.L4, "both", true, 1)
+        c.lab, c.ic, c.nm, c.price, c.div, c.host = lab, ic, nm, price, div, host
+        if hui and hui.MakeSolidChip then
+            local chip = hui.MakeSolidChip(host, base + 5, 16)
+            chip:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -7)
+            chip:EnableMouse(false)
+            chip:Hide()
+            c.badgeChip = chip
+        else
+            local bd = CreateFrame("Frame", nil, host)
+            bd:SetFrameLevel(base + 5)
+            if hui and hui.BuildRoundedBG and hui.layer then
+                hui.BuildRoundedBG(bd, 4, hui.layer.L4, "both", true, 1)
+            end
+            local bdFs = MakeFS(bd, 10, { 0.42, 0.94, 0.62 }, "CENTER")
+            bdFs:SetPoint("CENTER", bd, "CENTER", 0, 0)
+            bd:SetSize(32, 16)
+            bd:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -7)
+            bd:Hide()
+            c.badge, c.badgeFs = bd, bdFs
         end
-        local bdFs = MakeFS(bd, 10, { 0.42, 0.94, 0.62 }, "CENTER")
-        bdFs:SetPoint("CENTER", bd, "CENTER", 0, 0)
-        bd:SetSize(32, 14)
-        bd:SetPoint("TOPRIGHT", host, "TOPRIGHT", -6, -24)
-        bd:Hide()
-        c.badge, c.badgeFs = bd, bdFs
         cards[k] = c
         local z = CreateFrame("Button", nil, r)
         z:SetFrameLevel(base + 4)
@@ -10026,6 +10071,11 @@ function PD.WireTipZone(z, r)
     z:SetScript("OnMouseWheel", function(self, delta)
         PD.HideVendorPick()
         local hb = getHostBridge()
+        if r and r.GetParent and r:GetParent() == PD.side and PD.sideScroll and PD.side then
+            if hb and hb.WheelScroll then hb.WheelScroll(PD.sideScroll, PD.side, delta) end
+            if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
+            return
+        end
         if hb and hb.WheelScroll then hb.WheelScroll(PD.scroll, PD.child, delta) end
     end)
 end
