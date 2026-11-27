@@ -56,7 +56,6 @@ Core\ProfCDWatch.lua
 Core\ProfTooltips.lua
 Core\ProfMainExports.lua
 Core\ProfessionUI.lua
-Core\ProfFollow.lua
 Core\ProfSupply.lua
 Core\ProfSourceMerge.lua
 Core\ProfGates.lua
@@ -74,3 +73,5 @@ Core\ProfSolverRun.lua
 Core\ProfRoutePlans.lua
 Core\ProfAuctionScanner.lua
 Core\ProfShoppingExport.lua
+Core\ProfFollowEngine.lua
+Core\ProfFollow.lua

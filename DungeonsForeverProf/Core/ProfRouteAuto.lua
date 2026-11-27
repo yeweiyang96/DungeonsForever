@@ -8,7 +8,6 @@ if type(gns) == "table" and gns ~= ns then
     gns.ProfRouteAuto = RA
 end
 
-local existingComputeFishing = RA.ComputeFishing
 local format = string.format
 
 local function getDS()
@@ -128,11 +127,6 @@ end
 local function cfgDefaultTarget()
     local cfg = getSolverCfg()
     return (type(cfg) == "table" and type(cfg.DEFAULT_TARGET) == "number" and cfg.DEFAULT_TARGET) or 300
-end
-
-local function cfgMaxPerRecipe()
-    local cfg = getSolverCfg()
-    return (type(cfg) == "table" and type(cfg.MAX_PER_RECIPE) == "number" and cfg.MAX_PER_RECIPE) or 3
 end
 
 local function cfgCacheTTL()
@@ -1616,10 +1610,9 @@ end
 
 local function Simulate(cands, start, cap, allowUnpriced, scheme)
     local steps, gaps = {}, {}
-    local banned, segRun = {}, {}
+    local used = {}
     local cur = math.max(1, math.min(cap - 1, start or 1))
     local guard = 0
-    local maxPer = cfgMaxPerRecipe()
 
     while cur < cap do
         RouteTick()
@@ -1627,23 +1620,32 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
         if guard > 4000 then break end
 
         local best, bestMetric
+        local fallback, fallbackMetric
         for _, c in ipairs(cands) do
-            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
+            if Usable(scheme, c, cur, allowUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
                     local metric = MetricOf(scheme, c, g)
-                    if not best or metric < bestMetric - 1e-9
-                        or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
-                        best, bestMetric = c, metric
+                    if not used[c.spell] then
+                        if not best or metric < bestMetric - 1e-9
+                            or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
+                            best, bestMetric = c, metric
+                        end
+                    elseif not fallback or metric < fallbackMetric - 1e-9
+                        or (metric < fallbackMetric + 1e-9 and c.grey > fallback.grey) then
+                        fallback, fallbackMetric = c, metric
                     end
                 end
             end
+        end
+        if not best then
+            best, bestMetric = fallback, fallbackMetric
         end
 
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced) then
+                if Eligible(c, allowUnpriced) then
                     local lo = c.learn
                     if lo > cur and (not nxt or lo < nxt) then nxt = lo end
                 end
@@ -1665,7 +1667,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
-                    if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
+                    if c ~= best and not used[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
                         if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
                             stop = true
@@ -1687,136 +1689,11 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
                     cost = best.cost * qty, item = best.item,
                     unpriced = best.unpriced,
                 }
-                segRun[best.spell] = (segRun[best.spell] or 0) + 1
-                if segRun[best.spell] >= maxPer then banned[best.spell] = true end
+                used[best.spell] = true
             end
         end
     end
     return steps, gaps
-end
-
-local function SimulateRange(cands, a, b, scheme, allowUnpriced)
-    local steps = {}
-    local banned, segRun = {}, {}
-    local cur = a
-    local guard = 0
-    local maxPer = cfgMaxPerRecipe()
-    while cur <= b do
-        RouteTick()
-        guard = guard + 1
-        if guard > 1000 then break end
-        local best, bestMetric
-        for _, c in ipairs(cands) do
-            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
-                local g = GainOf(scheme, c, cur)
-                if g then
-                    local metric = MetricOf(scheme, c, g)
-                    if not best or metric < bestMetric - 1e-9
-                        or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
-                        best, bestMetric = c, metric
-                    end
-                end
-            end
-        end
-        if not best then
-            local nxt
-            for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced) then
-                    local lo = c.learn
-                    if lo > cur and lo <= b and (not nxt or lo < nxt) then nxt = lo end
-                end
-            end
-            if not nxt then break end
-            cur = nxt
-        else
-            local from = cur
-            local crafts = 0
-            while cur <= b do
-                local g = Gain(cur, best)
-                if not g then break end
-                crafts = crafts + 1 / g
-                cur = cur + 1
-                local stop = false
-                for _, c in ipairs(cands) do
-                    if c ~= best and not banned[c.spell] and cur <= b
-                        and Usable(scheme, c, cur, allowUnpriced) then
-                        local g2 = GainOf(scheme, c, cur)
-                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
-                            stop = true
-                            break
-                        end
-                    end
-                end
-                if stop then break end
-            end
-            local qty = math.max(1, math.ceil(crafts - 1e-9))
-            local to = math.min(cur - 1, b)
-            local last = steps[#steps]
-            if last and last[3] == best.spell and last[2] + 1 == from then
-                last[2] = to
-                last[4] = last[4] + qty
-                last.cost = last.cost + best.cost * qty
-            else
-                steps[#steps + 1] = {
-                    from, to, best.spell, qty,
-                    cost = best.cost * qty, item = best.item,
-                    unpriced = best.unpriced, est = true,
-                }
-                segRun[best.spell] = (segRun[best.spell] or 0) + 1
-                if segRun[best.spell] >= maxPer then banned[best.spell] = true end
-            end
-        end
-    end
-    local coverTo = a - 1
-    for _, s in ipairs(steps) do
-        if s[1] <= coverTo + 1 then coverTo = math.max(coverTo, s[2]) end
-    end
-    local resid = (coverTo < b) and { coverTo + 1, b } or nil
-    return steps, resid
-end
-
-local function MergeSteps(steps)
-    local out = {}
-    for _, s in ipairs(steps) do
-        local last = out[#out]
-        if last and last[3] == s[3] and last[2] + 1 == s[1] then
-            last[2] = s[2]
-            last[4] = last[4] + s[4]
-            last.cost = (last.cost or 0) + (s.cost or 0)
-            if s.unpriced then last.unpriced = true end
-            if s.est then last.est = true end
-        else
-            out[#out + 1] = s
-        end
-    end
-    return out
-end
-
-local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
-    local out = {}
-    local si = 1
-    for _, g in ipairs(gaps) do
-        while si <= #steps and steps[si][2] < g[1] do
-            out[#out + 1] = steps[si]
-            si = si + 1
-        end
-        local fills, resid = SimulateRange(cands, g[1], g[2], scheme, allowUnpriced)
-        for _, s in ipairs(fills) do out[#out + 1] = s end
-        if resid then out[#out + 1] = { gap = resid } end
-    end
-    while si <= #steps do
-        out[#out + 1] = steps[si]
-        si = si + 1
-    end
-    local newSteps, newGaps = {}, {}
-    for _, it in ipairs(out) do
-        if it.gap then
-            newGaps[#newGaps + 1] = it.gap
-        else
-            newSteps[#newSteps + 1] = it
-        end
-    end
-    return MergeSteps(newSteps), newGaps
 end
 
 local function SummarizeCore(steps, recOf, skipLearnedFormulas, specInputs, skipMats, slug, opts)
@@ -2094,7 +1971,6 @@ function RA.SummarizeSteps(steps, slug, opts)
     if hasNIP then
         return {
             steps = {},
-            executionSteps = {},
             mats = {},
             formulas = {},
             status = "recalculate_required",
@@ -2293,7 +2169,6 @@ local function fixedPendingResult(slug, start, target)
         start = start,
         target = target,
         steps = {},
-        executionSteps = {},
         mats = {},
         formulas = {},
         total = 0,
@@ -2431,10 +2306,7 @@ local function baseFixedPlan(slug, supplied)
                 end
                 return nil
             end
-            local rawSteps, gaps = Simulate(cands, start, target, true, "cost")
-            if #gaps > 0 then
-                rawSteps, gaps = FillGaps(cands, rawSteps, gaps, "cost", true)
-            end
+            local rawSteps = Simulate(cands, start, target, true, "cost")
             if #rawSteps == 0 then
                 local pending = fixedPendingResult(slug, start, target)
                 if #learningGaps > 0 then
@@ -2616,50 +2488,6 @@ function RA.RecoveryForSteps(res, slug, recOf, opts)
     return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
-local function InjectTools(stepsOut, slug, cap, startLv, recOf)
-    local kept = {}
-    local G = getGates()
-    if not G or type(G.AutoCraftTools) ~= "function" then return kept end
-    local okAuto, autoTools = pcall(G.AutoCraftTools, slug)
-    if not okAuto then autoTools = readSetting("autoCraftTools", slug, true) end
-    if not autoTools then return kept end
-    local okGoals, goals = pcall(G.ToolGoals, slug, cap)
-    if not okGoals or type(goals) ~= "table" or #goals == 0 then return kept end
-    local have = {}
-    for _, st in ipairs(stepsOut) do have[st[3]] = true end
-    local lo = tonumber(startLv) or 1
-    local E = getEconomy()
-    for _, goal in ipairs(goals) do
-        local P = goal.minSkill or 1
-        local required = true
-        if E and type(E.RequiredLevelingTool) == "function" then
-            local okReq, v = pcall(E.RequiredLevelingTool, slug, goal)
-            if okReq then required = v end
-        end
-        local owned = false
-        if type(G.ToolOwned) == "function" then
-            local okOwned, vOwned = pcall(G.ToolOwned, goal.item)
-            if okOwned then owned = vOwned end
-        end
-        if required and P >= lo and not have[goal.spell] and recOf[goal.spell] and not owned then
-            local at = #stepsOut + 1
-            for i, st in ipairs(stepsOut) do
-                if (tonumber(st[1]) or 0) >= P then at = i; break end
-            end
-            table.insert(stepsOut, at, {
-                P, P, goal.spell, 1,
-                tool = true,
-                toolItem = goal.item,
-                toolSpell = goal.spell,
-                toolBop = goal.bindOnPickup or nil,
-            })
-            have[goal.spell] = true
-            kept[#kept + 1] = goal.item
-        end
-    end
-    return kept
-end
-
 function RA.StampToolPolicy(result, targetProfession, unused, snapshot)
     if type(result) ~= "table" then return result end
     local goals = {}
@@ -2669,12 +2497,10 @@ function RA.StampToolPolicy(result, targetProfession, unused, snapshot)
             if goal.item then goals[goal.item] = goal end
         end
     end
-    for _, listKey in ipairs({ "steps", "executionSteps" }) do
-        for _, st in ipairs(result[listKey] or {}) do
-            if st.tool and st.toolItem then
-                local goal = goals[st.toolItem]
-                st.toolBop = st.toolBop or (goal and goal.bindOnPickup) or nil
-            end
+    for _, st in ipairs(result.steps or {}) do
+        if st.tool and st.toolItem then
+            local goal = goals[st.toolItem]
+            st.toolBop = st.toolBop or (goal and goal.bindOnPickup) or nil
         end
     end
     for _, m in ipairs(result.mats or {}) do
@@ -2940,330 +2766,6 @@ function RA.StampSupply(result, context)
     end
     result.auctionSupplyUnknown = unknown > 0 and unknown or nil
     return result
-end
-
-local function standaloneComputeFishing(slug, opts)
-    if slug ~= "cooking" then return nil end
-    opts = opts or {}
-    local DS = getDS()
-    local guide = DS and type(DS.FishingGuide) == "function" and DS.FishingGuide() or nil
-    local fishDB = type(guide) == "table" and guide.fish or nil
-    if type(fishDB) ~= "table" then return nil end
-    local catalog = loadCatalogRecipes("cooking")
-    if not catalog then return nil end
-    local vendorCtx = buildVendorCtx(opts)
-    local cands, recOf, fishSet = {}, {}, {}
-    for _, spell in ipairs(catalog.spells) do
-        RouteTick()
-        local rec = decodeDSRow(catalog.recipes[spell], "cooking", spell)
-        if rec then
-            stampLegacyIndices(rec)
-            local learn, grey, mats = rec.learn, rec.grey, rec.mats
-            if type(learn) == "number" and type(grey) == "number" and grey > learn and type(mats) == "table" and #mats > 0 then
-                local ok, hasFish = true, false
-                for _, m in ipairs(mats) do
-                    local f = fishDB[m[1]]
-                    if not f and DS and type(DS.ExtraSources) == "function" then
-                        for _, es in ipairs(DS.ExtraSources(m[1])) do
-                            if type(es) == "table" and es.sourceKind == "fished" then
-                                f = { areas = { { areaID = es.targetID } } }
-                                break
-                            end
-                        end
-                    end
-                    if f then
-                        if f.season or f.night then ok = false end
-                        hasFish = true
-                        fishSet[m[1]] = f
-                    elseif not RA.MatPriceOf(m[1], vendorCtx) then
-                        ok = false
-                    end
-                end
-                if ok and hasFish then
-                    local cY = (type(rec.yellow) == "number") and rec.yellow or learn
-                    cands[#cands + 1] = {
-                        spell = spell,
-                        item = rec.item,
-                        learn = learn,
-                        orange = rec.orange,
-                        yellow = cY,
-                        green = (type(rec.green) == "number") and rec.green or cY,
-                        grey = grey,
-                        mats = mats,
-                        cost = 0,
-                        fcost = 0,
-                        base = 0,
-                        learnO = learn,
-                    }
-                    recOf[spell] = rec
-                end
-            end
-        end
-    end
-    if #cands == 0 then return nil end
-    local capMax = cfgCap()
-    local cap = math.max(2, math.min(capMax, math.floor(tonumber(opts.target) or capMax)))
-    local start = math.max(1, math.min(cap - 1, opts.start or 1))
-    local steps, gaps = Simulate(cands, start, cap, true, "crafts")
-    if #steps == 0 then return nil end
-    local stepsOut = ToReached(steps)
-    local fishList, fishAt = {}, {}
-    for _, st in ipairs(stepsOut) do
-        RouteTick()
-        local rec = recOf[st[3]]
-        local ml = (rec and rec.mats) or {}
-        local cnt = st[4] or 0
-        local line = {}
-        for _, m in ipairs(ml) do
-            local f = fishSet[m[1]] or fishDB[m[1]]
-            if f then
-                local need = (m[2] or 1) * cnt
-                local areas = f.areas or f.a or {}
-                local a1 = areas[1]
-                local e = fishAt[m[1]]
-                if not e then
-                    e = {
-                        id = m[1],
-                        count = 0,
-                        need = 0,
-                        source = "fishing",
-                        areas = areas,
-                        minSkill = a1 and a1.minSkill,
-                        noGetaway = a1 and a1.noGetaway,
-                        catchRate = f.rate,
-                        note = f.note,
-                    }
-                    fishAt[m[1]] = e
-                    fishList[#fishList + 1] = e
-                end
-                e.count = e.count + need
-                e.need = e.count
-                line[#line + 1] = { id = m[1], count = need, need = need, source = "fishing", areas = areas, note = f.note }
-            end
-        end
-        if #line > 0 then
-            local areas = {}
-            for _, e in ipairs(line) do
-                for _, a in ipairs(e.areas or {}) do areas[#areas + 1] = a end
-            end
-            st.fishing = line
-            st.fishMaterials = line
-            st.fishingAreas = areas
-            st.profession = "cooking"
-            st.role = "level"
-            st.reason = "level"
-        end
-    end
-    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
-        productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, false, nil, fishSet, slug, opts)
-    local reached = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or start
-    local res = {
-        planVersion = 2,
-        scheme = "fishing",
-        fishingRoute = true,
-        fishingRouteRevision = 2,
-        steps = stepsOut,
-        gaps = gaps,
-        mats = mats,
-        firstAt = firstAt,
-        fishMaterials = fishList,
-        matTotal = total,
-        formulas = formulas,
-        formulasTotal = formulasTotal,
-        total = total + formulasTotal,
-        vendorTotal = vendorTotal,
-        ahTotal = total + formulasTotal - vendorTotal,
-        productAH = productAH,
-        productNPC = productNPC,
-        productPartial = productPartial,
-        crafts = crafts,
-        start = start,
-        target = cap,
-        plannedTo = reached,
-        targetReached = reached >= cap,
-        partial = reached < cap,
-        feasible = true,
-        priced = RA.HasPriceData(),
-        snapshotAge = SnapshotSec(),
-        snapshotDays = priceCache.__minAge,
-        stamp = nowSec(),
-    }
-    res = RA.ApplyRecovery(res, "cooking", opts, recOf)
-    res.status = res.targetReached and "complete" or "incomplete"
-    return res
-end
-
-RA._StandaloneComputeFishing = standaloneComputeFishing
-
-local fishingWraps = setmetatable({}, { __mode = "k" })
-local function wrapComputeFishing(fn)
-    local target = type(fn) == "function" and fn or nil
-    if target and fishingWraps[target] then
-        return target
-    end
-    local wrapped
-    wrapped = function(slug, opts)
-        local pf = getFishing()
-        local callFn = (type(target) == "function" and target ~= wrapped) and target
-            or (pf and type(pf.ComputeFishing) == "function" and pf.ComputeFishing)
-            or nil
-        if type(callFn) == "function" then
-            local ok, res = pcall(callFn, slug, opts)
-            if ok then return res end
-        end
-        local okS, resS = pcall(standaloneComputeFishing, slug, opts)
-        if okS then return resS end
-        return nil
-    end
-    fishingWraps[wrapped] = true
-    return wrapped
-end
-
-local currentComputeFishing = wrapComputeFishing(existingComputeFishing)
-do
-    local prevMt = getmetatable(RA)
-    if not (type(prevMt) == "table" and prevMt.__dfFishingGuard) then
-        rawset(RA, "ComputeFishing", nil)
-        local prevIndex = type(prevMt) == "table" and prevMt.__index or nil
-        local prevNewIndex = type(prevMt) == "table" and prevMt.__newindex or nil
-        local mt = {}
-        if type(prevMt) == "table" then
-            for k, v in pairs(prevMt) do mt[k] = v end
-        end
-        mt.__dfFishingGuard = true
-        mt.__index = function(t, k)
-            if k == "ComputeFishing" then return currentComputeFishing end
-            if type(prevIndex) == "function" then return prevIndex(t, k) end
-            if type(prevIndex) == "table" then return prevIndex[k] end
-            return nil
-        end
-        mt.__newindex = function(t, k, v)
-            if k == "ComputeFishing" then
-                if v == nil then
-                    currentComputeFishing = nil
-                elseif type(v) == "function" then
-                    currentComputeFishing = wrapComputeFishing(v)
-                else
-                    currentComputeFishing = v
-                end
-                return
-            end
-            if type(prevNewIndex) == "function" then
-                prevNewIndex(t, k, v)
-                return
-            end
-            rawset(t, k, v)
-        end
-        setmetatable(RA, mt)
-    end
-end
-
-function RA._WrapComputeFishing()
-    local cur = RA.ComputeFishing
-    if type(cur) == "function" and not fishingWraps[cur] then
-        RA.ComputeFishing = wrapComputeFishing(cur)
-    end
-    return RA.ComputeFishing
-end
-
-local function baseCompute(slug, opts)
-    opts = opts or {}
-    if opts.scheme == "fishing" then
-        if type(RA.ComputeFishing) == "function" then
-            local okF, fr = pcall(RA.ComputeFishing, slug, opts)
-            if okF and type(fr) == "table" then return fr end
-            if not okF then
-                local okS, sr = pcall(standaloneComputeFishing, slug, opts)
-                if okS and type(sr) == "table" then return sr end
-                return nil
-            end
-        else
-            local okS, sr = pcall(standaloneComputeFishing, slug, opts)
-            if okS and type(sr) == "table" then return sr end
-        end
-    end
-    local cands, recOf, blockedCount, learningGaps = BuildCandidates(slug, opts)
-    if not cands then return nil end
-    local scheme = opts.scheme
-    if scheme ~= "net" then scheme = "cost" end
-    local capMax = cfgCap()
-    local cap = tonumber(opts.target) or capMax
-    cap = math.max(2, math.min(capMax, math.floor(cap)))
-    local allowUnpriced = false
-    local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme)
-    local filled = false
-    if #gaps > 0 then
-        steps, gaps = FillGaps(cands, steps, gaps, scheme, allowUnpriced)
-        for _, st in ipairs(steps) do
-            if st.est then filled = true; break end
-        end
-    end
-    if #learningGaps > 0 and #gaps > 0 then
-        local stop = cap
-        for _, gap in ipairs(gaps) do stop = math.min(stop, gap[1]) end
-        local prefix = {}
-        for _, step in ipairs(steps) do if step[1] < stop then prefix[#prefix + 1] = step end end
-        steps = prefix
-    end
-    local stepsOut = ToReached(steps)
-    local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
-    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
-        productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, false, nil, nil, slug, opts)
-    local res = {
-        scheme = scheme,
-        steps = stepsOut,
-        gaps = gaps,
-        mats = mats,
-        firstAt = firstAt,
-        total = total + formulasTotal,
-        matTotal = total,
-        formulas = formulas,
-        formulasTotal = formulasTotal,
-        vendorTotal = vendorTotal,
-        ahTotal = total + formulasTotal - vendorTotal,
-        productAH = productAH,
-        productNPC = productNPC,
-        productPartial = productPartial,
-        crafts = crafts,
-        start = math.max(1, math.min(capMax - 1, opts.start or 1)),
-        target = cap,
-        priced = RA.HasPriceData(),
-        filled = filled,
-        specBlocked = blockedCount,
-        learningGaps = learningGaps,
-        learningCoverageComplete = #learningGaps == 0,
-        toolItems = kept,
-        snapshotAge = SnapshotSec(),
-        snapshotDays = priceCache.__minAge,
-        stamp = nowSec(),
-    }
-    if #learningGaps > 0 then
-        res.plannedTo = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or res.start
-        res.targetReached = res.plannedTo >= cap
-        res.partial = not res.targetReached
-        res.feasible = #stepsOut > 0
-        res.status = res.targetReached and "complete" or res.feasible and "incomplete" or "infeasible"
-        res.optimal = false
-        if not res.targetReached then
-            res.learningComplete = false
-            res.completeCost = false
-            res.blockingDiagnostics = learningGaps
-            res.diagnostics = learningGaps
-        end
-    end
-    local economy = getEconomy()
-    if economy and type(economy.LearningPolicyFingerprint) == "function" then
-        local ok, v = pcall(economy.LearningPolicyFingerprint)
-        if ok then res.learningPolicyFingerprint = v end
-    end
-    return RA.ApplyRecovery(res, slug, opts, recOf)
-end
-
-RA._BaseCompute = baseCompute
-if type(RA.Compute) ~= "function" then
-    RA.Compute = baseCompute
 end
 
 local cache = {}

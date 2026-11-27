@@ -214,6 +214,8 @@ function ns.SetProfModule(on)
     ns.QuickCfg().tabs.Professions = on and true or false
 end
 
+local bootDone = false
+
 function ns.EnsureProfAPI()
     if type(ns.ProfAPI) == "table" then return ns.ProfAPI end
     if ns.AddonLoaded and ns.AddonLoaded("DungeonsForeverProf") then
@@ -227,10 +229,27 @@ function ns.EnsureProfAPI()
         local ok, state = pcall(C_AddOns.GetAddOnEnableState, "DungeonsForeverProf")
         if ok and state == 0 then return nil end
     end
+    local sink, prevSink
+    if bootDone then
+        sink = {}
+        prevSink = rawget(ns, "__inits")
+        ns.__inits = sink
+    end
     if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
         pcall(C_AddOns.LoadAddOn, "DungeonsForeverProf")
     elseif type(LoadAddOn) == "function" then
         pcall(LoadAddOn, "DungeonsForeverProf")
+    end
+    if sink then
+        ns.__inits = prevSink
+        for _, fn in ipairs(sink) do
+            local ok, err = xpcall(fn, function(e)
+                return tostring(e) .. "\n" .. (debugstack and debugstack(2) or "")
+            end)
+            if not ok then
+                print("|cffff5040[无限副本手册] 专业模块懒加载初始化出错（已跳过）：|r\n" .. tostring(err))
+            end
+        end
     end
     return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
 end
@@ -610,6 +629,7 @@ boot:SetScript("OnEvent", function(self, event, name)
             print("|cffff5040[无限副本手册] 初始化回调出错（已跳过，不影响后续模块）：|r\n" .. tostring(err))
         end
     end
+    bootDone = true
     end)
 end)
 

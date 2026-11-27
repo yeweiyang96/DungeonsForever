@@ -8,6 +8,7 @@ local C = {
     { key = "recipe", labelKey = "配方" },
     { key = "gather", labelKey = "采集" },
     { key = "leveling", labelKey = "升级" },
+    { key = "watchlist", labelKey = "易卖清单" },
     { key = "crate", labelKey = "板条箱" },
     { key = "writ", labelKey = "工匠文书" },
   },

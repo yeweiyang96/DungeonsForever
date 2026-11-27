@@ -4966,7 +4966,7 @@ end
 
 local sharedStateFields = {
     "inv", "produced", "priorityProduced", "unusable",
-    "skill", "progress", "cap", "learned", "formulaPaid", "ahUsed",
+    "skill", "cap", "learned", "formulaPaid", "ahUsed",
     "specializationAbilities", "completedSpecializationGoals", "completedToolGoals",
     "skeletonBought",
 }
@@ -5067,15 +5067,13 @@ end
 local function initial(snap, slug, opts, tick)
     local capLimit = solverCap()
     local inv = initialInventory(snap, slug, opts)
-    local skill, progress, cap = {}, {}, {}
+    local skill, cap = {}, {}
     for p, info in pairs(snap and snap.professions or {}) do
         skill[p] = (p == slug and tonumber(opts and opts.start)) or tonumber(info.cur) or 1
-        progress[p] = 0
         cap[p] = tonumber(info.max) or capLimit
     end
     if not skill[slug] then
         skill[slug] = tonumber(opts and opts.start) or 1
-        progress[slug] = 0
         cap[slug] = capLimit
     end
     local learned = copyStateMap(snap and snap.known or {})
@@ -5088,7 +5086,6 @@ local function initial(snap, slug, opts, tick)
         priorityProduced = {},
         unusable = {},
         skill = skill,
-        progress = progress,
         cap = cap,
         learned = learned,
         formulaPaid = {},
@@ -5235,8 +5232,6 @@ function S.Progress(job, result)
         quoteComplete = quoteComplete,
         optimal = inputOptimal and coverage or false,
         restrictedReason = job.restrictedReason,
-        frontierStates = job.frontierStates or 0,
-        memoStates = job.memoStates or 0,
         searchFrontierLimit = job.frontierLimit,
         finalizing = job.finalizing and true or false,
         finalizeProgress = job.finalizeProgress or 0,
@@ -5305,7 +5300,7 @@ local function buildReserveSummary(job, out, state, tick)
 
     local safeCraftsBySpellSpan = optMeta.safeCraftsByKey or {}
     local extraBySegment = {}
-    for _, step in ipairs(out.executionSteps or {}) do
+    for _, step in ipairs(out.steps or {}) do
         if not step.checkpoint and not step.kind and (step[2] or 0) > (step[1] or 0) and (step[3] or 0) > 0 then
             local skey = tostring(step.profession or job.slug) .. ":" .. tostring(step[3]) .. ":" .. tostring(step[1]) .. ":" .. tostring(step[2])
             local sc = safeCraftsBySpellSpan[skey]
@@ -5323,30 +5318,19 @@ local function buildReserveSummary(job, out, state, tick)
                     end
                 end
             end
-            sc = max(step[4] or 0, sc or (step[4] or 0))
+            sc = max(step[4] or 0, step.safeCrafts or 0, sc or 0)
             step.safeCrafts = sc
             step.extraReserveCrafts = max(0, sc - (step[4] or 0))
             extraBySegment[step.segmentID] = step.extraReserveCrafts
         else
-            step.safeCrafts = step.safeCrafts or step[4] or 0
-            step.extraReserveCrafts = 0
+            local sc = max(step[4] or 0, step.safeCrafts or 0)
+            step.safeCrafts = sc
+            step.extraReserveCrafts = max(0, sc - (step[4] or 0))
+            if step.extraReserveCrafts > 0 then
+                extraBySegment[step.segmentID] = step.extraReserveCrafts
+            end
         end
         if tick then tick() end
-    end
-    for _, row in ipairs(out.steps or {}) do
-        local sumSafe, sumExtra = 0, 0
-        if type(row.segmentIDs) == "table" and #row.segmentIDs > 0 then
-            for _, segID in ipairs(row.segmentIDs) do
-                local ex = extraBySegment[segID] or 0
-                sumExtra = sumExtra + ex
-            end
-            sumSafe = (row[4] or 0) + sumExtra
-        else
-            sumSafe = row.safeCrafts or row[4] or 0
-            sumExtra = max(0, sumSafe - (row[4] or 0))
-        end
-        row.safeCrafts = sumSafe
-        row.extraReserveCrafts = sumExtra
     end
 
     local safeMats = E.Copy(optMeta.safeMats or {}, tick)
@@ -5432,10 +5416,9 @@ function S.Result(job, state, status)
     end
     local out = {
         planVersion = 2,
-        executionVersion = 1,
+        executionVersion = 2,
         scheme = "cost",
         steps = {},
-        executionSteps = {},
         actions = {},
         mats = {},
         firstAt = {},
@@ -5462,7 +5445,6 @@ function S.Result(job, state, status)
         searchComplete = job.exhausted or false,
         budgetLimited = job.budgetLimited or false,
     }
-    out.batchOptimizationLimited = false
     out.searchTermination = job.searchTermination
     out.procurementPolicyVersion = S.ProcurementPolicyVersion
     out.auctionDepthRevision = 1
@@ -5471,7 +5453,6 @@ function S.Result(job, state, status)
     out.searchCpuMs = job.cpuUsed or 0
     out.searchCpuLimitMs = job.cpuLimitMs or solverBudget("cpuLimitMs", 8000)
     out.phaseCpuMs = E.Copy(job.phaseCpuMs or {})
-    out.solverWork = E.Copy(job.workCounters or {})
     out.firstFeasibleCpuMs = job.firstFeasibleCpuMs
     out.seedInventory = E.Copy(initialInventory(job.snap, job.slug, job.opts))
     out.useBagMaterials = bagMaterialsEnabled(job.slug, job.opts)
@@ -5739,7 +5720,7 @@ function S.Result(job, state, status)
         elseif a.type == "convert" then
             local c = a.conversion
             for _, output in ipairs(a.outputs or {}) do addOrigin(output[1], output[2], a.id) end
-            out.executionSteps[#out.executionSteps + 1] = {
+            out.steps[#out.steps + 1] = {
                 a.from, a.to, 0, a.count,
                 kind = "essence_conversion",
                 profession = a.profession,
@@ -5782,7 +5763,7 @@ function S.Result(job, state, status)
         elseif a.type == "specialization_quest" then
             local goal = E.Copy(a.quest)
             local key = "quest:" .. goal.id
-            out.executionSteps[#out.executionSteps + 1] = {
+            out.steps[#out.steps + 1] = {
                 a.from, a.to, 0, 0,
                 kind = "specialization_quest",
                 profession = a.profession,
@@ -5819,18 +5800,18 @@ function S.Result(job, state, status)
             local key = tostring(a.profession) .. ":" .. tostring(a.spell)
             local stepCost = pendingCost + (a.directCost or 0) + (cashByRecipe[key] or 0) * (a.count or 0) / max(1, countByRecipe[key] or 1)
             local stepUnpriced = pendingUnpriced or a.directUnpriced or unpricedByRecipe[key] or nil
-            local last = out.executionSteps[#out.executionSteps]
+            local last = out.steps[#out.steps]
             if a.type == "craft" and last and not last.kind and not last.checkpoint and last[3] == a.spell and last.profession == a.profession then
                 last[2] = a.to
                 last[4] = last[4] + a.count
+                last.safeCrafts = (last.safeCrafts or last[4] - a.count) + (a.safeCrafts or a.count or 0)
                 last.cost = last.cost + stepCost
                 last.unpriced = last.unpriced or stepUnpriced
                 last.actionIDs[#last.actionIDs + 1] = a.id
                 last.expectedGain = (last.expectedGain or 0) + (a.expectedGain or 0)
-                last.toProgress = a.toProgress
             else
                 local recipe = job.snap.byKey and job.snap.byKey[tostring(a.profession) .. ":" .. tostring(a.spell)]
-                out.executionSteps[#out.executionSteps + 1] = {
+                out.steps[#out.steps + 1] = {
                     a.from, a.to, a.spell or 0, a.count or 0,
                     profession = a.profession,
                     reason = a.reason,
@@ -5844,8 +5825,6 @@ function S.Result(job, state, status)
                     tool = recipe and recipe.tool or nil,
                     toolItem = recipe and recipe.toolItem or nil,
                     expectedGain = a.expectedGain or (a.to - a.from),
-                    fromProgress = a.fromProgress or 0,
-                    toProgress = a.toProgress or 0,
                     safeCrafts = a.safeCrafts,
                 }
             end
@@ -5862,40 +5841,35 @@ function S.Result(job, state, status)
             end
         end
     end
-    if pendingCost > 0 and #out.executionSteps > 0 then
-        local last = out.executionSteps[#out.executionSteps]
+    if pendingCost > 0 and #out.steps > 0 then
+        local last = out.steps[#out.steps]
         last.cost = last.cost + pendingCost
     end
     for _, e in ipairs(purchases) do out.mats[#out.mats + 1] = e end
     out.referenceRoute = out.pricePending or nil
     table.sort(out.mats, function(a, b) return a.id < b.id or (a.id == b.id and a.source < b.source) end)
     local occurrences, actionSegments = {}, {}
-    for i, step in ipairs(out.executionSteps) do
-        finalizeProgress(job, 0.92 + 0.01 * (i - 1) / max(1, #out.executionSteps))
+    for i, step in ipairs(out.steps) do
+        finalizeProgress(job, 0.92 + 0.02 * (i - 1) / max(1, #out.steps))
         resultTick(job)
         local key = step.kind == "specialization_quest" and ("quest:" .. step.goalID)
             or step.kind == "essence_conversion" and ("convert:" .. step.sourceItem .. ":" .. step.targetItem)
             or (step.profession .. ":" .. step[3])
         occurrences[key] = (occurrences[key] or 0) + 1
+        step.stepIndex = i
         step.segmentID = "segment:" .. key .. ":" .. occurrences[key]
         step.expectedCrafts = step[4]
         step.outputMin = step.recipe and (step.recipe.outputMin or step.recipe.count) or 0
         step.outputMax = step.recipe and (step.recipe.outputMax or step.recipe.count) or step.outputMin
         step.requiredOutputs = {}
         step.allocations = {}
-        if step.checkpoint then
+        if step.checkpoint or ((step.expectedGain or 0) > 0 and (step[2] or 0) > (step[1] or 0)) then
             step.goalSkill = step[2]
-        elseif (step.expectedGain or 0) > 0 then
-            step.goalSkill = step[2] > step[1] and step[2] or ceil(step[2] + (step.toProgress or 0) - 1e-7)
-            if step[2] == step[1] then
-                step.attemptLimit = step[4]
-                step.fractionalTransition = true
-            end
         end
         for _, id in ipairs(step.actionIDs) do actionSegments[id] = step.segmentID end
     end
-    for i, step in ipairs(out.executionSteps) do
-        finalizeProgress(job, 0.93 + 0.01 * (i - 1) / max(1, #out.executionSteps))
+    for i, step in ipairs(out.steps) do
+        finalizeProgress(job, 0.94 + 0.02 * (i - 1) / max(1, #out.steps))
         resultTick(job)
         for _, id in ipairs(step.actionIDs) do
             for _, allocation in ipairs(allocations[id] or {}) do
@@ -5941,94 +5915,23 @@ function S.Result(job, state, status)
             end
         end
     end
-    for i, step in ipairs(out.executionSteps) do
-        finalizeProgress(job, 0.94 + 0.02 * (i - 1) / max(1, #out.executionSteps))
-        resultTick(job)
-        local key = (step.checkpoint or step.kind == "specialization_quest" or step.kind == "essence_conversion") and step.actionID
-            or (step.profession .. ":" .. step[3])
-        local prevRow = out.steps[#out.steps]
-        local row = (prevRow and prevRow.__groupKey == key) and prevRow or nil
-        if not row then
-            row = E.Copy(step)
-            row.requiredOutputs = E.Copy(step.requiredOutputs)
-            row.allocations = {}
-            for _, allocation in ipairs(step.allocations) do row.allocations[#row.allocations + 1] = E.Copy(allocation) end
-            row.segments = {}
-            row.segmentIDs = {}
-            row.__groupKey = key
-            row.continued = true
-            out.steps[#out.steps + 1] = row
-            row.stepIndex = #out.steps
-        else
-            row[2] = step[2]
-            row[4] = row[4] + step[4]
-            row.safeCrafts = (row.safeCrafts or 0) + (step.safeCrafts or step[4] or 0)
-            row.cost = row.cost + step.cost
-            row.unpriced = row.unpriced or step.unpriced
-            row.expectedGain = (row.expectedGain or 0) + (step.expectedGain or 0)
-            row.materialMinCrafts = (row.materialMinCrafts or 0) + (step.materialMinCrafts or 0)
-            for id, n in pairs(step.requiredOutputs) do row.requiredOutputs[id] = (row.requiredOutputs[id] or 0) + n end
-            for _, allocation in ipairs(step.allocations) do row.allocations[#row.allocations + 1] = E.Copy(allocation) end
-        end
-        row.leveling = row.leveling or step.leveling
-        row.material = row.material or step.material
-        row.role = row.leveling and (row.material and "both" or "level") or (row.material and "material" or nil)
-        step.stepIndex = row.stepIndex
-        row.segmentIDs[#row.segmentIDs + 1] = step.segmentID
-        row.expectedCrafts = row[4]
-        row.segments[#row.segments + 1] = { from = step[1], to = step[2], count = step[4], reason = step.reason }
-    end
-    local priorDisplayTarget
-    for _, row in ipairs(out.steps) do
-        if row.role == "level" or row.role == "both" then
-            local rawFrom = tonumber(row[1])
-            local rawTo = tonumber(row.goalSkill) or tonumber(row[2])
-            row.displayFrom = priorDisplayTarget and rawFrom and max(rawFrom, priorDisplayTarget) or rawFrom
-            row.displayTo = rawTo
-            priorDisplayTarget = rawTo or priorDisplayTarget
-        end
-    end
-    for _, row in ipairs(out.steps) do
-        if row.role == "material" then
+    -- O(N + E) reverse pass: anchor pure material steps (including multi-hop chains) to earliest consuming leveling skill
+    local anchorBySegment = {}
+    for i = #out.steps, 1, -1 do
+        local step = out.steps[i]
+        if step.role == "level" or step.role == "both" then
+            anchorBySegment[step.segmentID] = step[1]
+        elseif step.role == "material" then
             local point
-            for _, consumer in ipairs(out.steps) do
-                if consumer.role == "level" or consumer.role == "both" then
-                    for _, allocation in ipairs(row.allocations or {}) do
-                        local id = allocation.consumerID
-                        local matched = consumer.segmentID == id
-                        if not matched and type(consumer.segmentIDs) == "table" then
-                            local alias = type(id) == "string" and id:match("(segment:.*)$")
-                            for _, segmentID in ipairs(consumer.segmentIDs) do
-                                if segmentID == id or (alias and segmentID == alias) then
-                                    matched = true
-                                    break
-                                end
-                            end
-                        end
-                        if matched then
-                            point = min(point or consumer.displayFrom or consumer[1], consumer.displayFrom or consumer[1])
-                        end
-                    end
+            for _, allocation in ipairs(step.allocations or {}) do
+                local targetSkill = anchorBySegment[allocation.consumerID]
+                if targetSkill ~= nil and (point == nil or targetSkill < point) then
+                    point = targetSkill
                 end
             end
-            point = point or priorDisplayTarget or row[1]
-            row.displayFrom = point
-            row.displayTo = point
-        end
-    end
-    for _, step in ipairs(out.executionSteps) do
-        local row
-        for _, candidate in ipairs(out.steps) do
-            if candidate.segmentIDs then
-                for _, id in ipairs(candidate.segmentIDs) do
-                    if id == step.segmentID then row = candidate; break end
-                end
-            end
-            if row then break end
-        end
-        if row then
-            step.displayFrom = row.displayFrom
-            step.displayTo = row.displayTo
+            point = point or step[1]
+            step.displaySkill = point
+            anchorBySegment[step.segmentID] = point
         end
     end
     local ra = getRouteAuto()
@@ -6053,18 +5956,16 @@ function S.Result(job, state, status)
         out.target = nil
         out.plannedTo = nil
         local demandID
-        for i = #out.executionSteps, 1, -1 do
-            local step = out.executionSteps[i]
+        for i = #out.steps, 1, -1 do
+            local step = out.steps[i]
             if step.profession == "__purchase" then
                 demandID = step.segmentID
                 out.crafts = out.crafts - step[4]
-                table.remove(out.executionSteps, i)
+                table.remove(out.steps, i)
             end
         end
-        for i = #out.steps, 1, -1 do
-            if out.steps[i].profession == "__purchase" then table.remove(out.steps, i) end
-        end
-        for _, step in ipairs(out.executionSteps) do
+        for i, step in ipairs(out.steps) do
+            step.stepIndex = i
             for _, allocation in ipairs(step.allocations) do
                 if allocation.consumerID == demandID then allocation.consumerID = "demand:" .. allocation.itemID end
             end
@@ -6081,7 +5982,7 @@ function S.Result(job, state, status)
         end
     end
     out.alreadyAtTarget = out.targetReached and out.start ~= nil and out.target ~= nil
-        and out.start >= out.target and #out.steps == 0 and #out.executionSteps == 0 or false
+        and out.start >= out.target and #out.steps == 0 or false
     if job.snap and job.snap.auctionDepthInputs then
         local missing = {}
         out.auctionDepthFallbackItems = {}
@@ -6143,17 +6044,6 @@ function S.NewJob(slug, opts)
         reserveMode = reserveMode,
         phase = "capture",
         phaseCpuMs = {},
-        workCounters = {
-            fastSeedPurchases = 0,
-            fastSeedCrafts = 0,
-            seedCraftComparisons = 0,
-            seedCandidateTrials = 0,
-            leafQuoteHits = 0,
-            seedQuoteCalls = 0,
-            batchedPlans = 0,
-            batchReuses = 0,
-            replayCalls = 0,
-        },
     }
 
     local ops = 0
@@ -6535,7 +6425,6 @@ function S.NewJob(slug, opts)
             end
         end
         writable(t, "skill")[p] = tgtSk
-        writable(t, "progress")[p] = 0
         t.plannedTarget = max(t.plannedTarget or 0, p == slug and tgtSk or 0)
         if p == slug and t.lastRecipe ~= r.key then
             t.switches = (t.switches or 0) + 1
@@ -6548,8 +6437,6 @@ function S.NewJob(slug, opts)
             count = n,
             from = curSk,
             to = tgtSk,
-            fromProgress = 0,
-            toProgress = 0,
             expectedGain = tgtSk - curSk,
             safeCrafts = safeCrafts or n,
             directCost = directCost,
@@ -6621,7 +6508,6 @@ function S.NewJob(slug, opts)
             local savedFailures = copyStateMap(j.failures)
             local direct = buyItemIntoState(s, id, missing, reason, owner)
             if direct then
-                j.workCounters.fastSeedPurchases = (j.workCounters.fastSeedPurchases or 0) + 1
                 considerCandidate(direct)
             else
                 j.failures = savedFailures
@@ -6702,7 +6588,6 @@ function S.NewJob(slug, opts)
                                     end
                                 end
                                 if cur then
-                                    j.workCounters.fastSeedCrafts = (j.workCounters.fastSeedCrafts or 0) + 1
                                     considerCandidate(cur)
                                 else
                                     j.failures = savedF
@@ -6790,7 +6675,6 @@ function S.NewJob(slug, opts)
             if not seen[p] then
                 if first.skill[p] == nil then fail("professionMissing", { profession = p }); valid = false end
                 writable(first, "skill")[p] = step[1]
-                writable(first, "progress")[p] = step.fromProgress or 0
                 seen[p] = true
             end
             local event = { step = step, inputs = {}, outputs = {} }
@@ -6863,7 +6747,6 @@ function S.NewJob(slug, opts)
             elseif step.checkpoint then
                 current = clone(current)
                 writable(current, "skill")[p] = step[2]
-                writable(current, "progress")[p] = 0
                 log(current, { type = "gather", profession = p, from = step[1], to = step[2], count = 0, spell = step[3], reason = step.reason })
             end
             tick()
@@ -6889,7 +6772,6 @@ function S.NewJob(slug, opts)
         j.result = S.Result(j, j.best, j.status)
         if not current then
             j.result.steps = E.Copy(skel.steps)
-            j.result.executionSteps = E.Copy(skel.steps)
             j.result.costComplete = false
             j.result.completeCost = false
             j.result.priced = false
@@ -7398,7 +7280,6 @@ function S.NewJob(slug, opts)
                     local from = cur.skill[p] or 1
                     local nxt = min(to, cur.cap[p] or capLimit)
                     writable(cur, "skill")[p] = nxt
-                    writable(cur, "progress")[p] = 0
                     cur.plannedTarget = max(cur.plannedTarget or 0, p == slug and nxt or 0)
                     log(cur, { type = "gather", profession = p, from = from, to = nxt, reason = "level", count = 0, spell = 0 })
                 end

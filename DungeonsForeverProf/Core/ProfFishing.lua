@@ -289,7 +289,6 @@ function P.Compute(opts)
         start = start,
         target = target,
         steps = {},
-        executionSteps = {},
         actions = {},
         mats = {},
         fishMaterials = {},
@@ -478,7 +477,6 @@ function P.Compute(opts)
         end
         if not valid then
             out.steps = clone(opts.routeSkeleton.steps)
-            out.executionSteps = clone(out.steps)
             out.status = "recalculate_required"
             out.feasible = false
             out.costComplete = false
@@ -777,7 +775,6 @@ function P.Compute(opts)
         }
     end
 
-    out.executionSteps = clone(out.steps)
     if xp and type(xp.NormalizePlan) == "function" then
         out = xp.NormalizePlan("cooking", out) or out
     end

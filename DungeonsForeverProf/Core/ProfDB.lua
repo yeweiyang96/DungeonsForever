@@ -20,7 +20,7 @@ local solverCfg = getSolverCfg()
 local pricingCfg = getPricingCfg()
 
 local DB = {}
-DB.SCHEMA_VERSION = 3
+DB.SCHEMA_VERSION = 4
 DB.LV_CAP = (type(solverCfg) == "table" and type(solverCfg.CAP) == "number" and solverCfg.CAP) or 300
 DB.LV_DEF = (type(solverCfg) == "table" and type(solverCfg.DEFAULT_TARGET) == "number" and solverCfg.DEFAULT_TARGET) or 300
 
@@ -491,19 +491,30 @@ function DB.SetExcludedRecoveryItem(slug, itemID, excluded)
     end
 end
 
-function DB.ResetRecoveryOverrides(slug)
+function DB.ResetExcludedRecoveryItems(slug)
     if type(slug) ~= "string" or slug == "" then return false end
     local prof = DB.Get().prof
-    local changed = false
-    if type(prof.customRecoveryRecipes) == "table" and type(prof.customRecoveryRecipes[slug]) == "table" and next(prof.customRecoveryRecipes[slug]) ~= nil then
-        prof.customRecoveryRecipes[slug] = {}
-        changed = true
-    end
     if type(prof.excludedRecoveryItems) == "table" and type(prof.excludedRecoveryItems[slug]) == "table" and next(prof.excludedRecoveryItems[slug]) ~= nil then
         prof.excludedRecoveryItems[slug] = {}
-        changed = true
+        return true
     end
-    return changed
+    return false
+end
+
+function DB.ClearCustomRecoveryRecipes(slug)
+    if type(slug) ~= "string" or slug == "" then return false end
+    local prof = DB.Get().prof
+    if type(prof.customRecoveryRecipes) == "table" and type(prof.customRecoveryRecipes[slug]) == "table" and next(prof.customRecoveryRecipes[slug]) ~= nil then
+        prof.customRecoveryRecipes[slug] = {}
+        return true
+    end
+    return false
+end
+
+function DB.ResetRecoveryOverrides(slug)
+    local a = DB.ClearCustomRecoveryRecipes(slug)
+    local b = DB.ResetExcludedRecoveryItems(slug)
+    return a or b
 end
 
 function DB.CustomRecoveryFingerprint(slug)

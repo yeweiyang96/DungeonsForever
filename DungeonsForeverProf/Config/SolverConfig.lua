@@ -4,7 +4,6 @@ if type(ns) ~= "table" then ns = _G.DF_NS or {} end
 local C = {
   CAP = 300,
   DEFAULT_TARGET = 300,
-  MAX_PER_RECIPE = 1,
   ROUTE_RISK_MODES = {
     ORDER = { "expected", "quantile" },
     DEFAULT = "expected",
@@ -45,8 +44,6 @@ local C = {
   COROUTINE_BUDGET = {
     cpuLimitMs = 8000,
     maxFrontier = 20000,
-    rebatchCpuLimitMs = 2000,
-    rebatchWorkLimit = 400000,
     frameBudgetMs = 8,
     paintCapMs = 4,
     routeTickMs = 1,

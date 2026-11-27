@@ -327,6 +327,30 @@ function R.ToggleExcludedItem(slug, itemID)
     return R.SetExcludedItem(slug, itemID, not R.IsExcludedItem(slug, itemID))
 end
 
+function R.ResetExcludedItems(slug)
+    local DB = getDB()
+    local res = false
+    if type(DB) == "table" and type(DB.ResetExcludedRecoveryItems) == "function" then
+        res = DB.ResetExcludedRecoveryItems(slug)
+    end
+    R.Invalidate()
+    local ra = getRouteAuto()
+    if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate) end
+    return res
+end
+
+function R.ClearCustomRecipes(slug)
+    local DB = getDB()
+    local res = false
+    if type(DB) == "table" and type(DB.ClearCustomRecoveryRecipes) == "function" then
+        res = DB.ClearCustomRecoveryRecipes(slug)
+    end
+    R.Invalidate()
+    local ra = getRouteAuto()
+    if ra and type(ra.Invalidate) == "function" then pcall(ra.Invalidate) end
+    return res
+end
+
 function R.ResetOverrides(slug)
     local DB = getDB()
     local res = false
@@ -823,7 +847,7 @@ local function trace(result, snapshot)
         for _, a in ipairs(result.actions) do out[#out + 1] = a end
         return out
     end
-    local rows = result.executionSteps and #result.executionSteps > 0 and result.executionSteps or result.steps or {}
+    local rows = result.steps or {}
     for i, step in ipairs(rows) do
         local r = recipeFor(step, snapshot)
         if step.kind == "essence_conversion" or step.kind == "conversion" then
@@ -1205,11 +1229,6 @@ function R.Apply(result, snapshot, tick)
         allocated = allocated + fill(step)
         if tick then tick() end
     end
-    local executionAllocated = 0
-    for _, step in ipairs(result.executionSteps or {}) do
-        executionAllocated = executionAllocated + fill(step)
-        if tick then tick() end
-    end
 
     local delta = result.purchaseTotal - result.demandNonCraftCost - allocated
     result.recoveryUnallocatedCost = delta
@@ -1219,30 +1238,17 @@ function R.Apply(result, snapshot, tick)
         last.netTotal = last.attributedCost - last.recoveryTotal
         result.recoveryUnallocatedCost = 0
     end
-    local executionLast = result.executionSteps and result.executionSteps[#result.executionSteps]
-    local executionDelta = result.purchaseTotal - result.demandNonCraftCost - executionAllocated
-    if executionLast and executionLast ~= last and math.abs(executionDelta) > 1e-8 then
-        executionLast.attributedCost = executionLast.attributedCost + executionDelta
-        executionLast.netTotal = executionLast.attributedCost - executionLast.recoveryTotal
-    end
 
-    local function roundAttribution(list)
-        local exact, rounded = 0, 0
-        for _, step in ipairs(list or {}) do
-            step.attributedCostExact = step.attributedCost
-            exact = exact + step.attributedCostExact
-            local nextRounded = floor(exact + 0.5 + 1e-8)
-            step.attributedCost = nextRounded - rounded
-            rounded = nextRounded
-            step.netTotal = step.attributedCost - (step.recoveryTotal or 0)
-            if tick then tick() end
-        end
+    local exact, rounded = 0, 0
+    for _, step in ipairs(result.steps or {}) do
+        step.attributedCostExact = step.attributedCost
+        exact = exact + step.attributedCostExact
+        local nextRounded = floor(exact + 0.5 + 1e-8)
+        step.attributedCost = nextRounded - rounded
+        rounded = nextRounded
+        step.netTotal = step.attributedCost - (step.recoveryTotal or 0)
+        if tick then tick() end
     end
-    roundAttribution(result.steps)
-    for _, step in ipairs(result.executionSteps or {}) do
-        if step.attributedCostExact ~= nil then step.attributedCost = step.attributedCostExact end
-    end
-    roundAttribution(result.executionSteps)
 
     result.attributedTotal = result.purchaseTotal
     result.netTotal = result.purchaseTotal - result.recoveryTotal

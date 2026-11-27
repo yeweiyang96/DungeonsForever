@@ -150,11 +150,13 @@ local function character()
     return "offline:player"
 end
 
+local EXECUTION_VERSION = 2
+
 local function ensureExecutionBucket(c)
     if type(c) ~= "table" then return nil end
-    if c.version ~= 1 then
+    if c.version ~= EXECUTION_VERSION then
         for k in pairs(c) do c[k] = nil end
-        c.version = 1
+        c.version = EXECUTION_VERSION
         c.nextID = 0
         c.active = {}
         c.runs = {}
@@ -244,15 +246,15 @@ local function outputTotal(p, item)
 end
 
 local function steps(plan)
-    local list = type(plan) == "table" and (plan.executionSteps or plan.steps)
+    local list = type(plan) == "table" and plan.steps
     return type(list) == "table" and list or {}
 end
 
 local function readablePlan(run)
     local plan = run and run.plan
     if type(plan) == "table" and rawget(plan, "__dfHistory") == nil and rawget(plan, "__dfPlan") == nil
-        and (plan.executionVersion == nil or plan.executionVersion == 1)
-        and type(plan.executionSteps or plan.steps) == "table" then
+        and (plan.executionVersion == nil or plan.executionVersion == EXECUTION_VERSION)
+        and type(plan.steps) == "table" then
         return plan
     end
     if run and not run.historyError then run.historyError = "history:unreadable_plan" end
@@ -917,19 +919,19 @@ function XP.NormalizePlan(slug, result)
         return nil, "historyUnreadable"
     end
     if type(result) ~= "table" then return nil, "pending" end
-    if (result.executionVersion ~= nil and result.executionVersion ~= 1)
-        or (result.executionSteps ~= nil and type(result.executionSteps) ~= "table")
+    if (result.executionVersion ~= nil and result.executionVersion ~= EXECUTION_VERSION)
         or (result.steps ~= nil and type(result.steps) ~= "table") then
         return nil, "historyUnreadable"
     end
-    if result.executionVersion == 1 then return result end
+    if result.executionVersion == EXECUTION_VERSION then return result end
     local out = copy(result)
-    out.executionVersion = 1
-    out.executionSteps = {}
-    for i, raw in ipairs(result.executionSteps or result.steps or {}) do
+    out.executionVersion = EXECUTION_VERSION
+    out.steps = {}
+    for i, raw in ipairs(result.steps or {}) do
         local seg = copy(raw)
         local rec = recipe(seg, slug)
         if seg[3] ~= 0 and not rec.spell then return nil, "migration_required" end
+        seg.stepIndex = i
         seg.profession = seg.profession or slug
         seg.recipe = copy(rec)
         seg.segmentID = seg.segmentID or ("legacy:" .. seg.profession .. ":" .. tostring(seg[3]) .. ":" .. i)
@@ -949,9 +951,8 @@ function XP.NormalizePlan(slug, result)
         end
         seg.outputMin = rec.outputMin or rec.count or 1
         seg.outputMax = rec.outputMax or seg.outputMin
-        out.executionSteps[#out.executionSteps + 1] = seg
+        out.steps[#out.steps + 1] = seg
     end
-    if not out.steps then out.steps = out.executionSteps end
     return out
 end
 
@@ -1216,9 +1217,6 @@ function XP.Bind(slug, result, opts)
     for _, a in ipairs(plan.seedAllocations or {}) do
         if ids[a.consumerID] then a.consumerID = ids[a.consumerID] end
     end
-    for _, row in ipairs(plan.steps or {}) do
-        for i, id in ipairs(row.segmentIDs or {}) do row.segmentIDs[i] = ids[id] or id end
-    end
     local run = {
         planID = planID,
         id = planID,
@@ -1302,17 +1300,6 @@ local function skillComplete(run, seg, index, record, skillSnapshot)
         skillDone = true
     elseif seg.checkpoint or seg[3] == 0 then
         skillDone = cur ~= nil and goal ~= nil and cur >= goal
-    end
-    local fractional = seg.fractionalTransition or ((seg.expectedGain or 0) > 0 and seg[2] == seg[1] and seg.attemptLimit ~= nil)
-    if not skillDone and fractional and (record.casts or 0) >= ceil(seg.attemptLimit - 1e-9) then
-        local following = steps(run.plan)[index + 1]
-        if following then
-            local nextRecipe = recipe(following, run.slug)
-            local nextSkill = skill(following.profession or run.slug, skillSnapshot)
-            if following.checkpoint or (nextSkill and type(nextRecipe.learn) == "number" and nextSkill >= nextRecipe.learn) then
-                skillDone = true
-            end
-        end
     end
     return skillDone, cur, goal
 end
@@ -1751,7 +1738,7 @@ function XP.Progress(slug, id, skillSnapshot, planID, creditSnapshot)
 end
 
 function XP.PreviewProgress(slug, plan)
-    if type(plan) ~= "table" or plan.executionVersion ~= 1 then return {} end
+    if type(plan) ~= "table" or plan.executionVersion ~= EXECUTION_VERSION then return {} end
     local E = getEconomy()
     local run = { slug = slug, plan = plan, progress = {}, status = "archived", currentIndex = 1, creditVersion = 0 }
     local snapshot
@@ -2396,7 +2383,8 @@ local function appendSupplement(run, result, seg, extra)
             a.consumerID = ids[a.consumerID] or seg.segmentID
         end
     end
-    for i = #insertions, 1, -1 do table.insert(plan.executionSteps, index, insertions[i]) end
+    for i = #insertions, 1, -1 do table.insert(plan.steps, index, insertions[i]) end
+    for i, st in ipairs(plan.steps) do st.stepIndex = i end
     local p = progressRecord(run, seg)
     p.supplementAllowance = (p.supplementAllowance or 0) + extra
     result.appended = true

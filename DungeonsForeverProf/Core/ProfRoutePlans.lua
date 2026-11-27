@@ -14,14 +14,15 @@ if type(gns) == "table" and gns ~= ns then
     gns.ProfSolverRun = run
 end
 
-local quickCompute, clearPrices, baseOptions, baseFixedPlan =
-    RA._BaseCompute or RA.Compute,
+local clearPrices, baseOptions, baseFixedPlan =
     RA._BaseInvalidate or RA.Invalidate,
     RA._BaseOptionsFor or RA.OptionsFor,
     RA._BaseFixedPlan or RA.FixedPlan
 
-local function getBaseCompute()
-    return quickCompute or RA._BaseCompute or RA.ComputeFishing
+local function getFishingCompute()
+    if type(RA.ComputeFishing) == "function" then return RA.ComputeFishing end
+    local pf = ns.ProfFishing or (type(gns) == "table" and gns.ProfFishing) or nil
+    return pf and type(pf.ComputeFishing) == "function" and pf.ComputeFishing or nil
 end
 
 local function getBaseInvalidate()
@@ -104,7 +105,7 @@ local legacyRun
 local lastRunSlug
 local hookedBridge
 local invalidating = false
-local MODEL = 1
+local MODEL = 2
 
 local function cfgCap()
     local cfg = getSolverCfg()
@@ -558,14 +559,13 @@ local function gate(slug, opts, code)
     return {
         slug = slug,
         planVersion = 2,
-        executionVersion = 1,
+        executionVersion = 2,
         scheme = opts.scheme,
         start = opts.start,
         target = opts.target,
         status = code == "secondaryRequired" and "selection_required" or "recalculate_required",
         feasible = false,
         steps = {},
-        executionSteps = {},
         actions = {},
         mats = {},
         formulas = {},
@@ -579,7 +579,7 @@ end
 
 local function scopeConflict(plan, slug, opts)
     if opts.allowSecondaryLeveling or slug == "__purchase" then return false end
-    for _, step in ipairs(plan.executionSteps or plan.steps or {}) do
+    for _, step in ipairs(plan.steps or {}) do
         if step.profession and step.profession ~= slug then return true end
     end
     return false
@@ -863,7 +863,7 @@ end
 
 local skeletonStepFields = {
     "profession", "kind", "reason", "checkpoint", "segmentID", "safeCrafts", "extraReserveCrafts",
-    "tool", "toolItem", "toolSpell", "toolBop", "fromProgress", "toProgress", "displayFrom", "displayTo",
+    "tool", "toolItem", "toolSpell", "toolBop", "displaySkill",
     "goalID", "questID", "abilityID", "sourceItem", "targetItem",
 }
 local skeletonOptionFields = {
@@ -874,7 +874,7 @@ local skeletonOptionFields = {
 }
 
 local function planSkeleton(result, opts, status)
-    local rows = result.executionSteps or result.steps
+    local rows = result.steps
     if type(rows) ~= "table" or #rows == 0 then return end
     local steps = {}
     for _, st in ipairs(rows) do
@@ -931,14 +931,14 @@ local function planSkeleton(result, opts, status)
 end
 
 local function remember(job, result, status)
-    if job.opts.snapshot or (job.opts.routeSkeleton and not (job.opts.regroupSaved and result.targetReached)) or (result.status == "searching" and not status) then
+    if job.opts.snapshot or job.opts.routeSkeleton or (result.status == "searching" and not status) then
         return
     end
     local skeleton = planSkeleton(result, job.opts, status)
     if not skeleton then return end
     local db = saved()
     if not db then return end
-    db.routes[job.signature] = { slug = job.slug, skeleton = skeleton, model = MODEL, batchVersion = 4 }
+    db.routes[job.signature] = { slug = job.slug, skeleton = skeleton, model = MODEL }
     db.active[job.slug] = job.signature
     for key, row in pairs(db.routes) do
         if key ~= job.signature and type(row) == "table" and row.slug == job.slug then
@@ -951,7 +951,7 @@ local searchFields = {
     "status", "expanded", "improvements", "initialTotal", "bestTotal", "savings", "budgetLimited",
     "searchComplete", "searchTermination", "searchCpuMs", "searchCpuLimitMs", "inputModelOptimal",
     "costSearchPerformed", "costSearchStatus",
-    "catalogueCoverageComplete", "quoteComplete", "restrictedReason", "searchModel", "frontierStates", "memoStates",
+    "catalogueCoverageComplete", "quoteComplete", "restrictedReason", "searchModel",
     "searchFrontierLimit", "initialNetTotal", "bestNetTotal", "netSavings", "recoveryOptimized",
 }
 
@@ -1025,7 +1025,7 @@ local function publish(job, result)
     result.learningPolicyFingerprint = learningPolicy()
     local executionOptions = {}
     for key, value in pairs(job.opts) do
-        if key ~= "snapshot" and key ~= "routeSkeleton" and key ~= "regroupSaved" and key ~= "deferBagPreparation" then
+        if key ~= "snapshot" and key ~= "routeSkeleton" and key ~= "deferBagPreparation" then
             executionOptions[key] = value
         end
     end
@@ -1074,7 +1074,6 @@ local function release(job)
     job.best = nil
     job.partial = nil
     job.preview = nil
-    job.rebatchFinal = nil
     job.tick = nil
     job.resultState = nil
     job.resultCache = nil
@@ -1185,10 +1184,10 @@ local function start(slug, opts, sigOpts)
     serial = serial + 1
     local skel = opts.routeSkeleton
     local db = not opts.snapshot and saved()
-    if db and (not skel or opts.regroupSaved) then db.nextID = (db.nextID or 0) + 1 end
-    local id = skel and not opts.regroupSaved and skel.planID or character() .. ":route:" .. tostring(db and db.nextID or serial)
+    if db and not skel then db.nextID = (db.nextID or 0) + 1 end
+    local id = skel and skel.planID or character() .. ":route:" .. tostring(db and db.nextID or serial)
     if opts.scheme == "fishing" then
-        local computeFn = getBaseCompute()
+        local computeFn = getFishingCompute()
         local runOpts = sanitizeSolverOpts(opts)
         if type(computeFn) ~= "function" then
             return gate(slug, opts, "solverUnavailable")
@@ -1323,20 +1322,6 @@ function RA.Get(slug, supplied)
             or type(skel.steps) ~= "table" or #skel.steps == 0 or type(skel.options) ~= "table" then
             return gate(slug, opts, "historyUnreadable")
         end
-        if ((record.batchVersion or 0) < 4 and skel.status == "complete" or skel.status == "interrupted")
-            and skel.scheme ~= "fixed" and skel.scheme ~= "fishing" then
-            local seen, previous, repeated, reached = {}, nil, false, false
-            for _, step in ipairs(skel.steps) do
-                local k = not step.kind and not step.checkpoint and (step[3] or 0) > 0 and (step.profession or slug) .. ":" .. step[3]
-                if k and seen[k] and k ~= previous then repeated = true end
-                if (step.profession or slug) == slug and (step[2] or 0) >= skel.target then reached = true end
-                if k then seen[k] = true end
-                previous = k
-            end
-            if reached and (repeated or skel.status == "interrupted") then
-                return RA.RebuildFromSkel(slug, skel, opts, true)
-            end
-        end
         return RA.RebuildFromSkel(slug, skel, opts)
     end
     return nil
@@ -1369,7 +1354,7 @@ function RA.HasSavedRoute(slug)
     return false
 end
 
-function RA.RebuildFromSkel(slug, skel, supplied, regroup)
+function RA.RebuildFromSkel(slug, skel, supplied)
     local request = options(slug, supplied)
     if skel.pricingPolicyStale then return gate(slug, request, "pricingPolicyChanged") end
     if scopeConflict(skel, slug, request) then return gate(slug, request, "secondaryDisabled") end
@@ -1385,7 +1370,6 @@ function RA.RebuildFromSkel(slug, skel, supplied, regroup)
     restored.start, restored.target, restored.scheme = skel.start, skel.target, skel.scheme
     local opts = options(slug, restored)
     opts.routeSkeleton = skel
-    opts.regroupSaved = regroup or nil
     return start(slug, opts, request)
 end
 
@@ -1398,7 +1382,7 @@ function RA.Compute(slug, supplied)
     if opts.partnerRequired then return gate(slug, opts, "secondaryRequired") end
     local runOpts = sanitizeSolverOpts(opts)
     if opts.scheme == "fishing" then
-        local computeFn = getBaseCompute()
+        local computeFn = getFishingCompute()
         if type(computeFn) ~= "function" then return gate(slug, opts, "solverUnavailable") end
         local okComp, result, job = pcall(computeFn, slug, runOpts)
         if not okComp or type(result) ~= "table" then return gate(slug, opts, "solverUnavailable") end
@@ -1737,7 +1721,6 @@ run.State = function(job)
         seedSkill = job and job.seedSkill,
         target = job and job.target,
         finalizeProgress = job and job.finalizeProgress,
-        batchSearch = job and job.batchSearch,
         expanded = job and job.expanded,
         cpuUsed = job and job.cpuUsed,
         cpuLimitMs = job and job.cpuLimitMs,
@@ -1775,30 +1758,8 @@ end
 RA.RegisterSolverDelegate = registerSolverDelegate
 registerSolverDelegate()
 
-local fishingPlanWraps = setmetatable({}, { __mode = "k" })
-local function guardComputeFishing()
-    if type(RA._WrapComputeFishing) == "function" then
-        RA._WrapComputeFishing()
-        return
-    end
-    local fn = RA.ComputeFishing
-    if type(fn) ~= "function" or fishingPlanWraps[fn] then return end
-    local wrapped = function(slug, opts)
-        local ok, res = pcall(fn, slug, opts)
-        if ok then return res end
-        if type(RA._StandaloneComputeFishing) == "function" then
-            local okS, resS = pcall(RA._StandaloneComputeFishing, slug, opts)
-            if okS then return resS end
-        end
-        return nil
-    end
-    fishingPlanWraps[wrapped] = true
-    RA.ComputeFishing = wrapped
-end
-
 local function initialize()
     ensureBridgeHook()
-    guardComputeFishing()
     if type(RA.RegisterDelegate) == "function" then
         RA.RegisterDelegate()
     end

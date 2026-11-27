@@ -523,6 +523,7 @@ function PD.DoRecalc(slug)
         if T and T.End then T.End(slug, "ended") end
     end
     PD.exclusionsOpen = false
+    if PD.autoPage == "exclusions" then PD.autoPage = "route" end
     PD.ClearPlanCache(slug)
     PD.exactFailed = {}
     local E = getEco()
@@ -851,6 +852,11 @@ function PD.ChangeRouteSetting(key, value, slug)
                 end
             end
         end
+        local follow = getFollow()
+        if follow then
+            if follow.InvalidateRoute then pcall(follow.InvalidateRoute) end
+            if follow.Paint then pcall(follow.Paint) end
+        end
         PD.RequestRender()
         return
     end
@@ -999,6 +1005,7 @@ function PD.SetCookingRoute(mode)
         if PD.autoPage == "recovery" then PD.autoPage = "route" end
     end
     PD.exclusionsOpen, PD.partnerPicker = false, nil
+    if PD.autoPage == "exclusions" then PD.autoPage = "route" end
     PD.MarkRouteStale(PD.cur, "settings")
     if PD.scroll then PD.scroll:SetVerticalScroll(0) end
     playSoundSafe(1)
@@ -1937,8 +1944,9 @@ local function buildSubTabs()
         { key = "trainer",  text = L["训练师"] },
         { key = "recipe",   text = L["配方"] },
         { key = "gather",   text = L["采集"] },
-        { key = "leveling", text = L["升级"] },
-        { key = "crate",    text = L["板条箱"] },
+        { key = "leveling",  text = L["升级"] },
+        { key = "watchlist", text = L["易卖清单"] },
+        { key = "crate",     text = L["板条箱"] },
         { key = "writ",     text = L["工匠文书"] },
     }
 end
@@ -2391,7 +2399,9 @@ function PD.Row(i)
     PD.SetRowHover(r, false)
     r:EnableMouse(true)
     if type(r.SetHyperlinksEnabled) == "function" then pcall(r.SetHyperlinksEnabled, r, true) end
-    r:SetScript("OnHyperlinkClick", function(_, link) AHCopy(link) end)
+    r:SetScript("OnHyperlinkClick", function(_, link, text, button)
+        if type(_G.SetItemRef) == "function" then pcall(_G.SetItemRef, link, text, button) end
+    end)
     r.icon = r:CreateTexture(nil, "ARTWORK")
     r.icon:SetSize(20, 20)
     r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -2590,7 +2600,14 @@ function PD.Row(i)
         GameTooltip:Hide()
     end)
     r:SetScript("OnClick", function(self, button)
-        if button == "RightButton" and not self.__routePolicy then return end
+        if button == "RightButton" then
+            if self.__rightAct then
+                self.__rightAct(self)
+                playSoundSafe(1)
+                return
+            end
+            if not self.__routePolicy then return end
+        end
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
             if self.__spell and PD.InsertSpellLink(self.__spell) then return end
             if self.__it then
@@ -3845,6 +3862,7 @@ function PD.BindRow(r, spec, h)
     r.__mkLines = spec.mkLines
     r.__linesFirst = spec.linesFirst
     r.__act = spec.act
+    r.__rightAct = spec.rightAct
     r.__routePolicy = spec.lvstep and spec.act and true or nil
     r.__tipTitle = spec.tipTitle
     r.__tipExtra = spec.tipExtra
@@ -6387,7 +6405,7 @@ function PD.Build(page)
     PD.LV_TILE_H, PD.LV_TILE_GAP = 64, 8
     PD.SET_CARD_W, PD.SET_CHIP_H, PD.SET_CHIP_GAP = 500, 24, 6
     PD.RES_MIN_W = 262
-    PD.HUD_W = 96
+    PD.HUD_W = 74
 
     local hudBtn = NewButton(page, "", PD.HUD_W, PD.TOOL_H, 14)
     SetButtonSelected(hudBtn, false)
@@ -6425,12 +6443,12 @@ function PD.Build(page)
     PD.setCard = setCard
     coroutine.yield()
     PD.lvTiles = {}
-    PD.chipOrder = { "mode", "scheme", "budget", "excl", "target", "spec" }
+    PD.chipOrder = { "mode", "scheme", "ahRec", "budget", "target", "spec" }
     for _, td in ipairs({
         { key = "mode",   text = L["模式"] },
         { key = "scheme", text = L["路线方案"] },
+        { key = "ahRec",  text = L["拍卖行回血"] },
         { key = "budget", text = L["备料方式"] },
-        { key = "excl",   text = L["排除"] },
         { key = "target", text = L["目标等级"] },
         { key = "spec",   text = L["专精"] },
     }) do
@@ -6509,18 +6527,21 @@ function PD.Build(page)
         if PD.FixedOnly() then return end
         local on = not PD.Setting("autoRoute")
         PD.SetSettingRaw("autoRoute",on)
-        if not on and PD.autoPage == "recovery" then PD.autoPage = "route" end
+        if not on and (PD.autoPage == "recovery" or PD.autoPage == "exclusions") then
+            if PD.autoPage == "exclusions" then PD.FlushPolicies() end
+            PD.autoPage = "route"
+        end
         local ra = raMod()
         if not on and ra and ra.Invalidate then ra.Invalidate() end
         PD.RequestRender()
         playSoundSafe(1)
     end)
     PD.lvTiles.scheme:SetScript("OnClick", function(self) PD.ShowSchemeMenu(self) end)
-    PD.lvTiles.excl:SetScript("OnClick", function()
-        PD.exclusionsOpen = not PD.exclusionsOpen
-        PD.partnerPicker = nil
-        if not PD.exclusionsOpen then PD.FlushPolicies() end
-        PD.RequestRender()
+    PD.lvTiles.ahRec:SetScript("OnClick", function()
+        if PD.FixedOnly() or not PD.RecoveryModeActive(PD.cur) then return end
+        local nextOn = not PD.Setting("auctionRecoveryEnabled", PD.cur)
+        PD.ChangeRouteSetting("auctionRecoveryEnabled", nextOn, PD.cur)
+        PD.MarkRecoveryDirty(PD.cur)
         playSoundSafe(1)
     end)
     function PD.SetBadge(text, r, g, b)
@@ -7262,6 +7283,53 @@ function PD.PickNav()
     end
 end
 
+function PD.IsRecoveryItemBound(itemID)
+    if type(itemID) ~= "number" or itemID <= 0 then return true end
+    local ds = getDS()
+    if ds and ds.Item then
+        local it = ds.Item(itemID)
+        if type(it) == "table" then
+            if it.nonAuctionable == true or it.bindType == 1 or it.bindType == 4 then return true end
+            if it.bindType ~= nil or it.nonAuctionable == false then return false end
+        end
+    end
+    local ci = C_Item
+    local fn = (type(ci) == "table" and ci.GetItemInfo) or GetItemInfo
+    if type(fn) == "function" then
+        local ok, _, _, _, _, _, _, _, _, _, _, _, _, _, bindType = pcall(fn, itemID)
+        if ok and (bindType == 1 or bindType == 4) then return true end
+    end
+    return false
+end
+
+function PD.ToggleCustomWatchlistQuick(slug, spellID, label)
+    slug = slug or PD.cur
+    if not PD.WatchlistSupported(slug) then return false end
+    local sid = tonumber(spellID)
+    if not sid or sid <= 0 then return false end
+    local rec = getRec()
+    if not (rec and rec.ToggleCustomRecipe) then return false end
+    local added = rec.ToggleCustomRecipe(slug, sid)
+    PD.MarkRecoveryDirty(slug)
+    local nm = (type(label) == "string" and label ~= "") and label or SpellName(sid) or ("#" .. tostring(sid))
+    local msg = added and format(L["已加入自定义易卖清单：%s"], nm) or format(L["已从自定义易卖清单移出：%s"], nm)
+    if UIErrorsFrame and UIErrorsFrame.AddMessage then
+        pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, added and 0.45 or 0.95, added and 0.85 or 0.72, added and 1.0 or 0.42)
+    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, msg, added and 0.45 or 0.95, added and 0.85 or 0.72, added and 1.0 or 0.42)
+    end
+    PD.RequestRender()
+    return added
+end
+
+function PD.WatchlistSupported(slug)
+    slug = slug or PD.cur
+    if not slug or slug == "__index" or PD.FixedOnly(slug) then return false end
+    local p = profEntryOf(slug)
+    if not p then return false end
+    return p.section == "crafting" or slug == "cooking"
+end
+
 function PD.TabsFor(slug)
     if slug == "__index" then return { "overview" } end
     if slug == "crates" then return { "crate", "writ" } end
@@ -7309,6 +7377,9 @@ function PD.TabsFor(slug)
         or slug == "fishing" then
         out[#out + 1] = "leveling"
     end
+    if PD.WatchlistSupported(slug) then
+        out[#out + 1] = "watchlist"
+    end
     return out
 end
 
@@ -7320,7 +7391,8 @@ function PD.PickTabs()
     local shown = 0
     for _, def in ipairs(hostConst("PROF_SUBTABS") or PROF_SUBTABS) do
         local bt = PD.subBtns[def.key]
-        local on = PD.avail[def.key] and true or false
+        local on = (bt ~= nil) and PD.avail[def.key] and true or false
+        if bt then
         local txt = def.text
         local sel = (not PD.setOpen) and (def.key == PD.tab)
         local key = (on and "1" or "0") .. "|" .. shown .. "|"
@@ -7343,6 +7415,7 @@ function PD.PickTabs()
                     end
                 end
             end
+        end
         end
         if on then shown = shown + 1 end
     end
@@ -7690,7 +7763,8 @@ function PD.PaintTool(list, handler, yoff)
             end
         end
     end
-    local actBase = PD.RIGHT_W - rightTotal
+    local rightEdge = PD.RIGHT_W - (PD.LIST_PAD or 8)
+    local actBase = (rightTotal > 0) and (PD.RIGHT_W - rightTotal) or rightEdge
     PD.actX = actBase
     local actRow, ax, placedCount = 0, actBase, 0
     local function placeAction(btn, want, before)
@@ -7699,10 +7773,10 @@ function PD.PaintTool(list, handler, yoff)
         local bw = (btn:GetWidth() or want) + before
         local try = ax - bw
         if placedCount > 0 or rightTotal > 0 then try = try - PD.TOOL_GAP end
-        while try < (leftEnds[actRow] or 0) + PD.TOOL_GAP
+        while try < (leftEnds[actRow] or 0)
             and ((leftEnds[actRow] or 0) > 0 or placedCount > 0 or (actRow == 0 and rightTotal > 0)) do
             actRow = actRow + 1
-            ax = PD.RIGHT_W
+            ax = rightEdge
             placedCount = 0
             try = ax - bw
         end
@@ -7715,10 +7789,24 @@ function PD.PaintTool(list, handler, yoff)
     local jumpSpace = PD.jumpBtn and PD.jumpBtn:IsShown() and (PD.JUMP_W + PD.TOOL_GAP) or 0
     placeAction(PD.hudBtn, PD.HUD_W, jumpSpace)
     if PD.actDiv then
-        if rightTotal > 0 and ax > 24 then
+        local divRow, divX
+        if rightTotal > 0 then
+            if actRow == 0 then
+                divRow, divX = 0, ax
+            elseif (leftEnds[actRow] or 0) > 0 then
+                divRow, divX = actRow, ax
+            elseif (leftEnds[0] or 0) > 0 then
+                divRow, divX = 0, actBase
+            end
+        end
+        local leftEnd = divRow and leftEnds[divRow] or 0
+        local leftRight = (leftEnd > 0) and (leftEnd - PD.TOOL_GAP) or 0
+        local gap = divX and (divX - leftRight) or 0
+        if divRow and leftEnd > 0 and divX > 24 and gap >= 12 then
+            local dx = (gap >= 16) and (divX - 10) or (leftRight + math.floor(gap / 2))
             PD.actDiv:ClearAllPoints()
-            PD.actDiv:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + ax - 10,
-                               -(PD.BODY_TOP + yoff + actRow * (PD.TOOL_H + PD.TOOL_GAP)
+            PD.actDiv:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + dx,
+                               -(PD.BODY_TOP + yoff + divRow * (PD.TOOL_H + PD.TOOL_GAP)
                                  + (PD.TOOL_H - 16) / 2))
             PD.actDiv:Show()
         else
@@ -7985,15 +8073,19 @@ end
 function PD.PaintGatherTiles()
     local tiles = PD.lvTiles
     if PD.tab ~= "leveling" or PD.setOpen then
-        for _, k in ipairs({ "mode", "scheme", "budget", "excl", "target", "spec" }) do
-            tiles[k].__use = false
-            tiles[k]:Hide()
+        for _, k in ipairs(PD.chipOrder or { "mode", "scheme", "ahRec", "budget", "target", "spec" }) do
+            if tiles[k] then
+                tiles[k].__use = false
+                tiles[k]:Hide()
+            end
         end
         if PD.setCard then PD.setCard:Hide() end
         tiles.cost:Hide()
         return 0
     end
-    tiles.excl.__use, tiles.target.__use = false, false
+    if tiles.ahRec then tiles.ahRec.__use = false end
+    if tiles.budget then tiles.budget.__use = false end
+    tiles.target.__use = false
     tiles.spec.__use = false
     tiles.spec:SetScript("OnClick", nil)
     tiles.mode.__use, tiles.scheme.__use = true, true
@@ -8067,15 +8159,18 @@ function PD.PaintLvTiles()
     if not (tiles and tiles.mode) then return 0 end
     if PD.IsGatherRoute() then return PD.PaintGatherTiles() end
     if PD.tab ~= "leveling" or PD.setOpen then
-        for _, k in ipairs({ "mode", "scheme", "budget", "excl", "target", "spec" }) do
-            tiles[k].__use = false
-            tiles[k]:Hide()
+        for _, k in ipairs(PD.chipOrder or { "mode", "scheme", "ahRec", "budget", "target", "spec" }) do
+            if tiles[k] then
+                tiles[k].__use = false
+                tiles[k]:Hide()
+            end
         end
         if PD.setCard then PD.setCard:Hide() end
         tiles.cost:Hide()
         return 0
     end
-    for _, k in ipairs({ "mode", "scheme", "excl", "target" }) do tiles[k].__use = true end
+    for _, k in ipairs({ "mode", "scheme", "target" }) do tiles[k].__use = true end
+    if tiles.ahRec then tiles.ahRec.__use = false end
     tiles.spec.__use = false
     tiles.spec:SetScript("OnClick", nil)
     local s = PD.lvSummary or {}
@@ -8096,7 +8191,10 @@ function PD.PaintLvTiles()
             end
             local on = not PD.Setting("autoRoute")
             PD.SetSettingRaw("autoRoute", on)
-            if not on and PD.autoPage == "recovery" then PD.autoPage = "route" end
+            if not on and (PD.autoPage == "recovery" or PD.autoPage == "exclusions") then
+                if PD.autoPage == "exclusions" then PD.FlushPolicies() end
+                PD.autoPage = "route"
+            end
             local ra = getRA()
             if not on and ra and ra.Invalidate then ra.Invalidate() end
             PD.RequestRender()
@@ -8128,7 +8226,7 @@ function PD.PaintLvTiles()
         end
         TipOn(tiles.mode, modeLines)
     end
-    local sch = (auto and s.scheme) or PD.SettingRaw("autoScheme") or "cost"
+    local sch = (auto and not fishRoute and PD.SettingRaw("autoScheme")) or (auto and s.scheme) or "cost"
     if sch == "cheapest" then sch = "cost" end
     tiles.scheme.label:SetText(L["路线方案"])
     local ra = raMod()
@@ -8190,17 +8288,24 @@ function PD.PaintLvTiles()
     else
         tiles.budget:SetScript("OnClick", nil)
     end
-    do
-        local banR, banM = PD.CountBans()
-        local nBan = banR + banM
-        tiles.excl.val:SetText(nBan > 0 and format(L["%d 项"], nBan) or L["无"])
-        tiles.excl.val:SetTextColor(Unpack(nBan > 0 and C_WHITE or C_GREY))
-        PD.PaintTileBorder(tiles.excl, { 1, 1, 1, 0.10 })
-        local lines = { { L["图样 / 材料使用管理"], 1, 0.82, 0 } }
-        if banR > 0 then lines[#lines + 1] = { format(L["已禁用图样：%d"], banR), 0.88, 0.42, 0.38 } end
-        if banM > 0 then lines[#lines + 1] = { format(L["已禁用材料：%d"], banM), 0.88, 0.42, 0.38 } end
-        if nBan == 0 then lines[#lines + 1] = { L["点击管理不使用的图样与材料"], 0.7, 0.7, 0.7 } end
-        TipOn(tiles.excl, lines)
+    if tiles.ahRec then
+        local showAhRec = auto and not fishRoute and not fixedOnly and sch == "net"
+        tiles.ahRec.__use = showAhRec
+        if showAhRec then
+            local ahRecOn = PD.Setting("auctionRecoveryEnabled", PD.cur)
+            local fee = tonumber(PD.SettingRaw("recoveryFeePercent", PD.cur)) or 5
+            tiles.ahRec.label:SetText(L["拍卖行回血"])
+            tiles.ahRec.val:SetText(ahRecOn and L["开启"] or L["关闭"])
+            tiles.ahRec.val:SetTextColor(Unpack(ahRecOn and { 0.42, 0.90, 0.58 } or C_GREY))
+            PD.PaintTileBorder(tiles.ahRec, ahRecOn and { 0.32, 0.78, 0.48, 0.45 } or { 1, 1, 1, 0.10 })
+            TipOn(tiles.ahRec, {
+                { L["拍卖行回血（易卖清单与自选）"], 1, 0.82, 0 },
+                { ahRecOn
+                    and format(L["已开启：本周推荐与自定义易卖产物按拍卖行净价（扣 %d%% 手续费）算回血，其余按卖商人算。"], fee)
+                    or L["已关闭：所有剩余产物统一按卖给商人估算回血。"], 0.85, 0.85, 0.85 },
+                { L["点击一键切换开关；可在顶层「易卖清单」配置清单，在右上角设置齿轮调整手续费。"], 0.7, 0.7, 0.7 },
+            })
+        end
     end
     tiles.cost.label:SetText(s.referenceOnly and L["材料参考价"] or s.useBagMaterials and L["预计额外支出"] or s.partial and L["已计算支出"] or L["预计总花费"])
     local costLines
@@ -11129,6 +11234,7 @@ function PD.WipeRow(r, keepShown)
     r.__it = nil
     r.__spell = nil
     r.__act = nil
+    r.__rightAct = nil
     r.__routePolicy = nil
     r.__tipTitle = nil
     r.__tipExtra = nil
@@ -11210,7 +11316,7 @@ function PD.LevelSrc(rec, profession, resolved, frozen)
     if not rec then return nil, nil, nil end
     local E=getEco()
     if (profession or PD.cur)=="poisons" then resolved=nil
-    else resolved=resolved or rec.spell and rec or E and E.FindRecipe and E.FindRecipe(profession or PD.cur,rec[1]) end
+    else resolved=resolved or (rec.spell and rec) or (E and E.FindRecipe and E.FindRecipe(profession or PD.cur, rec[1] or rec.spellID)) end
     local card=resolved and PD.RecipeLearningCard(resolved,frozen==true)
     if card then
         local text=card.kind=="trainer" and card.text==L["训练师"] and L["训练师"] or card.text
@@ -12956,6 +13062,12 @@ function PD.RecipeSpec(r)
         if diff > 0 then gapColor = AH_PCT_RED elseif diff < 0 then gapColor = AH_PCT_GREEN else gapColor = { 0.75, 0.75, 0.75 } end
     end
     local rowName = outItem and PD.ItemName(outItem) or SpellName(spell)
+    local wlCanQuick = PD.WatchlistSupported(PD.cur)
+        and (not isV2 or r.availability == nil or r.availability == "live")
+        and type(outItem) == "number" and outItem > 0
+        and tonumber(spell) and tonumber(spell) > 0
+        and not PD.IsRecoveryItemBound(outItem)
+    local wlSlug, wlSpell, wlLabel = PD.cur, tonumber(spell), rowName
     return {
         kind = "row", is_new = isV2 and r.isNew or r[11], it = outItem and { outItem } or nil,
         qItem = outItem, row = r, _mats = mats,
@@ -12970,6 +13082,15 @@ function PD.RecipeSpec(r)
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
             if dtip then
                 for i = 1, #dtip do lines[#lines + 1] = dtip[i] end
+            end
+            if wlCanQuick then
+                local recMod = getRec()
+                local inCustom = recMod and recMod.IsCustomRecipe and recMod.IsCustomRecipe(wlSlug, wlSpell)
+                if inCustom then
+                    lines[#lines + 1] = { L["已在自定义易卖清单 · 右键移出"], 0.45, 0.80, 1.0 }
+                else
+                    lines[#lines + 1] = { L["右键加入自定义易卖清单"], 0.65, 0.75, 0.85 }
+                end
             end
             return lines
         end,
@@ -13009,6 +13130,9 @@ function PD.RecipeSpec(r)
             return lines
         end,
         act = hasVendor and PD.VendorAct(src) or nil,
+        rightAct = wlCanQuick and function()
+            PD.ToggleCustomWatchlistQuick(wlSlug, wlSpell, wlLabel)
+        end or nil,
     }
 end
 
@@ -14854,7 +14978,7 @@ function PD.MaterialKindCount(entries)
 end
 
 function PD.MarketLineText(sec, days)
-    local src = PD.AHSourceName() or AH_AU
+    local src = PD.AHSourceName() or AH_NATIVE
     if days then
         if (tonumber(days) or 0) <= 0 then return format(L["行情 %s · 今天"], src) end
         return format(L["行情 %s · %d 天前"], src, days)
@@ -15287,13 +15411,16 @@ function PD.StepRole(st)
 end
 
 function PD.StepRange(st)
-    local current = st and tonumber(st.displayFrom) or st and tonumber(st[1])
-    local target = st and tonumber(st.displayTo) or st and tonumber(st.goalSkill)
-    if not target then target = st and tonumber(st[2]) end
-    if current == nil or target == nil then
-        return format(L["%s – %s"], tostring(st and st[1]), tostring(st and st[2]))
+    if not st then return "" end
+    if st.displaySkill ~= nil then
+        return tostring(math.floor(tonumber(st.displaySkill) + 0.5))
     end
-    if current == target then return tostring(current) end
+    local current = tonumber(st[1])
+    local target = tonumber(st.goalSkill) or tonumber(st[2])
+    if current == nil or target == nil then
+        return format(L["%s – %s"], tostring(st[1]), tostring(st[2]))
+    end
+    if current == target then return tostring(math.floor(current + 0.5)) end
     return format(L["%d – %d"], math.floor(current + 0.5), math.floor(target + 0.5))
 end
 
@@ -15812,6 +15939,7 @@ function PD.RowsRoutePartner(rows, context)
             if PD.partnerPicker == target then PD.partnerPicker = nil
             else PD.partnerPicker = target end
             PD.exclusionsOpen = false
+    if PD.autoPage == "exclusions" then PD.autoPage = "route" end
             PD.FlushPolicies()
             PD.RequestRender()
         end,
@@ -15831,6 +15959,7 @@ function PD.RowsRoutePartner(rows, context)
                     PD.partnerUIRevision = (PD.partnerUIRevision or 0) + 1
                     PD.partnerPicker = nil
                     PD.exclusionsOpen = false
+    if PD.autoPage == "exclusions" then PD.autoPage = "route" end
                     PD.solverSig = nil
                     PD.MarkRouteStale(target, "settings")
                 end,
@@ -15850,8 +15979,7 @@ function PD.PlanDiagnostics(emit, plan)
         formulaUnavailable=true, auctionSupplyLimited=true,
         levelGap=true, clientDataPending=true, outputConflict=true,
         characterLevelRequired=true, characterRaceRequired=true, characterClassRequired=true, poisonRogueRequired=true,
-        reputationRequired=true,questRequired=true,learningDataMissing=true,
-        batchDependency=true, batchSkillGap=true}
+        reputationRequired=true,questRequired=true,learningDataMissing=true}
     local function add(diagnostic, blocking)
         local key = type(diagnostic) == "table" and diagnostic.code or tostring(diagnostic)
         if not key then return end
@@ -15925,7 +16053,6 @@ function PD.SolverText()
         local pct = math.min(100, math.floor((st.cpuUsed or 0) * 100 / math.max(1, st.cpuLimitMs or 8000) + 0.5))
         return format(L["正在优化 %d%%"], pct)
     elseif st.phase == "finalizing" then
-        if st.batchSearch then return format(L["正在合并制作步骤：已检查 %d 种安排，当前 %d 步"],st.batchSearch.states or 0,st.batchSearch.bestSegments or 0) end
         return format(L["正在整理计算结果 %d%%"],math.max(0,math.min(99,math.floor((st.finalizeProgress or 0)*100))))
     end
     return L["正在准备数据"]
@@ -16460,7 +16587,7 @@ function PD.UpdateJumpButton()
     if not button then return false end
     local idx
     if PD.tab == "leveling" and not PD.setOpen and not PD.IsGatherRoute()
-       and not PD.exclusionsOpen and (PD.autoPage == nil or PD.autoPage == "route")
+       and (PD.autoPage == nil or PD.autoPage == "route")
        and PD.hudBtn and PD.hudBtn:IsShown() then
         idx = PD.CurrentSegRow()
     end
@@ -16486,48 +16613,17 @@ local function TrackStepsFor(slug, steps)
     local T = getExec()
     if not T then return nil end
     local run, plan = TrackRunOf(slug)
-    if not plan then return nil end
-    local mine = plan.executionSteps or plan.steps
-    if type(mine) ~= "table" or type(steps) ~= "table" or #steps == 0 or #mine == 0 then return nil end
-    if steps[1].segmentIDs then
-        local progress=T.GetProgressAll(slug)
-        if not progress then return nil end
-        local ledger=plan.executionSteps or mine
-        local byID={}
-        for index,segment in ipairs(ledger) do
-            if not segment.segmentID then return nil end
-            byID[segment.segmentID]=index
+    local mine = plan and plan.steps
+    if type(mine) ~= "table" or type(steps) ~= "table" or #steps == 0 or #mine ~= #steps then return nil end
+    if mine == steps then return run, T.GetProgressAll(slug) end
+    for i = 1, #steps do
+        local a, b = steps[i], mine[i]
+        if a[3] ~= b[3] or (a.profession or slug) ~= (b.profession or slug)
+            or (a.segmentID and a.segmentID ~= b.segmentID) then
+            return nil
         end
-        local grouped={run=run,finished=progress.finished,current=#steps+1,steps={}}
-        local assigned={}
-        for index,group in ipairs(steps) do
-            local sum={casts=0,actualOutputs=0,remainingCrafts=0,complete=true}
-            if not group.segmentIDs or #group.segmentIDs==0 then return nil end
-            for _,id in ipairs(group.segmentIDs) do
-                local executionIndex=byID[id]
-                local part=executionIndex and progress.steps[executionIndex]
-                if not part or assigned[id] then return nil end
-                assigned[id]=true
-                sum.casts=sum.casts+(part.casts or 0)
-                sum.actualOutputs=sum.actualOutputs+(part.actualOutputs or 0)
-                sum.remainingCrafts=sum.remainingCrafts+(part.remainingCrafts or 0)
-                sum.complete=sum.complete and part.complete==true
-                if executionIndex==progress.current then grouped.current=index end
-            end
-            grouped.steps[index]=sum
-        end
-        for _,segment in ipairs(ledger) do if not assigned[segment.segmentID] then return nil end end
-        return run,grouped
     end
-    if #mine == #steps then
-        local same = true
-        for i = 1, #steps do
-            if steps[i][3] ~= mine[i][3] or (steps[i].profession or slug) ~= (mine[i].profession or slug)
-                or steps[i].segmentID and steps[i].segmentID ~= mine[i].segmentID then same = false break end
-        end
-        if same then return run, T.GetProgressAll(slug) end
-    end
-    return nil
+    return run, T.GetProgressAll(slug)
 end
 
 function PD.CraftLogCost(slug)
@@ -16537,7 +16633,7 @@ function PD.CraftLogCost(slug)
     if not run then return 0, 0, 0 end
     local plan = T.GetPlan(slug,run.planID)
     if not plan then return nil, 0, 0 end
-    local steps = plan.executionSteps or plan.steps
+    local steps = plan.steps
     local unknown = false
     local total, casts, planned = 0, 0, 0
     for i = 1, #steps do
@@ -17076,16 +17172,9 @@ function PD.RowsLeveling(rows)
         end
     end
     PD.warnNotes = notes
-    local onRecoveryManage = PD.autoPage == "recovery"
-        and PD.RecoveryModeActive(PD.cur)
-        and PD.recSub == "manage"
     local scanWarning,_,scanFix=PD.ReplicateScanWarning()
     local scanAdvice=PD.ScanModeAdvice()
-    if scanWarning and onRecoveryManage then
-        warningSeen[scanWarning]=true
-        PushText(rows,L["尚未扫描拍卖行（拍卖价暂显示为 —），可先预览或配置本周易卖清单，扫描后再重新计算路线。"],12,{0.95,0.75,0.42})
-        PushGap(rows,4)
-    elseif scanWarning then
+    if scanWarning and PD.autoPage ~= "exclusions" then
         warningSeen[scanWarning]=true
         PushText(rows,PD.ScanHeadline() or scanWarning,14,{0.98,0.6,0.46},1)
         if scanFix then
@@ -17193,6 +17282,20 @@ function PD.RowsLeveling(rows)
         PD.CopyPlanSummary(res)
         return
     end
+    if PD.autoPage == "exclusions" and (not autoOn or fishRoute or PD.FixedOnly()) then
+        PD.autoPage = "route"
+    end
+    if PD.autoPage == "exclusions" and autoOn and not fishRoute then
+        PD.lvSummary = {target = target, auto = autoOn, autoSetting = fishRoute or PD.Setting("autoRoute"), total = res and res.total,
+                        scheme = auto and res.scheme or nil,
+                        priced = auto or false,
+                        snapshotAge = auto and res.snapshotAge or nil,
+                        snapshotDays = auto and res.snapshotDays or nil,
+                        np = auto and CountUnpriced(res) or 0}
+        PD.CopyPlanSummary(res)
+        PD.RowsExclusions(rows)
+        return
+    end
     if res and (res.status == "selection_required" or res.status == "recalculate_required") then
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true}
         PD.CopyPlanSummary(res)
@@ -17207,17 +17310,6 @@ function PD.RowsLeveling(rows)
         if res.status == "recalculate_required" and not scanWarning then
             PushText(rows, L["点击右上角「开始计算」按钮，按当前设置与拍卖行行情生成升级路线。"], 14, C_GREY)
         end
-        return
-    end
-    if PD.exclusionsOpen and autoOn then
-        PD.lvSummary = {target = target, auto = autoOn, autoSetting = fishRoute or PD.Setting("autoRoute"), total = res and res.total,
-                        scheme = auto and res.scheme or nil,
-                        priced = auto or false,
-                        snapshotAge = auto and res.snapshotAge or nil,
-                        snapshotDays = auto and res.snapshotDays or nil,
-                        np = auto and CountUnpriced(res) or 0}
-        PD.CopyPlanSummary(res)
-        PD.RowsExclusions(rows)
         return
     end
     if autoOn and not PD.PlanHasSteps(res) then
@@ -17376,34 +17468,6 @@ function PD.RowsLeveling(rows)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
     local stepW = PD.TextW(L["步骤"], PD.LV_FS)
     local cardNeed = 0
-    local rngAdj = {}
-    do
-        local all = steps or {}
-        for _, si in ipairs(all) do
-            local a, b = si[1], si[2]
-            if type(a) == "number" and type(b) == "number" and a < b then
-                local lo, hi = a, b
-                for priorIndex, sj in ipairs(all) do
-                    if sj == si then break end
-                    if sj.role ~= "material" and not (sj.reason == "material" and sj.leveling ~= true) then
-                        local p = tonumber(sj[1])
-                        local q = tonumber(sj.goalSkill) or tonumber(sj[2])
-                        if p and q and q <= hi and q >= lo then
-                            lo = math.max(lo, q)
-                        end
-                    end
-                end
-                if lo <= hi then rngAdj[si] = { lo, hi } end
-            end
-        end
-    end
-    local function rngText(st)
-        local adj = rngAdj[st]
-        if st.displayFrom~=nil or st.displayTo~=nil then return PD.StepRange(st) end
-        if not adj then return PD.StepRange(st) end
-        if adj[2] > adj[1] then return format("%d - %d", adj[1], adj[2]) end
-        return PD.StepRange(st)
-    end
     for index, st in ipairs(steps or {}) do
         local rec = PD.StepRecipe(st) or recOf[st[3]]
         local riM
@@ -17464,7 +17528,7 @@ function PD.RowsLeveling(rows)
             count, sub = format("%d/%d", tp.casts, st[4] or 0), nil
         end
         cntOf[st], costOf[st], cntSubOf[st] = count, cost, sub
-        rngW = math.max(rngW, PD.TextW(rngText(st), PD.LV_FS))
+        rngW = math.max(rngW, PD.TextW(PD.StepRange(st), PD.LV_FS))
         cntW = math.max(cntW, PD.TextW(count, PD.LV_FS),
                         sub and PD.TextW(sub, PD.LV_CNT_SUB_FS) or 0)
         costW = math.max(costW, PD.TextW(cost, PD.LV_FS))
@@ -17648,10 +17712,8 @@ function PD.RowsLeveling(rows)
             elseif st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
             if (rec and rec.clientPending) or (ri and ri.clientPending) then src = L["客户端数据待读取"] end
             if shownSum and shownSum.referenceOnly and not rec and not ri then src=L["配方资料待补全"] end
-            local rangeStep = st
-            if st.displayFrom~=nil then rangeStep={ [1]=st.displayFrom,[2]=st.displayTo,goalSkill=st.displayTo } end
-            local segLo = tonumber(rangeStep[1])
-            local segHi = tonumber(rangeStep.goalSkill) or tonumber(rangeStep[2])
+            local segLo = tonumber(st.displaySkill) or tonumber(st[1])
+            local segHi = tonumber(st.displaySkill) or tonumber(st.goalSkill) or tonumber(st[2])
             local stepLv = _learned and _learned[st.profession or PD.cur]
             local actualLv = stepLv and stepLv.cur or curLv
             local over = (actualLv ~= nil and segHi ~= nil and segHi < actualLv) or nil
@@ -17673,7 +17735,7 @@ function PD.RowsLeveling(rows)
                                or nil),
                 noTip = true,
                 stepIndex = st.stepIndex or st.index or index,
-                rng = rngText(st),
+                rng = PD.StepRange(st),
                 text = FitName(nm),
                 src = src,
                 cnt = cntOf[st] or format(L["~%s 次制作"], tostring(st[4])),
@@ -17696,7 +17758,7 @@ function PD.RowsLeveling(rows)
                 act = auto and st[3] ~= 0 and function(_, button)
                     local profession = st.profession or PD.cur
                     if button == "RightButton" then PD.ChangeRecipePolicy(profession, st[3], true)
-                    else PD.exclusionsOpen = true; PD.RequestRender() end
+                    else PD.autoPage = "exclusions"; PD.RequestRender() end
                 end or nil,
             }
             local recText = recMode and PD.StepRecoveryText(st) or nil
@@ -18131,7 +18193,7 @@ end
 function PD.ShopMatSeg(data, id)
     local fa = (data.firstAt or {})[id]
     if not fa then return nil end
-    for _, st in ipairs(data.executionSteps or data.steps or {}) do
+    for _, st in ipairs(data.steps or {}) do
         if st[1] <= fa and fa <= st[2] then return st end
     end
     return nil
@@ -18230,95 +18292,11 @@ local function RecoveryPricePair(itemID, fee)
 end
 
 local function RecoveryItemBound(itemID)
-    if type(itemID) ~= "number" or itemID <= 0 then return true end
-    local ds = getDS()
-    if ds and ds.Item then
-        local it = ds.Item(itemID)
-        if type(it) == "table" then
-            if it.nonAuctionable == true or it.bindType == 1 or it.bindType == 4 then return true end
-            if it.bindType ~= nil or it.nonAuctionable == false then return false end
-        end
-    end
-    local ci = C_Item
-    local fn = (type(ci) == "table" and ci.GetItemInfo) or GetItemInfo
-    if type(fn) == "function" then
-        local ok, _, _, _, _, _, _, _, _, _, _, _, _, _, bindType = pcall(fn, itemID)
-        if ok and (bindType == 1 or bindType == 4) then return true end
-    end
-    return false
+    return PD.IsRecoveryItemBound(itemID)
 end
 
-function PD.RowsRecoveryHeader(rows, src)
-    local rec = getRec()
-    local slug = PD.cur
-    local onManage = PD.recSub == "manage"
-    local ahRecOn = PD.Setting("auctionRecoveryEnabled", slug)
-    local fee = tonumber(PD.SettingRaw("recoveryFeePercent", slug)) or 5
-    local customMap = (rec and rec.GetCustomRecipes and rec.GetCustomRecipes(slug)) or {}
-    local excludedMap = (rec and rec.GetExcludedItems and rec.GetExcludedItems(slug)) or {}
-    local customN, excludedN = 0, 0
-    for _ in pairs(customMap) do customN = customN + 1 end
-    for _ in pairs(excludedMap) do excludedN = excludedN + 1 end
-    local overrideN = customN + excludedN
-
-    PushHead(rows, onManage and L["易卖清单管理"] or L["路线回血明细"])
-    rows[#rows].noHover = true
-    local segs = {
-        { key = "rec_sub_detail", text = L["路线回血明细"], on = not onManage },
-        { key = "rec_sub_manage",
-          text = overrideN > 0 and format(L["易卖清单管理 (%d)"], overrideN) or L["易卖清单管理"],
-          on = onManage },
-        { key = "rec_toggle_ah",
-          text = ahRecOn and L["拍卖行回血：开"] or L["拍卖行回血：关"],
-          on = ahRecOn },
-    }
-    if ahRecOn then
-        segs[#segs + 1] = { key = "rec_fee", text = format(L["手续费 %d%%"], fee) }
-    end
-    rows[#rows].segs = segs
-    if not ahRecOn then
-        PushText(rows, L["当前未开启「拍卖行回血」，所有产物按卖商人估算；可提前查看或配置易卖清单，开启并点击「重新计算」后生效。"],
-            12, { 0.95, 0.78, 0.42 })
-        PushGap(rows, 4)
-    end
-    return ahRecOn, fee, customMap, excludedMap, customN, excludedN
-end
-
-function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, customN, excludedN)
+local function CollectWatchlistRecipes(slug)
     local ds = getDS()
-    local rec = getRec()
-    local ra = raMod()
-    local slug = PD.cur
-    local lw = PD.GRID_LW or PD.COL_LW
-    local rw = PD.GRID_RW or PD.COL_RW
-    local marketCode = rec and rec.ResolveMarketCode and rec.ResolveMarketCode(nil, nil) or nil
-    local marketLabel = (rec and rec.MarketCodeLabel and rec.MarketCodeLabel(marketCode)) or L["当前市场"]
-    local updatedAt = ds and ds.MarketWatchlistUpdatedAt and ds.MarketWatchlistUpdatedAt() or nil
-    local weeklyMap = (ds and marketCode and ds.MarketWatchlist and ds.MarketWatchlist(marketCode)) or {}
-
-    local function fmtM(v)
-        if type(v) ~= "number" then return L["—"] end
-        return (ra and ra.MoneyStr and ra.MoneyStr(v, "copper")) or tostring(v)
-    end
-    local function fmtBrief(v)
-        if type(v) ~= "number" then return L["—"] end
-        return PD.MoneyBrief(v)
-    end
-    local function pushTextCol(text, fs, color, col)
-        for _, ln in ipairs(PD.Wrap(text, fs, (col == 2 and rw or lw) - 16)) do
-            rows[#rows + 1] = { kind = "text", text = ln, fs = fs, color = color,
-                                col = col, fcol = col, noSpan = true }
-        end
-    end
-    local function pushGapCol(h, col)
-        rows[#rows + 1] = { kind = "gap", h = h, col = col, fcol = col, noSpan = true }
-    end
-
-    local routeSpells = {}
-    for _, st in ipairs((src and src.steps) or {}) do
-        if type(st[3]) == "number" and st[3] > 0 then routeSpells[st[3]] = true end
-    end
-
     local rr = ds and ds.Recipes and ds.Recipes(slug)
     local profRecipes = {}
     local profItems = {}
@@ -18340,151 +18318,169 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
             end
         end
     end
+    return profRecipes, profItems, rr
+end
 
-    local flt = PD.recFilter or "all"
-    local q = string.lower(tostring(PD.searchQ or ""))
-    local filtered = {}
-    for _, e in ipairs(profRecipes) do
-        local npc, _, ahNet = RecoveryPricePair(e.item, fee)
-        e.npc, e.ahNet = npc, ahNet
-        local matchFlt = true
-        if flt == "route" then
-            matchFlt = routeSpells[e.spell] == true
-        elseif flt == "profit" then
-            matchFlt = (type(ahNet) == "number" and ahNet > (tonumber(npc) or 0))
-        end
-        local matchQ = (q == "")
-            or string.find(string.lower(tostring(e.recipeName or "")), q, 1, true) ~= nil
-            or string.find(string.lower(tostring(e.itemName or "")), q, 1, true) ~= nil
-        if matchFlt and matchQ then
-            filtered[#filtered + 1] = e
-        end
-    end
-    table.sort(filtered, function(a, b)
-        local ca = customMap[a.spell] and 1 or 0
-        local cb = customMap[b.spell] and 1 or 0
-        if ca ~= cb then return ca > cb end
-        if a.learn ~= b.learn then return a.learn < b.learn end
-        return a.spell < b.spell
-    end)
-
-    -- Left column (col = 1): Browse & add custom recovery recipes
-    pushGapCol(4, 1)
-    rows[#rows + 1] = {
-        kind = "head", h = PD.HEAD_H, col = 1, fcol = 1, noSpan = true, noHover = true,
-        text = format(L["自选回血（%d）"], #filtered),
-        segs = {
-            { key = "rec_flt_all", text = L["全部"], on = flt == "all" },
-            { key = "rec_flt_route", text = L["路线"], on = flt == "route" },
-            { key = "rec_flt_profit", text = L["高于卖店"], on = flt == "profit" },
-        },
-    }
-    if #filtered == 0 then
-        pushTextCol((q ~= "") and L["没有匹配的配方，可清空搜索词重试。"]
-            or (flt == "route" and L["当前路线暂无可交易产物，可切到「全部可交易」查看。"])
-            or (flt == "profit" and L["暂无拍卖行净价高于卖店的配方，请先完整扫描拍卖行或查看「全部可交易」。"])
-            or L["当前专业没有可拍卖产物配方。"], 12, C_GREY, 1)
-    else
-        local cap = math.min(#filtered, 120)
-        for i = 1, cap do
-            local e = filtered[i]
-            local isCustom = customMap[e.spell] == true
-            local isWeekly = weeklyMap[e.item] ~= nil
-            local isExcluded = excludedMap[e.item] == true
-            local tagText, tagColor
-            if isCustom then
-                tagText, tagColor = L["已自选"], { 0.45, 0.78, 1.0 }
-            elseif isWeekly and not isExcluded then
-                tagText, tagColor = L["本周推荐"], { 0.42, 0.90, 0.58 }
-            elseif isWeekly and isExcluded then
-                tagText, tagColor = L["已屏蔽"], { 0.92, 0.48, 0.45 }
-            else
-                tagText, tagColor = L["添加"], C_GREY
-            end
-            local priceSub = format(L["卖店 %s · 拍卖 %s"], fmtBrief(e.npc), fmtBrief(e.ahNet))
-            local tipLines = {
-                { e.recipeName, 1, 0.82, 0 },
-                { format(L["产物：%s"], tostring(e.itemName or ("#" .. tostring(e.item)))), 0.85, 0.85, 0.85 },
-                { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(e.npc), fee, fmtM(e.ahNet)), 0.8, 0.9, 0.8 },
-                { isCustom and L["点击从自定义回血清单中移出（需点「重新计算」生效）"]
-                    or L["点击加入自定义回血清单（需点「重新计算」生效）"], 0.7, 0.7, 0.7 },
-            }
-            local spellID = e.spell
-            rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H2, col = 1, fcol = 1, noSpan = true,
-                it = { e.item },
-                fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
-                text = PD.Fit(e.recipeName, PD.ROW2_FS, lw - 118),
-                sub = priceSub,
-                tag = { text = tagText, color = tagColor },
-                lines = tipLines,
-                act = function()
-                    if rec and rec.ToggleCustomRecipe then
-                        rec.ToggleCustomRecipe(slug, spellID)
-                        PD.MarkRecoveryDirty(slug)
-                        playSoundSafe(1)
-                    end
-                end,
-            }
-        end
-        if #filtered > cap then
-            pushTextCol(format(L["共 %d 条，仅展示前 %d 条；可在上方搜索框输入关键词筛选。"], #filtered, cap), 12, C_GREY, 1)
-        end
-    end
-
-    -- Right column (col = 2): Section A (Weekly Recommended Easy-Sell List) + Section B (My Custom Recovery Recipes)
-    local gradeRank = { S = 1, A = 2, B = 3, C = 4, D = 5 }
-    local weeklyList = {}
-    for iid, meta in pairs(weeklyMap) do
+function PD.WatchlistStats(slug)
+    slug = slug or PD.cur
+    local ds = getDS()
+    local rec = getRec()
+    local marketCode = rec and rec.ResolveMarketCode and rec.ResolveMarketCode(nil, nil) or nil
+    local weeklyMap = (ds and marketCode and ds.MarketWatchlist and ds.MarketWatchlist(marketCode)) or {}
+    local customMap = (rec and rec.GetCustomRecipes and rec.GetCustomRecipes(slug)) or {}
+    local excludedMap = (rec and rec.GetExcludedItems and rec.GetExcludedItems(slug)) or {}
+    local _, profItems = CollectWatchlistRecipes(slug)
+    local weeklyN, customN, excludedN = 0, 0, 0
+    for iid in pairs(weeklyMap) do
         local numId = tonumber(iid)
         if numId and profItems[numId] then
-            local m = type(meta) == "table" and meta or { status = "recommended" }
-            local npc, _, ahNet = RecoveryPricePair(numId, fee)
-            weeklyList[#weeklyList + 1] = {
-                item = numId,
-                name = PD.ItemName(numId),
-                status = m.status or "recommended",
-                grade = m.grade,
-                avgDailySold = tonumber(m.avgDailySold),
-                npc = npc,
-                ahNet = ahNet,
-            }
+            weeklyN = weeklyN + 1
+            if excludedMap[numId] then excludedN = excludedN + 1 end
         end
     end
-    table.sort(weeklyList, function(a, b)
-        local ga = gradeRank[a.grade or ""] or 9
-        local gb = gradeRank[b.grade or ""] or 9
-        if ga ~= gb then return ga < gb end
-        local sa = a.avgDailySold or -1
-        local sb = b.avgDailySold or -1
-        if sa ~= sb then return sa > sb end
-        return a.item < b.item
-    end)
+    for _ in pairs(customMap) do customN = customN + 1 end
+    return weeklyN, customN, excludedN, marketCode, weeklyMap, customMap, excludedMap
+end
 
-    pushGapCol(4, 2)
-    local wkHead = {
-        kind = "head", h = PD.HEAD_H, col = 2, fcol = 2, noSpan = true, noHover = true,
-        text = format(L["本周推荐易卖清单（%d）"], #weeklyList),
+function PD.WatchlistTool()
+    local slug = PD.cur
+    local weeklyN, customN, excludedN = PD.WatchlistStats(slug)
+    local onCustom = PD.wlSub == "custom"
+    local picking = onCustom and PD.wlPicking == true
+    local list = {
+        { key = "wl_sub_weekly", text = format(L["本周推荐 (%d)"], weeklyN), on = not onCustom },
+        { key = "wl_sub_custom", text = format(L["自定义易卖 (%d)"], customN), on = onCustom },
     }
-    if customN > 0 or excludedN > 0 then
-        wkHead.segs = { { key = "rec_reset_overrides", text = L["恢复默认"] } }
-    end
-    rows[#rows + 1] = wkHead
-    pushTextCol(updatedAt
-        and format(L["当前市场：%s · 清单更新于 %s"], marketLabel, updatedAt)
-        or format(L["当前市场：%s · 暂未生成本周清单"], marketLabel),
-        12, C_GREY, 2)
-
-    if #weeklyList == 0 then
-        local hasAnyMarketData = next(weeklyMap) ~= nil
-        if not hasAnyMarketData then
-            pushTextCol(format(L["本周推荐易卖清单暂未生成数据。数据表生成后将按「%s」自动展示易卖产物，并支持单项屏蔽。您现在可直接在左侧搜索添加自定义回血配方。"], marketLabel),
-                12, C_GREY, 2)
-        else
-            pushTextCol(format(L["本周「%s」推荐易卖清单中暂无当前专业产物，可在左侧自行添加自定义回血配方。"], marketLabel),
-                12, C_GREY, 2)
+    if not onCustom then
+        if excludedN > 0 then
+            list[#list + 1] = { key = "wl_reset_excluded", align = "right", text = L["恢复默认"],
+                tip = { { L["恢复默认"], 1, 0.82, 0 },
+                        { L["仅解除本周推荐中的已屏蔽项，不会清空你的自定义易卖清单。"], 0.85, 0.85, 0.85 } } }
         end
+    elseif picking then
+        list[#list + 1] = { key = "wl_pick_done", align = "right", primary = true, text = L["完成返回"] }
     else
+        if customN > 0 then
+            list[#list + 1] = { key = "wl_clear_custom", align = "right", text = L["清空自选"],
+                tip = { { L["清空自选"], 1, 0.82, 0 },
+                        { L["仅清空当前专业的自定义易卖项，不影响本周推荐的启用/屏蔽设置。"], 0.85, 0.85, 0.85 } } }
+        end
+        list[#list + 1] = { key = "wl_pick_open", align = "right", primary = true, text = L["+ 添加配方"],
+            tip = { { L["+ 添加配方"], 1, 0.82, 0 },
+                    { L["从当前专业可交易配方中搜索并勾选加入自定义易卖清单。"], 0.85, 0.85, 0.85 } } }
+    end
+    return list, function(k)
+        if k == "wl_sub_weekly" then
+            PD.wlSub = "weekly"
+            PD.wlPicking = false
+        elseif k == "wl_sub_custom" then
+            PD.wlSub = "custom"
+        elseif k == "wl_pick_open" then
+            PD.wlSub = "custom"
+            PD.wlPicking = true
+        elseif k == "wl_pick_done" then
+            PD.wlPicking = false
+        elseif k == "wl_flt_all" then
+            PD.wlFilter = "all"
+        elseif k == "wl_flt_route" then
+            PD.wlFilter = "route"
+        elseif k == "wl_flt_profit" then
+            PD.wlFilter = "profit"
+        elseif k == "wl_reset_excluded" then
+            local rec = getRec()
+            if rec and rec.ResetExcludedItems then rec.ResetExcludedItems(PD.cur) end
+            PD.MarkRecoveryDirty(PD.cur)
+        elseif k == "wl_clear_custom" then
+            local rec = getRec()
+            if rec and rec.ClearCustomRecipes then rec.ClearCustomRecipes(PD.cur) end
+            PD.MarkRecoveryDirty(PD.cur)
+        end
+        PD.RequestRender()
+        playSoundSafe(1)
+    end
+end
+
+function PD.RowsWatchlist(rows)
+    local ds = getDS()
+    local rec = getRec()
+    local ra = raMod()
+    local slug = PD.cur
+    local lw = PD.GRID_W or PD.RIGHT_W
+    local fee = tonumber(PD.SettingRaw("recoveryFeePercent", slug)) or 5
+    local ahRecOn = PD.Setting("auctionRecoveryEnabled", slug)
+    local updatedAt = ds and ds.MarketWatchlistUpdatedAt and ds.MarketWatchlistUpdatedAt() or nil
+    local profRecipes, profItems, rr = CollectWatchlistRecipes(slug)
+    local marketCode = rec and rec.ResolveMarketCode and rec.ResolveMarketCode(nil, nil) or nil
+    local marketLabel = (rec and rec.MarketCodeLabel and rec.MarketCodeLabel(marketCode)) or L["当前市场"]
+    local weeklyMap = (ds and marketCode and ds.MarketWatchlist and ds.MarketWatchlist(marketCode)) or {}
+    local customMap = (rec and rec.GetCustomRecipes and rec.GetCustomRecipes(slug)) or {}
+    local excludedMap = (rec and rec.GetExcludedItems and rec.GetExcludedItems(slug)) or {}
+    local q = string.lower(tostring(PD.searchQ or ""))
+
+    local function fmtM(v)
+        if type(v) ~= "number" then return L["—"] end
+        return (ra and ra.MoneyStr and ra.MoneyStr(v, "copper")) or tostring(v)
+    end
+    local function fmtBrief(v)
+        if type(v) ~= "number" then return L["—"] end
+        return PD.MoneyBrief(v)
+    end
+
+    if PD.wlSub ~= "custom" then
+        local gradeRank = { S = 1, A = 2, B = 3, C = 4, D = 5 }
+        local weeklyList = {}
+        for iid, meta in pairs(weeklyMap) do
+            local numId = tonumber(iid)
+            if numId and profItems[numId] then
+                local nm = PD.ItemName(numId)
+                local matchQ = (q == "") or string.find(string.lower(tostring(nm or "")), q, 1, true) ~= nil
+                if matchQ then
+                    local m = type(meta) == "table" and meta or { status = "recommended" }
+                    local npc, _, ahNet = RecoveryPricePair(numId, fee)
+                    weeklyList[#weeklyList + 1] = {
+                        item = numId,
+                        name = nm,
+                        status = m.status or "recommended",
+                        grade = m.grade,
+                        avgDailySold = tonumber(m.avgDailySold),
+                        npc = npc,
+                        ahNet = ahNet,
+                    }
+                end
+            end
+        end
+        table.sort(weeklyList, function(a, b)
+            local ga = gradeRank[a.grade or ""] or 9
+            local gb = gradeRank[b.grade or ""] or 9
+            if ga ~= gb then return ga < gb end
+            local sa = a.avgDailySold or -1
+            local sb = b.avgDailySold or -1
+            if sa ~= sb then return sa > sb end
+            return a.item < b.item
+        end)
+
+        PushHead(rows, format(L["本周推荐易卖清单（%d）"], #weeklyList))
+        rows[#rows].noHover = true
+        PushText(rows, updatedAt
+            and format(L["当前市场：%s · 清单更新于 %s · 点击任意条目可单独屏蔽或恢复"], marketLabel, updatedAt)
+            or format(L["当前市场：%s · 暂未生成本周清单"], marketLabel),
+            12, C_GREY)
+        if not ahRecOn then
+            PushText(rows, L["提示：升级页「回血净花费」方案下开启「拍卖行回血」并重新计算后，本清单将生效。"], 12, { 0.95, 0.78, 0.42 })
+        end
+        PushGap(rows, 4)
+
+        if #weeklyList == 0 then
+            if q ~= "" then
+                PushText(rows, L["没有匹配的本周推荐物品，可清空搜索词重试。"], 13, C_GREY)
+            elseif next(weeklyMap) == nil then
+                PushText(rows, format(L["本周推荐易卖清单暂未生成数据。数据表生成后将按「%s」自动展示易卖产物；您可先切到「自定义易卖」自行添加。"], marketLabel), 13, C_GREY)
+            else
+                PushText(rows, format(L["本周「%s」推荐易卖清单中暂无当前专业产物，可切到「自定义易卖」自行添加。"], marketLabel), 13, C_GREY)
+            end
+            return
+        end
+
         for _, w in ipairs(weeklyList) do
             local isExcluded = excludedMap[w.item] == true
             local parts = {}
@@ -18504,10 +18500,10 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
                   isExcluded and 0.95 or 0.7, isExcluded and 0.65 or 0.7, isExcluded and 0.55 or 0.7 },
             }
             rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H2, col = 2, fcol = 2, noSpan = true,
+                kind = "row", h = PD.ROW_H2, col = 1,
                 it = { itemID },
                 fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
-                text = PD.Fit(w.name, PD.ROW2_FS, rw - 108),
+                text = PD.Fit(w.name, PD.ROW2_FS, lw - 130),
                 sub = subText,
                 tag = isExcluded
                     and { text = L["已屏蔽"], color = { 0.92, 0.48, 0.45 } }
@@ -18522,66 +18518,210 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
                 end,
             }
         end
+        return
     end
 
-    pushGapCol(10, 2)
-    local customList = {}
-    for sid in pairs(customMap) do
-        local r = rr and rr.recipes and rr.recipes[sid] or nil
-        local iid = r and (r.outputItemID or r.item or r[2]) or nil
-        local npc, _, ahNet = iid and RecoveryPricePair(iid, fee) or nil, nil, nil
-        customList[#customList + 1] = {
-            spell = sid,
-            item = iid,
-            name = SpellName(sid),
-            itemName = iid and PD.ItemName(iid) or nil,
-            npc = npc,
-            ahNet = ahNet,
+    if PD.wlPicking then
+        local routeSpells = {}
+        local plan = (ra and ra.Peek and ra.Peek(slug)) or (PD.autoSnapshotSlug == slug and PD.autoSnapshot) or nil
+        for _, st in ipairs((plan and plan.steps) or {}) do
+            if type(st[3]) == "number" and st[3] > 0 then routeSpells[st[3]] = true end
+        end
+        local flt = PD.wlFilter or "all"
+        local filtered = {}
+        for _, e in ipairs(profRecipes) do
+            local npc, _, ahNet = RecoveryPricePair(e.item, fee)
+            e.npc, e.ahNet = npc, ahNet
+            local matchFlt = true
+            if flt == "route" then
+                matchFlt = routeSpells[e.spell] == true
+            elseif flt == "profit" then
+                matchFlt = (type(ahNet) == "number" and ahNet > (tonumber(npc) or 0))
+            end
+            local matchQ = (q == "")
+                or string.find(string.lower(tostring(e.recipeName or "")), q, 1, true) ~= nil
+                or string.find(string.lower(tostring(e.itemName or "")), q, 1, true) ~= nil
+            if matchFlt and matchQ then
+                filtered[#filtered + 1] = e
+            end
+        end
+        table.sort(filtered, function(a, b)
+            local ca = customMap[a.spell] and 1 or 0
+            local cb = customMap[b.spell] and 1 or 0
+            if ca ~= cb then return ca > cb end
+            if a.learn ~= b.learn then return a.learn < b.learn end
+            return a.spell < b.spell
+        end)
+
+        PushHead(rows, format(L["选择添加到自定义易卖（%d）"], #filtered))
+        rows[#rows].noHover = true
+        rows[#rows].segs = {
+            { key = "wl_flt_all", text = L["全部"], on = flt == "all" },
+            { key = "wl_flt_route", text = L["路线"], on = flt == "route" },
+            { key = "wl_flt_profit", text = L["高于卖店"], on = flt == "profit" },
         }
-    end
-    table.sort(customList, function(a, b) return a.spell < b.spell end)
+        PushText(rows, L["点击任意配方即刻加入或移出自定义易卖清单，可连续多选；选完点右上角「完成返回」。"], 12, C_GREY)
+        PushGap(rows, 4)
 
-    rows[#rows + 1] = {
-        kind = "head", h = PD.HEAD_H, col = 2, fcol = 2, noSpan = true, noHover = true,
-        text = format(L["我的自定义回血配方（%d）"], #customList),
-    }
-    if #customList == 0 then
-        pushTextCol(L["尚未添加自定义回血配方；在左侧点击任意可交易配方即可加入。"], 12, C_GREY, 2)
-    else
-        for _, c in ipairs(customList) do
-            local sid = c.spell
-            local subText = format(L["卖店 %s · 拍卖 %s"], fmtBrief(c.npc), fmtBrief(c.ahNet))
+        if #filtered == 0 then
+            PushText(rows, (q ~= "") and L["没有匹配的配方，可清空搜索词重试。"]
+                or (flt == "route" and L["当前路线暂无可交易产物，可切到「全部」查看。"])
+                or (flt == "profit" and L["暂无拍卖行净价高于卖店的配方，请先完整扫描拍卖行或查看「全部」。"])
+                or L["当前专业没有可拍卖产物配方。"], 13, C_GREY)
+            return
+        end
+
+        local cap = math.min(#filtered, 150)
+        for i = 1, cap do
+            local e = filtered[i]
+            local isCustom = customMap[e.spell] == true
+            local inWeekly = weeklyMap[e.item] ~= nil
+            local priceSub = format(L["卖店 %s · 拍卖 %s"], fmtBrief(e.npc), fmtBrief(e.ahNet))
+            if inWeekly then
+                priceSub = priceSub .. " · " .. L["亦在本周推荐"]
+            end
+            local spellID = e.spell
             rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H2, col = 2, fcol = 2, noSpan = true,
-                it = c.item and { c.item } or nil,
+                kind = "row", h = PD.ROW_H2, col = 1,
+                it = { e.item },
                 fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
-                text = PD.Fit(c.name, PD.ROW2_FS, rw - 108),
-                sub = subText,
-                tag = { text = L["移出"], color = { 0.92, 0.58, 0.45 } },
+                text = PD.Fit(e.recipeName, PD.ROW2_FS, lw - 130),
+                sub = priceSub,
+                tag = isCustom
+                    and { text = L["已添加"], color = { 0.45, 0.78, 1.0 } }
+                    or { text = L["添加"], color = C_GREY },
                 lines = {
-                    { c.name, 1, 0.82, 0 },
-                    { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(c.npc), fee, fmtM(c.ahNet)), 0.8, 0.9, 0.8 },
-                    { L["点击从自定义回血清单中移出（需点「重新计算」生效）"], 0.7, 0.7, 0.7 },
+                    { e.recipeName, 1, 0.82, 0 },
+                    { format(L["产物：%s"], tostring(e.itemName or ("#" .. tostring(e.item)))), 0.85, 0.85, 0.85 },
+                    { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(e.npc), fee, fmtM(e.ahNet)), 0.8, 0.9, 0.8 },
+                    { isCustom and L["点击从自定义易卖清单中移出（需点「重新计算」生效）"]
+                        or L["点击加入自定义易卖清单（需点「重新计算」生效）"], 0.7, 0.7, 0.7 },
                 },
                 act = function()
-                    if rec and rec.SetCustomRecipe then
-                        rec.SetCustomRecipe(slug, sid, false)
+                    if rec and rec.ToggleCustomRecipe then
+                        rec.ToggleCustomRecipe(slug, spellID)
                         PD.MarkRecoveryDirty(slug)
                         playSoundSafe(1)
                     end
                 end,
             }
         end
+        if #filtered > cap then
+            PushText(rows, format(L["共 %d 条，仅展示前 %d 条；可在上方搜索框输入关键词筛选。"], #filtered, cap), 12, C_GREY)
+        end
+        return
+    end
+
+    local customList = {}
+    for sid in pairs(customMap) do
+        local r = rr and rr.recipes and rr.recipes[sid] or nil
+        local iid = r and (r.outputItemID or r.item or r[2]) or nil
+        local rName = SpellName(sid)
+        local iName = iid and PD.ItemName(iid) or nil
+        local matchQ = (q == "")
+            or string.find(string.lower(tostring(rName or "")), q, 1, true) ~= nil
+            or string.find(string.lower(tostring(iName or "")), q, 1, true) ~= nil
+        if matchQ then
+            local npc, ahNet
+            if iid then
+                npc, _, ahNet = RecoveryPricePair(iid, fee)
+            end
+            customList[#customList + 1] = {
+                spell = sid,
+                item = iid,
+                name = rName,
+                itemName = iName,
+                npc = npc,
+                ahNet = ahNet,
+                inWeekly = iid and weeklyMap[iid] ~= nil or false,
+            }
+        end
+    end
+    table.sort(customList, function(a, b) return a.spell < b.spell end)
+
+    PushHead(rows, format(L["我的自定义易卖清单（%d）"], #customList))
+    rows[#rows].noHover = true
+    PushText(rows, L["仅显示你自己添加的条目；可在右上角点「+ 添加配方」，或在「配方」「出售列表」中右键任意可交易产物一键加入。"], 12, C_GREY)
+    if not ahRecOn then
+        PushText(rows, L["提示：升级页「回血净花费」方案下开启「拍卖行回血」并重新计算后，本清单将生效。"], 12, { 0.95, 0.78, 0.42 })
+    end
+    PushGap(rows, 4)
+
+    if #customList == 0 then
+        if q ~= "" then
+            PushText(rows, L["没有匹配的自定义易卖项，可清空搜索词重试。"], 13, C_GREY)
+        else
+            PushText(rows, L["当前专业还没有自定义易卖项。"], 13, C_GREY)
+            PushGap(rows, 4)
+            rows[#rows + 1] = {
+                kind = "row", h = 34, col = 1, fs = 14,
+                text = L["+ 添加配方到自定义易卖清单"],
+                color = { 0.45, 0.80, 1.0 },
+                right = L["点击选品"],
+                rightColor = C_GREY,
+                act = function()
+                    PD.wlSub = "custom"
+                    PD.wlPicking = true
+                    PD.RequestRender()
+                end,
+            }
+        end
+        return
+    end
+
+    for _, c in ipairs(customList) do
+        local sid = c.spell
+        local subText = format(L["卖店 %s · 拍卖 %s"], fmtBrief(c.npc), fmtBrief(c.ahNet))
+        if c.inWeekly then
+            subText = subText .. " · " .. L["亦在本周推荐"]
+        end
+        rows[#rows + 1] = {
+            kind = "row", h = PD.ROW_H2, col = 1,
+            it = c.item and { c.item } or nil,
+            fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
+            text = PD.Fit(c.name, PD.ROW2_FS, lw - 130),
+            sub = subText,
+            tag = { text = L["移出"], color = { 0.92, 0.58, 0.45 } },
+            lines = {
+                { c.name, 1, 0.82, 0 },
+                { format(L["卖店价：%s · 拍卖行净价（扣 %d%%）：%s"], fmtM(c.npc), fee, fmtM(c.ahNet)), 0.8, 0.9, 0.8 },
+                { L["点击从自定义易卖清单中移出（需点「重新计算」生效）"], 0.7, 0.7, 0.7 },
+            },
+            act = function()
+                if rec and rec.SetCustomRecipe then
+                    rec.SetCustomRecipe(slug, sid, false)
+                    PD.MarkRecoveryDirty(slug)
+                    playSoundSafe(1)
+                end
+            end,
+        }
     end
 end
 
 function PD.RowsRecoveryDetail(rows, src)
-    local ahRecOn, feeSetting, customMap, excludedMap, customN, excludedN = PD.RowsRecoveryHeader(rows, src)
-    if PD.recSub == "manage" then
-        PD.RowsRecoveryManage(rows, src, ahRecOn, feeSetting, customMap, excludedMap, customN, excludedN)
+    local slug = PD.cur
+    local lw = PD.GRID_W or PD.COL_LW
+    local feeSetting = tonumber(PD.SettingRaw("recoveryFeePercent", slug)) or 5
+    local ahRecSetting = PD.Setting("auctionRecoveryEnabled", slug)
+    local wlSupported = PD.WatchlistSupported(slug)
+
+    PushHead(rows, L["出售列表"])
+    rows[#rows].noHover = true
+    if wlSupported then
+        rows[#rows].segs = {
+            { key = "goto_watchlist", text = L["管理易卖清单"] },
+        }
+    end
+
+    local planMatchesNet = (type(src) == "table" and src.scheme == "net" and PD.PlanHasSteps(src))
+    if not planMatchesNet then
+        PushText(rows, L["当前尚未按「回血净花费」方案生成路线；请点击右上角「重新计算」生成出售列表。"], 13, { 0.95, 0.78, 0.42 })
+        if wlSupported then
+            PushText(rows, L["可先点上方「管理易卖清单」配置本周推荐或自定义易卖项，并在顶部「拍卖行回血」切换开关。"], 12, C_GREY)
+        end
         return
     end
-    local lw = PD.GRID_W or PD.COL_LW
+
     local outs = (src and src.saleOutputs) or {}
     PD.recDetailSrc = src
     local rec = tonumber(src and src.recoveryTotal) or 0
@@ -18590,9 +18730,11 @@ function PD.RowsRecoveryDetail(rows, src)
     local planAhRec = src and src.auctionRecoveryEnabled == true
     PushText(rows, format(L["预计回血 %s · 净成本 %s"], PD.RecoveryMoney(rec), PD.RecoveryMoney(net)), 16, C_GOLD, 1)
     if planAhRec then
-        PushText(rows, format(L["按「本周推荐易卖清单 + 自定义配方」估价（拍卖行扣 %d%% 手续费），其余产物按卖商人计。"], fee or 5), 12, C_GREY, 1)
+        PushText(rows, format(L["按「本周推荐易卖清单 + 自定义易卖」估价（拍卖行扣 %d%% 手续费），其余产物按卖商人计。"], fee or 5), 12, C_GREY, 1)
+    elseif ahRecSetting then
+        PushText(rows, L["当前结果仍为纯卖店估价；已开启「拍卖行回血」，请点击「重新计算」应用易卖清单。"], 12, { 0.95, 0.78, 0.42 }, 1)
     else
-        PushText(rows, L["本次路线按全部剩余产物卖给商人计算回血。"], 12, C_GREY, 1)
+        PushText(rows, L["本次路线按全部剩余产物卖给商人计算回血；如需按拍卖行估价，请在顶部开启「拍卖行回血」后重算。"], 12, C_GREY, 1)
     end
     if src and src.recoveryEstimated then
         PushText(rows, L["回血暂按历史数据估算；请打开拍卖行完成一次完整扫描，再重新计算路线。"], 12, {0.95, 0.75, 0.4}, 1)
@@ -18613,9 +18755,34 @@ function PD.RowsRecoveryDetail(rows, src)
     end
     if #outs == 0 then
         PushGap(rows, 6, 1)
-        PushText(rows, src and L["当前路线没有可出售的剩余产物。"] or L["请先点击「重新计算」生成回血路线。"], 12, C_GREY, 1)
+        PushText(rows, L["当前路线没有可出售的剩余产物。"], 12, C_GREY, 1)
         return
     end
+
+    -- Build itemID -> spellID map (prefer recipes used in current route steps) for right-click quick custom add
+    local itemToSpell = {}
+    if wlSupported then
+        local ds = getDS()
+        local rr = ds and ds.Recipes and ds.Recipes(slug)
+        local rmap = rr and rr.recipes or {}
+        for _, st in ipairs(src.steps or {}) do
+            local sid = tonumber(st[3])
+            local r = sid and rmap[sid]
+            local iid = r and (r.outputItemID or r.item or r[2])
+            if type(iid) == "number" and iid > 0 and not itemToSpell[iid] then
+                itemToSpell[iid] = sid
+            end
+        end
+        for sid, r in pairs(rmap) do
+            if type(r) == "table" and r.availability == "live" then
+                local iid = r.outputItemID or r.item or r[2]
+                if type(iid) == "number" and iid > 0 and not itemToSpell[iid] then
+                    itemToSpell[iid] = sid
+                end
+            end
+        end
+    end
+
     local sell, unknown = {}, {}
     for _, o in ipairs(outs) do
         local unit = tonumber(o.unit) or 0
@@ -18630,6 +18797,7 @@ function PD.RowsRecoveryDetail(rows, src)
         if ra ~= rb then return ra > rb end
         return (tonumber(b.count) or 0) > (tonumber(a.count) or 0)
     end)
+    local recMod = getRec()
     if #sell > 0 then
         PushGap(rows, 8, 1)
         PushHead(rows, format(L["可出售（%d 种）"], #sell), 1)
@@ -18647,33 +18815,44 @@ function PD.RowsRecoveryDetail(rows, src)
                 local reasonLine
                 if ah then
                     reasonLine = o.eligibilitySource == "custom"
-                        and { L["来源：玩家自定义回血配方（按拍卖行净价估算，已扣手续费）"], 0.45, 0.80, 1.0 }
+                        and { L["来源：玩家自定义易卖清单（按拍卖行净价估算，已扣手续费）"], 0.45, 0.80, 1.0 }
                         or { L["来源：本周推荐易卖清单（按拍卖行净价估算，已扣手续费）"], 0.42, 0.94, 0.62 }
                 elseif planAhRec then
                     reasonLine = { L["未在易卖/自选清单内（或拍卖净价不高于卖店），按卖商人价估算"], 0.7, 0.7, 0.7 }
                 else
                     reasonLine = { L["未开启拍卖行回血，按卖商人价估算"], 0.7, 0.7, 0.7 }
                 end
-                rows[#rows + 1] = {
-                    kind = "row", h = PD.ROW_H2, col = 1, it = { o.id },
-                    fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
-                    text = PD.Fit(PD.ItemName(o.id), PD.ROW2_FS, lw - 170),
-                    sub = format(L["×%d · 单价 %s"], n, unitStr),
-                    tag = { text = tagText,
-                            color = ah and PD.TAG_INK.ah or PD.TAG_INK.shop },
-                    right = revStr,
-                    lines = {
-                        { format(L["%d 件 · 单价 %s"], n, unitStr) },
-                        reasonLine,
-                        { format(L["收入 %s"], revStr), 1, 0.82, 0 },
-                    },
+                local itemName = PD.ItemName(o.id)
+                local quickSpell = wlSupported and not RecoveryItemBound(o.id) and itemToSpell[o.id] or nil
+                local tipLines = {
+                    { format(L["%d 件 · 单价 %s"], n, unitStr) },
+                    reasonLine,
+                    { format(L["收入 %s"], revStr), 1, 0.82, 0 },
                 }
                 if ah and tonumber(o.quantity) then
-                    local tipLines = rows[#rows].lines
                     table.insert(tipLines, #tipLines,
                         { format(o.supplyEstimated and L["历史观测数量：%d（仅用于回血估算）"]
                             or L["本次扫描在售数量：%d（仅用于回血估算）"], tonumber(o.quantity)), 0.7, 0.7, 0.7 })
                 end
+                if quickSpell then
+                    local inCustom = recMod and recMod.IsCustomRecipe and recMod.IsCustomRecipe(slug, quickSpell)
+                    tipLines[#tipLines + 1] = inCustom
+                        and { L["已在自定义易卖清单 · 右键移出"], 0.45, 0.80, 1.0 }
+                        or { L["右键加入自定义易卖清单"], 0.65, 0.75, 0.85 }
+                end
+                rows[#rows + 1] = {
+                    kind = "row", h = PD.ROW_H2, col = 1, it = { o.id },
+                    fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
+                    text = PD.Fit(itemName, PD.ROW2_FS, lw - 170),
+                    sub = format(L["×%d · 单价 %s"], n, unitStr),
+                    tag = { text = tagText,
+                            color = ah and PD.TAG_INK.ah or PD.TAG_INK.shop },
+                    right = revStr,
+                    lines = tipLines,
+                    rightAct = quickSpell and function()
+                        PD.ToggleCustomWatchlistQuick(slug, quickSpell, itemName)
+                    end or nil,
+                }
             end
         end
     end
@@ -19034,20 +19213,39 @@ function PD.LevelTool()
     local routeSlug = PD.cur
     local fishRoute = PD.CookingFishingMode and PD.CookingFishingMode() or false
     local recMode = PD.RecoveryModeActive(routeSlug)
+    local showExcl = PD.AutoRouteEnabled(routeSlug) and not PD.FixedOnly(routeSlug) and not fishRoute
     if not recMode and PD.autoPage == "recovery" then
+        PD.autoPage = "route"
+    end
+    if not showExcl and PD.autoPage == "exclusions" then
         PD.autoPage = "route"
     end
     local onLog = PD.autoPage == "log"
     local onRec = recMode and PD.autoPage == "recovery" or false
+    local onExcl = showExcl and PD.autoPage == "exclusions" or false
     local list = {
-        { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" and not onLog and not onRec },
+        { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" and not onLog and not onRec and not onExcl },
         { key = "page_shop",  text = L["购物清单"], on = PD.autoPage == "shop" },
         { key = "page_log",   text = L["制作记录"], on = onLog },
     }
     if recMode then
-        list[#list + 1] = { key = "page_rec", text = L["回血"], on = onRec }
+        list[#list + 1] = { key = "page_rec", text = L["出售列表"], on = onRec }
     end
-    if not onLog and not onRec and PD.autoPage ~= "shop" then
+    if showExcl then
+        local banR, banM = PD.CountBans()
+        local nBan = banR + banM
+        local exclTip = { { L["图样 / 材料使用管理"], 1, 0.82, 0 } }
+        if banR > 0 then exclTip[#exclTip + 1] = { format(L["已禁用图样：%d"], banR), 0.88, 0.42, 0.38 } end
+        if banM > 0 then exclTip[#exclTip + 1] = { format(L["已禁用材料：%d"], banM), 0.88, 0.42, 0.38 } end
+        if nBan == 0 then exclTip[#exclTip + 1] = { L["管理不使用的图样与材料"], 0.7, 0.7, 0.7 } end
+        list[#list + 1] = {
+            key = "page_excl",
+            text = nBan > 0 and format(L["排除 (%d)"], nBan) or L["排除"],
+            on = onExcl,
+            tip = exclTip,
+        }
+    end
+    if not onLog and not onRec and not onExcl and PD.autoPage ~= "shop" then
         local snap = (PD.autoSnapshotSlug == PD.cur) and PD.autoSnapshot or nil
         local notes = PD.warnNotes
         if not (notes and notes.slug == PD.cur and notes.plan == snap and PD.PlanHasSteps(snap))
@@ -19089,7 +19287,7 @@ function PD.LevelTool()
     if xp then
         local trackRun, trackPlan = TrackRunOf(PD.cur)
         if trackRun then
-            local total = trackPlan and #(trackPlan.executionSteps or trackPlan.steps) or 0
+            local total = trackPlan and #(trackPlan.steps or {}) or 0
             local cur = math.min(trackRun.currentIndex or 1, total)
             list[#list + 1] = { key = "track", align = "right", on = true, tone = "blue",
                                 text = trackPlan and format(L["追踪 %d/%d"], cur, total) or L["结束追踪"], tip = {
@@ -19147,50 +19345,36 @@ function PD.LevelTool()
     end
     return list, function(k)
         if k == "page_route" then
+            if PD.autoPage == "exclusions" then PD.FlushPolicies() end
             PD.autoPage = "route"
             PD.exclusionsOpen = false
-            PD.FlushPolicies()
         elseif k == "page_shop" then
+            if PD.autoPage == "exclusions" then PD.FlushPolicies() end
             PD.autoPage = "shop"
             PD.exclusionsOpen = false
-            PD.FlushPolicies()
         elseif k == "page_log" then
+            if PD.autoPage == "exclusions" then PD.FlushPolicies() end
             PD.autoPage = "log"
             PD.exclusionsOpen = false
-            PD.FlushPolicies()
         elseif k == "page_rec" then
+            if PD.autoPage == "exclusions" then PD.FlushPolicies() end
             PD.autoPage = "recovery"
-            if not PD.PlanHasSteps(PD.autoSnapshot) then
-                PD.recSub = "manage"
-            end
             PD.exclusionsOpen = false
-            PD.FlushPolicies()
+        elseif k == "page_excl" then
+            PD.autoPage = "exclusions"
+            PD.partnerPicker = nil
+        elseif k == "goto_watchlist" then
+            if PD.WatchlistSupported(PD.cur) then
+                PD.wlPicking = false
+                PD.SetTab("watchlist")
+                return
+            end
         elseif k == "eng_spec" then
             PD.ShowSpecChoiceMenu(PD.RecipeChip("eng_spec"), PD.cur)
         elseif k == "supply_warn" then
+            if PD.autoPage == "exclusions" then PD.FlushPolicies() end
             PD.autoPage = "shop"
             PD.exclusionsOpen = false
-            PD.FlushPolicies()
-        elseif k == "rec_fee" then
-            PD.ShowRecoveryFeeMenu(PD.RecipeChip("rec_fee") or PD.lvTiles and PD.lvTiles.cost)
-        elseif k == "rec_sub_detail" then
-            PD.recSub = "detail"
-        elseif k == "rec_sub_manage" then
-            PD.recSub = "manage"
-        elseif k == "rec_toggle_ah" then
-            local nextOn = not PD.Setting("auctionRecoveryEnabled", PD.cur)
-            PD.ChangeRouteSetting("auctionRecoveryEnabled", nextOn, PD.cur)
-            PD.MarkRecoveryDirty(PD.cur)
-        elseif k == "rec_flt_all" then
-            PD.recFilter = "all"
-        elseif k == "rec_flt_route" then
-            PD.recFilter = "route"
-        elseif k == "rec_flt_profit" then
-            PD.recFilter = "profit"
-        elseif k == "rec_reset_overrides" then
-            local rec = getRec()
-            if rec and rec.ResetOverrides then rec.ResetOverrides(PD.cur) end
-            PD.MarkRecoveryDirty(PD.cur)
         elseif k == "shop_group" then
             PD.shopGroup = not PD.shopGroup
             PD.RequestRender()
@@ -19206,9 +19390,13 @@ function PD.LevelTool()
             if PD.cur ~= routeSlug then return end
             PD.DoRecalc(routeSlug)
         elseif k == "exclusions" then
-            PD.exclusionsOpen = not PD.exclusionsOpen
-            PD.partnerPicker = nil
-            if not PD.exclusionsOpen then PD.FlushPolicies() end
+            if PD.autoPage == "exclusions" then
+                PD.FlushPolicies()
+                PD.autoPage = "route"
+            else
+                PD.autoPage = "exclusions"
+                PD.partnerPicker = nil
+            end
         elseif k == "ex_sub_recipe" then
             PD.exSub = "recipe"
         elseif k == "ex_sub_material" then
@@ -19216,6 +19404,7 @@ function PD.LevelTool()
         elseif k == "partner" then
             if PD.partnerPicker == PD.cur then PD.partnerPicker = nil
             else PD.partnerPicker = PD.cur end
+            if PD.autoPage == "exclusions" then PD.autoPage = "route" end
             PD.exclusionsOpen = false
             PD.FlushPolicies()
         elseif k == "restore_all" then
@@ -19231,6 +19420,7 @@ function PD.LevelTool()
             if ra and ra.Cancel then ra.Cancel(PD.cur) end
         elseif k == "gather_mode" then
             ProfDB().gatherMode = "gather"
+            if PD.autoPage == "exclusions" then PD.autoPage = "route" end
             PD.exclusionsOpen = false
             PD.FlushPolicies()
         elseif k == "track" then
@@ -19259,7 +19449,7 @@ function PD.LevelTool()
                     and res.status ~= "selection_required"
                     and res.status ~= "recalculate_required"
                     and PD.autoSnapshotSlug == PD.cur
-                    and #(res.executionSteps or res.steps or {}) > 0) and true or false
+                    and #(res.steps or {}) > 0) and true or false
 
                 local bound,reason
                 if ready and T.StartNew then bound,reason=T.StartNew(PD.cur,res) end
@@ -20737,12 +20927,15 @@ function PD.Render()
        and PD.subTabSlug ~= PD.cur then
         PD.SyncSubTab(PD.cur)
     end
+    if PD.wlPickSlug ~= PD.cur then
+        PD.wlPickSlug = PD.cur
+        PD.wlPicking = false
+    end
     PD.PickNav()
     PD.PickTabs()
     local crateTab = (PD.tab == "crate" or PD.tab == "writ")
-    local recManage = (PD.tab == "leveling" and not PD.setOpen and PD.autoPage == "recovery"
-        and PD.recSub == "manage" and PD.RecoveryModeActive(PD.cur))
-    if not crateTab and PD.tab ~= "recipe" and not recManage and (PD.searchQ or "") ~= "" then
+    local wlTab = (PD.tab == "watchlist" and not PD.setOpen)
+    if not crateTab and PD.tab ~= "recipe" and not wlTab and (PD.searchQ or "") ~= "" then
         PD.searchQ = ""
         if PD.searchBox then
             PD.searchBox.eb:SetText("")
@@ -20779,7 +20972,8 @@ function PD.Render()
     do
         local pk = tostring(PD.cur) .. "|" .. tostring(PD.tab) .. "|"
                    .. tostring(PD.autoPage) .. "|" .. tostring(PD.setOpen) .. "|" .. tostring(PD.exclusionsOpen)
-                   .. "|" .. tostring(PD.exSub) .. "|" .. tostring(PD.recSub) .. "|" .. tostring(PD.recFilter)
+                   .. "|" .. tostring(PD.exSub) .. "|" .. tostring(PD.wlSub) .. "|" .. tostring(PD.wlPicking)
+                   .. "|" .. tostring(PD.wlFilter)
                    .. "|" .. tostring(PD.partnerPicker) .. "|" .. tostring(PD.partnerUIRevision)
                    .. "|" .. tostring(PD.shopGroup) .. "|" .. tostring(PD.subTab)
         if pk ~= PD.__pageKey then
@@ -20842,6 +21036,11 @@ function PD.Render()
             PD.gcSpec = PD.GatherCards(rows)
             PD.wantGCards = true
         end
+    elseif PD.tab == "watchlist" then
+        PD.lvSplit = false
+        PD.gridSplit = false
+        tool, handler = PD.WatchlistTool()
+        PD.RowsWatchlist(rows)
     elseif PD.tab == "leveling" then
         if PD.IsGatherRoute() then
             PD.lvSplit = false
@@ -20858,16 +21057,11 @@ function PD.Render()
                 PD.RowsGatherRoute(rows)
             end
         else
-        if PD.autoPage == "shop" and not PD.exclusionsOpen then
+        if PD.autoPage == "shop" then
             PD.lvSplit = true
             PD.splitLW = math.floor((PD.GRID_W - PD.OV_GUT) * PD.SHOP_SPLIT)
             PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW
             PD.sideFixed = true
-        elseif recManage and not PD.exclusionsOpen then
-            PD.lvSplit = false
-            PD.gridSplit = true
-            PD.gridSepOn = true
-            PD.hideDivider = true
         else
             PD.lvSplit = false
         end
@@ -20890,7 +21084,7 @@ function PD.Render()
         local stale
         local raStale = raMod()
         local busy = (PD.SolverText() ~= nil) or (raStale and raStale.HasWork and raStale.HasWork(PD.cur))
-        if tool and PD.tab == "leveling" and not recManage and PD.AutoRouteEnabled() and not busy then
+        if tool and PD.tab == "leveling" and PD.AutoRouteEnabled() and not busy then
             if not PD.HasExistingRoute(PD.cur) then
                 stale = L["尚未计算路线，点击「开始计算」"]
             elseif PD.policyDirty and PD.policyDirty[PD.cur] then
@@ -20933,14 +21127,10 @@ function PD.Render()
             local has = (sBox.eb:GetText() or "") ~= ""
             if not has and not sBox.eb:HasFocus() then sBox.eb.ph:Show() else sBox.eb.ph:Hide() end
             sBox.eb.clear:SetShown(has)
-        elseif recManage then
+        elseif wlTab then
             sBox:ClearAllPoints()
-            if PD.setGear and PD.setGear:IsShown() then
-                sBox:SetPoint("RIGHT", PD.setGear, "LEFT", -10, 0)
-            else
-                sBox:SetPoint("TOPRIGHT", PD.page, "TOPRIGHT",
-                              -(PD.CARD_INSET + PD.LIST_PAD), -(PD.SUB_Y))
-            end
+            sBox:SetPoint("TOPRIGHT", PD.page, "TOPRIGHT",
+                          -(PD.CARD_INSET + PD.LIST_PAD), -(PD.SUB_Y))
             sBox.label:Hide()
             sBox.eb.ph:SetText(L["搜索配方 / 产物名"])
             sBox:Show()
@@ -20963,7 +21153,7 @@ function PD.Render()
     PD.curRows, PD.visMode = nil, false
     local sig = table.concat({
         tostring(PD.tab), tostring(PD.cur), tostring(PD.exclusionsOpen),
-        tostring(PD.exSub), tostring(PD.autoPage), tostring(PD.recSub), tostring(PD.recFilter),
+        tostring(PD.exSub), tostring(PD.autoPage), tostring(PD.wlSub), tostring(PD.wlPicking), tostring(PD.wlFilter),
         tostring(PD.setOpen), tostring(PD.splitLW),
         PD.searchBox and PD.searchBox:IsShown() and PD.searchBox.eb
         and PD.searchBox.eb:GetText() or "",
@@ -21069,6 +21259,11 @@ function PD.Show(slug)
     perfBegin("专业·" .. tostring(slug))
     PD.HideVendorPick()
     if slug ~= PD.cur then
+        if PD.autoPage == "exclusions" then
+            PD.FlushPolicies()
+            PD.autoPage = "route"
+        end
+        PD.wlPicking = false
         PD.__planShown = nil
         PD.__planPending = nil
         PD.ClearPlanCache()
@@ -21089,7 +21284,11 @@ function PD.Show(slug)
 end
 
 function PD.SetTab(key)
+    if PD.tab == "leveling" and PD.autoPage == "exclusions" and key ~= "leveling" then
+        PD.FlushPolicies()
+    end
     PD.setOpen = false
+    PD.wlPicking = false
     PD.subTabSlug = nil
     if PD.mgrBtn then PD.mgrBtn:Hide() end
     PD.ResetItemNameMemo()
@@ -21605,8 +21804,14 @@ pfTime(PD, "RequestRows", "请求")
 pfCount(getHui(), "TextW",   "量宽")
 pfCount(PD, "TextW",       "量宽调用")
 pfCount(PD, "ItemName",    "取名")
-pfCount(DG, "ItemInfo",    "取名(引擎)")
-pfCount(DG, "RequestItem", "完整预热")
+do
+    local hb = getHostBridge()
+    local dg = hb and hb.DG and hb.DG()
+    if dg then
+        pfCount(dg, "ItemInfo",    "取名(引擎)")
+        pfCount(dg, "RequestItem", "完整预热")
+    end
+end
 if type(C_Item) == "table" then
     pfCount(C_Item, "RequestLoadItemDataByID", "发包")
 end
