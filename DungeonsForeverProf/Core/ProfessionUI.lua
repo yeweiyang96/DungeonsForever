@@ -568,7 +568,7 @@ function PD.SnapshotBadgeState(s)
     if s.auctionSupplyShortages and #s.auctionSupplyShortages>0 then return "stock_short" end
     if s.status == "infeasible" then return "no_route" end
     if s.planVersion == 2 and s.completeCost == false then
-        if s.status == "searching" then return "calculating" end
+        if s.status == "searching" then return s.restoring and "restoring" or "calculating" end
         return "incomplete"
     end
     if s.staleReason=="supply" then return "stock_changed" end
@@ -614,6 +614,7 @@ function PD.SnapshotBadgeText(s)
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
     if st == "rules_changed" then return L["路线待重算"], 0.95, 0.75, 0.4 end
     if st == "learning_unknown" then return L["资料待补"], 0.95, 0.75, 0.4 end
+    if st == "restoring" then return L["恢复中"], 0.95, 0.75, 0.4 end
     if st == "calculating" then return L["计算中"], 0.95, 0.75, 0.4 end
     if st == "no_route" then return L["无可用路线"], 0.95, 0.75, 0.4 end
     if st == "incomplete" then return L["请扫描拍卖行"], 0.95, 0.75, 0.4 end
@@ -7765,7 +7766,8 @@ function PD.UpdateCalculationNotice()
         and PD.tab == "leveling" and not PD.setOpen and PD.cur and PD.cur ~= "__index"
         and SR and SR.Active and SR.Active(PD.cur)
     local job = active and active.job
-    if not job or job.finished or job.cancelled or job.invalid or job.status == "stopped" or job.status == "error" then
+    local isRestore = job and (job.restoring or (job.opts and job.opts.routeSkeleton ~= nil))
+    if not job or isRestore or job.finished or job.cancelled or job.invalid or job.status == "stopped" or job.status == "error" then
         if notice then notice:Hide(); notice.slug = nil end
         return false
     end
@@ -14939,6 +14941,9 @@ function PD.PlanStatusParts(plan)
         if (plan.expanded or 0)==0 then return L["路线已生成，尚未进行降本搜索。"] end
         return L["路线已生成，成本尚未证明最优。"]
     end
+    if plan.restoring and plan.status == "searching" then
+        return L["正在恢复已保存路线…"]
+    end
     local status = {
         searching = L["后台优化中"], paused = L["优化已停止"],
         stopped = L["优化已停止"], infeasible = L["当前限制下没有可行路线"],
@@ -14960,6 +14965,7 @@ end
 function PD.PlanProgressText(plan)
     plan = plan and (plan.searchState or plan)
     if plan and not plan.running and plan.status ~= "searching" then return nil end
+    if plan and plan.restoring then return L["正在恢复已保存路线…"] end
     return L["正在计算升级路线…"]
 end
 
@@ -14978,6 +14984,7 @@ function PD.PlanCacheText(plan)
         end
         return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
     end
+    if plan and plan.staleReason=="prices" then return L["拍卖行行情已更新，点击重新计算即可使用。"] end
     if plan and plan.stale then return L["路线输入已更新，点击重新计算。"] end
 end
 
@@ -15231,7 +15238,7 @@ function PD.CopyPlanSummary(plan)
                            "inputModelOptimal", "catalogueCoverageComplete", "quoteComplete", "searchTermination", "searchState",
                            "costSearchPerformed", "costSearchStatus", "routeRiskMode", "reserveMode", "safeTotal", "safeNetTotal", "safePrepTotal", "auctionRecoveryEnabled", "priorityTotal", "useBagMaterials", "bagInventoryChanged", "bagInventoryUnknown",
                            "bagInventory", "bagInventoryStamp", "bagInventoryFingerprint", "bagInventoryVersion", "bagMaterialQuotes", "seedInventory", "seedAllocations",
-                           "stale", "staleReason", "cached", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
+                           "stale", "staleReason", "cached", "restoring", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
                            "considerAuctionSupply", "allowBindOnPickupFormulas", "allowCurrencyFormulas", "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete", "auctionSupplyShortages", "purchaseVerified", "auctionDepthRevision", "auctionDepthComplete", "auctionDepthInputs", "auctionDepthFallbackItems", "vendorDiscountSig", "pricingPolicyStale",
                            "formulasTotal", "formulaTotal", "formulaComplete", "formulaBlocked", "procurementPolicyVersion",
                            "learningGaps","learningCoverageComplete","learningBlocked","learningBlockReason",
@@ -15909,6 +15916,9 @@ function PD.SolverText()
     end
     local st = SR.State(PD.cur)
     PD.solverFrac = st.fraction or 0
+    if st.restoring then
+        return L["正在恢复已保存路线…"]
+    end
     if st.phase == "seed" then
         return format(L["正在推演 %d/%d"], st.seedSkill or 1, st.target or PD.LV_DEF)
     elseif st.phase == "search" then
@@ -17073,8 +17083,8 @@ function PD.RowsLeveling(rows)
     local scanAdvice=PD.ScanModeAdvice()
     if scanWarning and onRecoveryManage then
         warningSeen[scanWarning]=true
-        PushText(rows,L["尚未扫描拍卖行（拍卖价暂显示为 —），可先预览或配置本周易卖清单，扫描后再重新计算路线。"],12,{0.95,0.75,0.42},1)
-        PushGap(rows,4,1)
+        PushText(rows,L["尚未扫描拍卖行（拍卖价暂显示为 —），可先预览或配置本周易卖清单，扫描后再重新计算路线。"],12,{0.95,0.75,0.42})
+        PushGap(rows,4)
     elseif scanWarning then
         warningSeen[scanWarning]=true
         PushText(rows,PD.ScanHeadline() or scanWarning,14,{0.98,0.6,0.46},1)
@@ -17230,7 +17240,8 @@ function PD.RowsLeveling(rows)
             end
             local progress = PD.PlanProgressText(res)
             if progress then PushText(rows, progress, 14, C_GREY) end
-            PD.lvRouteHead = { progress = (ra and ra.HasWork and ra.HasWork(PD.cur)) and L["正在计算升级路线…"] or nil }
+            local busyText = (res and res.restoring) and L["正在恢复已保存路线…"] or L["正在计算升级路线…"]
+            PD.lvRouteHead = { progress = (ra and ra.HasWork and ra.HasWork(PD.cur)) and busyText or nil }
             if res then PD.PlanDiagnostics(note, res) end
         end
         return
@@ -18299,6 +18310,9 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
                                 col = col, fcol = col, noSpan = true }
         end
     end
+    local function pushGapCol(h, col)
+        rows[#rows + 1] = { kind = "gap", h = h, col = col, fcol = col, noSpan = true }
+    end
 
     local routeSpells = {}
     for _, st in ipairs((src and src.steps) or {}) do
@@ -18355,14 +18369,14 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
     end)
 
     -- Left column (col = 1): Browse & add custom recovery recipes
-    PushGap(rows, 4, 1)
+    pushGapCol(4, 1)
     rows[#rows + 1] = {
         kind = "head", h = PD.HEAD_H, col = 1, fcol = 1, noSpan = true, noHover = true,
-        text = format(L["添加自定义回血配方（%d）"], #filtered),
+        text = format(L["自选回血（%d）"], #filtered),
         segs = {
-            { key = "rec_flt_all", text = L["全部可交易"], on = flt == "all" },
-            { key = "rec_flt_route", text = L["当前路线"], on = flt == "route" },
-            { key = "rec_flt_profit", text = L["拍卖高于卖店"], on = flt == "profit" },
+            { key = "rec_flt_all", text = L["全部"], on = flt == "all" },
+            { key = "rec_flt_route", text = L["路线"], on = flt == "route" },
+            { key = "rec_flt_profit", text = L["高于卖店"], on = flt == "profit" },
         },
     }
     if #filtered == 0 then
@@ -18447,7 +18461,7 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
         return a.item < b.item
     end)
 
-    PushGap(rows, 4, 2)
+    pushGapCol(4, 2)
     local wkHead = {
         kind = "head", h = PD.HEAD_H, col = 2, fcol = 2, noSpan = true, noHover = true,
         text = format(L["本周推荐易卖清单（%d）"], #weeklyList),
@@ -18510,7 +18524,7 @@ function PD.RowsRecoveryManage(rows, src, ahRecOn, fee, customMap, excludedMap, 
         end
     end
 
-    PushGap(rows, 10, 2)
+    pushGapCol(10, 2)
     local customList = {}
     for sid in pairs(customMap) do
         local r = rr and rr.recipes and rr.recipes[sid] or nil
@@ -19256,7 +19270,7 @@ function PD.LevelTool()
                         or PD.ReplicateScanMessage(reason) or PD.ReplicateScanWarning()
                         or T and T.IsCombatPaused and T.IsCombatPaused()
                         and L["战斗中暂停追踪，脱战后自动恢复。"] or computing
-                        and L["正在计算升级路线…"]
+                        and ((res and res.restoring) and L["正在恢复已保存路线…"] or L["正在计算升级路线…"])
                         or L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
                     if UIErrorsFrame and UIErrorsFrame.AddMessage then
                         pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
@@ -22006,54 +22020,72 @@ if not PD.writSkillWatch and type(CreateFrame) == "function" then
     end)
     PD.writSkillWatch = frame
 end
-local bridge = getBridge()
-if bridge and bridge.OnChanged then bridge.OnChanged(function(_,reason)
+PD.__onBridgeChanged = function(_, reason)
     if (reason=="supply" or reason=="scan-status") and PD.built and pageVisible(PD.page) then PD.RequestRender() end
-end) end
-local ra = getRA()
-if ra and ra.OnPlanChanged then
-    ra.OnPlanChanged(function(slug, plan)
-        PD.craftAll = nil
-        PD.craftAllFull = nil
-        if type(slug) == "table" then plan = slug; slug = plan.slug end
-        if slug == PD.cur and plan and (not plan.slug or plan.slug == slug) then
-            local xp = getExec()
-            local frozen=xp and xp.GetPlan and xp.GetPlan(slug) or nil
-            if frozen and frozen.slug and frozen.slug~=slug then frozen=nil end
-            PD.autoSnapshot = frozen or plan
-            PD.autoSnapshotSlug = slug
-        end
-        PD.UpdateCalculationNotice()
-        local visible = PD.built and pageVisible(PD.page)
-        if visible and (slug == nil or slug == PD.cur) then
-            PD.RequestRender()
-        end
-    end)
-    if ra.OnProgress then ra.OnProgress(function(slug)
-        if slug==PD.cur and PD.built and pageVisible(PD.page) then
-            PD.UpdateCalculationNotice()
-            local text = PD.SolverText()
-            PD.PaintToolProgress(text, PD.solverFrac)
-        end
-    end) end
 end
-if ra and ra.OnPricesChanged then
-    ra.OnPricesChanged(function()
-        local pf = getFollow()
-        if pf and pf.InvalidateRoute then pcall(pf.InvalidateRoute) end
-        if PD.autoSnapshotSlug == PD.cur and type(PD.autoSnapshot) == "table" and PD.autoSnapshot.mode ~= "fixed" then
-            PD.autoSnapshot.stale = true
-            PD.autoSnapshot.staleReason = "prices"
-        end
-        if PD.built and pageVisible(PD.page) then
-            PD.RequestRender()
-        end
-    end)
+local bridge = getBridge()
+if bridge and bridge.OnChanged and PD.__hookedBridge ~= bridge then
+    PD.__hookedBridge = bridge
+    bridge.OnChanged(function(...) if PD.__onBridgeChanged then PD.__onBridgeChanged(...) end end)
+end
+PD.__onPlanChanged = function(slug, plan)
+    PD.craftAll = nil
+    PD.craftAllFull = nil
+    if type(slug) == "table" then plan = slug; slug = plan.slug end
+    if slug == PD.cur and plan and (not plan.slug or plan.slug == slug) then
+        local xp = getExec()
+        local frozen=xp and xp.GetPlan and xp.GetPlan(slug) or nil
+        if frozen and frozen.slug and frozen.slug~=slug then frozen=nil end
+        PD.autoSnapshot = frozen or plan
+        PD.autoSnapshotSlug = slug
+    end
+    PD.UpdateCalculationNotice()
+    local visible = PD.built and pageVisible(PD.page)
+    if visible and (slug == nil or slug == PD.cur) then
+        PD.RequestRender()
+    end
+end
+PD.__onPlanProgress = function(slug)
+    if slug==PD.cur and PD.built and pageVisible(PD.page) then
+        PD.UpdateCalculationNotice()
+        local text = PD.SolverText()
+        PD.PaintToolProgress(text, PD.solverFrac)
+    end
+end
+PD.__onPricesChanged = function()
+    local pf = getFollow()
+    if pf and pf.InvalidateRoute then pcall(pf.InvalidateRoute) end
+    if PD.autoSnapshotSlug == PD.cur and type(PD.autoSnapshot) == "table" and PD.autoSnapshot.mode ~= "fixed" then
+        PD.autoSnapshot.stale = true
+        PD.autoSnapshot.staleReason = "prices"
+    end
+    if PD.built and pageVisible(PD.page) then
+        PD.RequestRender()
+    end
+end
+local ra = getRA()
+local planState = ra and ra._planState or ra
+if ra and ra.OnPlanChanged and PD.__hookedPlanState ~= planState then
+    PD.__hookedPlanState = planState
+    ra.OnPlanChanged(function(...) if PD.__onPlanChanged then PD.__onPlanChanged(...) end end)
+    if ra.OnProgress then
+        ra.OnProgress(function(...) if PD.__onPlanProgress then PD.__onPlanProgress(...) end end)
+    end
+end
+if ra and ra.OnPricesChanged and PD.__hookedPricesRA ~= ra then
+    PD.__hookedPricesRA = ra
+    ra.OnPricesChanged(function(...) if PD.__onPricesChanged then PD.__onPricesChanged(...) end end)
 end
 end
 do
     local hb = getHostBridge()
-    if hb and type(hb.OnInit) == "function" then hb.OnInit(HookRoutePlans) else HookRoutePlans() end
+    if PD.built then
+        HookRoutePlans()
+    elseif hb and type(hb.OnInit) == "function" then
+        hb.OnInit(HookRoutePlans)
+    else
+        HookRoutePlans()
+    end
 end
 end
 

@@ -84,8 +84,21 @@ local function getIdle()
     return ns.ProfIdle or (type(gns) == "table" and gns.ProfIdle) or nil
 end
 
-local jobs, results, active, listeners, progressListeners = {}, {}, {}, {}, {}
-local planPrevMem = {}
+local planState = RA._planState
+if type(planState) ~= "table" then
+    planState = {
+        jobs = {},
+        results = {},
+        active = {},
+        listeners = {},
+        progressListeners = {},
+        planPrevMem = {},
+    }
+    RA._planState = planState
+end
+local jobs, results, active, listeners, progressListeners =
+    planState.jobs, planState.results, planState.active, planState.listeners, planState.progressListeners
+local planPrevMem = planState.planPrevMem
 local serial, revision = 0, 0
 local legacyRun
 local lastRunSlug
@@ -1225,6 +1238,7 @@ local function start(slug, opts, sigOpts)
     job.key, job.scope, job.slug, job.planID = key, scope, slug, id
     job.signature = skel and skel.sig or signature(slug, sigOpts or opts)
     job.requestOptions = sigOpts
+    job.restoring = (skel ~= nil) and true or nil
     local okRes, result = pcall(S.Result, job, nil, "searching")
     if not okRes or type(result) ~= "table" then
         return gate(slug, opts, "solverUnavailable")
@@ -1233,6 +1247,9 @@ local function start(slug, opts, sigOpts)
     result.planID = id
     result.cacheSignature = job.signature
     result.learningPolicyFingerprint = learningPolicy()
+    if skel ~= nil then
+        result.restoring = true
+    end
     discardScope(scope)
     jobs[key] = job
     active[scope] = key
@@ -1725,6 +1742,7 @@ run.State = function(job)
         cpuUsed = job and job.cpuUsed,
         cpuLimitMs = job and job.cpuLimitMs,
         status = job and job.status,
+        restoring = (job and (job.restoring or (job.opts and job.opts.routeSkeleton ~= nil))) and true or false,
     }
 end
 
