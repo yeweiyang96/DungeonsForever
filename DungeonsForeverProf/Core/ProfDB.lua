@@ -322,6 +322,19 @@ function DB.SetTargetSkill(slug, value)
     return n
 end
 
+function DB.SettingDefault(k, slug)
+    if RETIRED_SETTINGS[k] then return nil end
+    if k == "target" then return DB.LV_DEF end
+    if k == "engChoice" then return "none" end
+    if type(slug) == "string" and type(DB.PROF_SETTING_DEF) == "table" then
+        local pdef = DB.PROF_SETTING_DEF[slug]
+        if type(pdef) == "table" and pdef[k] ~= nil then
+            return pdef[k]
+        end
+    end
+    return DB.SETTING_DEF[k]
+end
+
 function DB.SettingRaw(k, slug)
     if RETIRED_SETTINGS[k] then return nil end
     if k == "recoveryEnabled" then
@@ -349,13 +362,7 @@ function DB.SettingRaw(k, slug)
         if v == nil then return normalizeScheme(DB.SETTING_DEF.autoScheme, recVal) end
         return normalizeScheme(v, recVal)
     end
-    if v == nil and type(slug) == "string" and type(DB.PROF_SETTING_DEF) == "table" then
-        local pdef = DB.PROF_SETTING_DEF[slug]
-        if type(pdef) == "table" and pdef[k] ~= nil then
-            return pdef[k]
-        end
-    end
-    if v == nil then return DB.SETTING_DEF[k] end
+    if v == nil then return DB.SettingDefault(k, slug) end
     return v
 end
 

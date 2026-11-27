@@ -816,6 +816,19 @@ function PD.SettingRaw(k, slug)
     return v
 end
 
+function PD.SettingDefault(k, slug)
+    slug = slug or PD.cur
+    local dbMod = getDBMod()
+    if type(dbMod) == "table" and type(dbMod.SettingDefault) == "function" then
+        return dbMod.SettingDefault(k, slug)
+    end
+    local profDef = type(dbMod) == "table" and type(dbMod.PROF_SETTING_DEF) == "table" and dbMod.PROF_SETTING_DEF[slug]
+    if type(profDef) == "table" and profDef[k] ~= nil then
+        return profDef[k]
+    end
+    return PD.SETTING_DEF[k]
+end
+
 function PD.Setting(k, slug) return PD.SettingRaw(k, slug) and true or false end
 
 function PD.BagMaterialsAvailable(slug)
@@ -6181,6 +6194,7 @@ function PD.Build(page)
     ensureDGContracts()
     PD.building = true
     PD.rows, PD.toolBtns, PD.setToggles, PD.setEdits = {}, {}, {}, {}
+    PD.setResetBtn = nil
     PD.perkOpen, PD.__pendRows = {}, {}
     local phaseRunner = getFrom("ProfPhased") or function(_, co)
         while coroutine.status(co) ~= "dead" do
@@ -19529,6 +19543,135 @@ PD.SET_GROUPS = {
     { L["回血设置"], { "auctionRecoveryEnabled", "recoveryFee" }, 2 },
 }
 
+function PD.SettingsResetSpecs(slug)
+    slug = slug or PD.cur
+    local fixedOnly = PD.FixedOnly(slug)
+    local gatherRoute = PD.IsGatherRoute(slug)
+    local fishRoute = PD.CookingFishingMode(slug)
+    local autoRouteOn = PD.AutoRouteEnabled(slug) and not fixedOnly
+    local recModeOn = PD.RecoveryModeActive(slug)
+    local specs = {
+        { k = "greyPassed", route = false },
+        { k = "hlCurrent", route = false },
+    }
+    if autoRouteOn and not fixedOnly and not gatherRoute then
+        local fromCurrent = PD.Setting("autoFromCurrent", slug)
+        specs[#specs + 1] = { k = "autoFromCurrent", route = true }
+        specs[#specs + 1] = { k = "autoStartSkill", route = true, num = true, visible = not fromCurrent }
+        if PD.BagMaterialsAvailable(slug) then
+            specs[#specs + 1] = { k = "autoUseBagMaterials", route = true }
+        end
+        if not fishRoute then
+            specs[#specs + 1] = { k = "autoRouteRiskMode", route = true, raw = true }
+        end
+        specs[#specs + 1] = { k = "autoCraftTools", route = true }
+        if not fishRoute then
+            specs[#specs + 1] = { k = "autoSecondaryLeveling", route = true }
+        end
+        specs[#specs + 1] = { k = "autoOnlyAH", route = true }
+        specs[#specs + 1] = { k = "autoBuyLimitedFormulas", route = true }
+        specs[#specs + 1] = { k = "autoAllowDropFormulas", route = true }
+        specs[#specs + 1] = { k = "autoAllowCurrencyFormulas", route = true }
+        specs[#specs + 1] = { k = "autoExcludeQuestRecipes", route = true }
+        specs[#specs + 1] = { k = "autoExcludeQuestTrainers", route = true }
+        specs[#specs + 1] = { k = "autoExcludeQuestVendors", route = true }
+        specs[#specs + 1] = { k = "autoExcludeInstanceVendors", route = true }
+        specs[#specs + 1] = { k = "autoExcludeInstanceTrainers", route = true }
+    end
+    if recModeOn and not fixedOnly and not gatherRoute then
+        local ahRecOn = PD.Setting("auctionRecoveryEnabled", slug)
+        specs[#specs + 1] = { k = "auctionRecoveryEnabled", route = true }
+        specs[#specs + 1] = { k = "recoveryFeePercent", route = true, num = true, visible = ahRecOn }
+    end
+    return specs, autoRouteOn and not fixedOnly and not gatherRoute
+end
+
+local function settingDiffers(spec, slug)
+    local def = PD.SettingDefault(spec.k, slug)
+    if spec.num then
+        local cur = tonumber(PD.SettingRaw(spec.k, slug))
+        local want = tonumber(def)
+        if cur == nil then cur = want end
+        return cur ~= want, want
+    elseif spec.raw then
+        return PD.SettingRaw(spec.k, slug) ~= def, def
+    else
+        local want = def and true or false
+        return PD.Setting(spec.k, slug) ~= want, want
+    end
+end
+
+function PD.HasCustomLevelingSettings(slug)
+    slug = slug or PD.cur
+    local specs = PD.SettingsResetSpecs(slug)
+    for _, spec in ipairs(specs) do
+        if spec.visible ~= false then
+            local diff = settingDiffers(spec, slug)
+            if diff then return true end
+        end
+    end
+    return false
+end
+
+function PD.ResetLevelingSettings(slug)
+    slug = slug or PD.cur
+    local specs, autoActive = PD.SettingsResetSpecs(slug)
+    if autoActive and type(PD.setEdits) == "table" then
+        local defStart = tonumber(PD.SettingDefault("autoStartSkill", slug)) or 1
+        for _, eb in ipairs(PD.setEdits) do
+            if eb and eb.HasFocus and eb:HasFocus() then
+                if eb.SetText then eb:SetText(tostring(defStart)) end
+                if eb.ClearFocus then eb:ClearFocus() end
+            end
+        end
+    end
+    if feeForm and feeForm.IsShown and feeForm:IsShown() then
+        feeForm:Hide()
+    end
+    local displayChanged, routeChanged = false, false
+    for _, spec in ipairs(specs) do
+        local diff, want = settingDiffers(spec, slug)
+        if diff then
+            PD.SetSettingRaw(spec.k, want, slug)
+            if spec.route then
+                if spec.visible ~= false then routeChanged = true end
+            else
+                displayChanged = true
+            end
+        end
+    end
+    if routeChanged then
+        PD.MarkRouteStale(slug, "settings")
+    elseif displayChanged then
+        PD.RequestRender()
+    end
+    return displayChanged or routeChanged, routeChanged
+end
+
+local function EnsureSetResetBtn()
+    if PD.setResetBtn then return PD.setResetBtn end
+    if not (PD.child and type(CreateFrame) == "function") then return nil end
+    local label = L["默认设置"]
+    local w = select(1, PD.ToolSize(label))
+    local bt = NewButton(PD.child, label, w, PD.TOOL_H, 14)
+    if not bt or type(bt.SetPoint) ~= "function" then return nil end
+    SetButtonSelected(bt, false)
+    if bt.SetMotionScriptsWhileDisabled then bt:SetMotionScriptsWhileDisabled(true) end
+    bt:SetScript("OnClick", function()
+        PD.ResetLevelingSettings(PD.cur)
+        playSoundSafe(1)
+    end)
+    bt:HookScript("OnEnter", function(self)
+        PD.TipShow(self, self.__tip)
+    end)
+    bt:HookScript("OnLeave", function()
+        if GameTooltip and GameTooltip.Hide then GameTooltip:Hide() end
+    end)
+    bt:Hide()
+    PD.setResetBtn = bt
+    return bt
+end
+
 function PD.RowsSettings(rows)
     PD.noZebra = true
     PD.gridSepOn = true
@@ -19538,6 +19681,7 @@ function PD.RowsSettings(rows)
     local autoRouteOn = PD.AutoRouteEnabled() and not fixedOnly
     local recModeOn = PD.RecoveryModeActive()
     PushHead(rows, L["升级页设置"])
+    rows[#rows].resetBtn = true
     PushGap(rows, 6)
     if not autoRouteOn and not fixedOnly and not gatherRoute then
         PushText(rows, L["当前为固定参考模式；切换顶部「模式」为「自动」后，可调整选路与配方来源设置。"], 14, C_GREY)
@@ -19677,10 +19821,12 @@ function PD.RowsSettings(rows)
         rows[#rows + 1] = { kind = "gap", h = h, col = col, fcol = col, noSpan = true }
     end
     local function pushToggle(d, col)
+        local togKey = nil
+        if not d.togGet then togKey = d.k end
         rows[#rows + 1] = {
             kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
             text = d.name,
-            togKey = d.togGet and nil or d.k,
+            togKey = togKey,
             togGet = d.togGet,
             togSet = d.togSet,
             help = { { d.name }, { d.desc, 0.7, 0.7, 0.7 }, { d.d1, 0.7, 0.7, 0.7 }, { d.d2, 0.7, 0.7, 0.7 } },
@@ -19743,21 +19889,58 @@ end
 function PD.PlaceSettingsToggles(rows)
     local n = math.min(#(rows or {}), PD.ROW_CAP)
     local ti, hi, ei = 0, 0, 0
+    local resetShown = false
     for i = 1, n do
         local spec = rows[i]
         local rr = PD.rows[i]
         if PD.setOpen and rr then
             rr.a:SetWidth(0)
             if spec.togKey or spec.togGet then rr.a:SetWordWrap(false) end
+            if spec.resetBtn then
+                local bt = EnsureSetResetBtn()
+                if bt then
+                    local label = L["默认设置"]
+                    if bt.__lbl ~= label then
+                        bt.__lbl = label
+                        local w = select(1, PD.ToolSize(label))
+                        bt:SetSize(w, PD.TOOL_H)
+                        bt:SetText(label)
+                    end
+                    local _, autoActive = PD.SettingsResetSpecs(PD.cur)
+                    local modified = PD.HasCustomLevelingSettings(PD.cur)
+                    if bt.SetEnabled then bt:SetEnabled(modified) end
+                    local tip = {
+                        { label, 1, 0.82, 0 },
+                        { autoActive
+                            and L["将当前专业「升级」页的路线计算、配方来源、回血与界面显示设置恢复为默认配置。"]
+                            or L["将「升级」页的界面显示开关恢复为默认配置。"], 0.85, 0.85, 0.85 },
+                    }
+                    if autoActive then
+                        tip[#tip + 1] = { L["不影响模式、路线方案、目标等级、专精、排除项、易卖清单与扫描数据。"], 0.7, 0.7, 0.7 }
+                    end
+                    if not modified then
+                        tip[#tip + 1] = { L["当前已全部为默认设置。"], 0.55, 0.85, 0.6 }
+                    end
+                    bt.__tip = tip
+                    bt:ClearAllPoints()
+                    bt:SetPoint("RIGHT", rr, "RIGHT", -8, 0)
+                    bt:SetFrameLevel((rr:GetFrameLevel() or 0) + 10)
+                    bt:Show()
+                    resetShown = true
+                end
+            end
             if spec.togKey or spec.togGet then
                 ti = ti + 1
                 local tg = PD.setToggles[ti]
                 tg:ClearAllPoints()
                 tg:SetPoint("RIGHT", rr, "RIGHT", -8, 0)
                 tg:SetFrameLevel((rr:GetFrameLevel() or 0) + 10)
-                local checked = (type(spec.togGet) == "function")
-                    and (spec.togGet() and true or false)
-                    or PD.Setting(spec.togKey)
+                local checked
+                if type(spec.togGet) == "function" then
+                    checked = spec.togGet() and true or false
+                else
+                    checked = PD.Setting(spec.togKey)
+                end
                 tg:SetChecked(checked)
                 tg.__key = spec.togKey
                 tg.__onToggle = spec.togSet
@@ -19792,6 +19975,7 @@ function PD.PlaceSettingsToggles(rows)
     for j = ti + 1, #PD.setToggles do PD.setToggles[j]:Hide() end
     for j = ei + 1, #PD.setEdits do PD.setEdits[j]:Hide() end
     for j = hi + 1, #PD.setHelps do PD.setHelps[j]:Hide() end
+    if not resetShown and PD.setResetBtn then PD.setResetBtn:Hide() end
 end
 
 PD.CRATE_SPLIT = 0.60
@@ -21970,6 +22154,7 @@ function PD.AuditRows(all)
     if PD.secGoldCards then for _, c in ipairs(PD.secGoldCards) do known[c] = true end end
     if PD.setToggles then for _, c in ipairs(PD.setToggles) do known[c] = true end end
     if PD.setHelps then for _, c in ipairs(PD.setHelps) do known[c] = true end end
+    if PD.setResetBtn then known[PD.setResetBtn] = true end
 
     local function texts(r)
         local t = {}
