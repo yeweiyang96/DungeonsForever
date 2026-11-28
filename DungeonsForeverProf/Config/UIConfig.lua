@@ -5,6 +5,7 @@ local C = {
   TABS = {
     { key = "overview", labelKey = "总览" },
     { key = "trainer", labelKey = "训练师" },
+    { key = "moonwell", labelKey = "月亮井" },
     { key = "recipe", labelKey = "配方" },
     { key = "gather", labelKey = "采集" },
     { key = "leveling", labelKey = "升级" },

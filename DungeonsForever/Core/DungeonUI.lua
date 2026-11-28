@@ -5717,13 +5717,17 @@ function DG.ShowItemTipBody(owner, it, extra, title)
     end
     if not native and id then DG.RequestItem(id) end
 
+    local tlOpts = (type(extra) == "table" and #extra > 0) and { skipCraftPrice = true } or nil
     if native then
-        local tl = ns.TipLines and ns.TipLines.Lines(id)
-        DG.TipAppendMerged(extra, tl)
-        if title then
-            local l1 = _G["GameTooltipTextLeft1"]
-            if l1 then l1:SetText(title) end
+        local l1 = _G["GameTooltipTextLeft1"]
+        local tipTitle = title
+        if not tipTitle and l1 and l1.GetText then
+            local okT, t = pcall(l1.GetText, l1)
+            if okT and type(t) == "string" and t ~= "" then tipTitle = t end
         end
+        local tl = ns.TipLines and ns.TipLines.Lines(id, nil, tipTitle, tlOpts)
+        DG.TipAppendMerged(extra, tl)
+        if title and l1 then l1:SetText(title) end
         GameTooltip:Show()
         return
     end
@@ -5748,7 +5752,7 @@ function DG.ShowItemTipBody(owner, it, extra, title)
     else
         GameTooltip:AddLine(L["客户端未收录此物品"], 0.5, 0.5, 0.5, true)
     end
-    local tl = ns.TipLines and ns.TipLines.Lines(id)
+    local tl = ns.TipLines and ns.TipLines.Lines(id, nil, title or (hasName and nm or nil), tlOpts)
     DG.TipAppendMerged(extra, tl)
     GameTooltip:Show()
 end

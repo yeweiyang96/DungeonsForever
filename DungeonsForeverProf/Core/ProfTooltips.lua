@@ -203,7 +203,13 @@ function TT.TipAppendLines(lines)
     for i = 1, #lines do
         local ln = lines[i]
         if type(ln) == "table" and type(ln[1]) == "string" then
-            GT:AddLine(ln[1], ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
+            if ln[7] ~= nil and type(GT.AddDoubleLine) == "function" then
+                GT:AddDoubleLine(ln[1], tostring(ln[7]),
+                    ln[2] or 1, ln[3] or 1, ln[4] or 1,
+                    ln[8] or ln[2] or 1, ln[9] or ln[3] or 1, ln[10] or ln[4] or 1)
+            else
+                GT:AddLine(ln[1], ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
+            end
         end
     end
 end
@@ -378,10 +384,7 @@ function TT.PatternTipLines(id, title)
     local idx = ex and type(ex.PatternIndex) == "function" and ex.PatternIndex() or nil
     local e = type(idx) == "table" and idx[id] or nil
     if not (e and e.pid) then return nil end
-    if not isTeachingItem(e, id) then
-        local pname = itemNameOf(e.pid)
-        if title ~= nil and title ~= "" and title ~= pname then return nil end
-    end
+    if not isTeachingItem(e, id) then return nil end
     local mats = e.r and e.r[12]
     if not (mats and #mats > 0) then return nil end
     return TT.MatPriceLines(mats, TT.MatsCostTextC(mats), e.itemID)
@@ -551,40 +554,18 @@ end
 
 function TT.RecipeSourceLines(lines, r)
     lines = lines or {}
-    if r and r.clientUnavailable then
-        lines[#lines + 1] = { L["未实装"], 0.95, 0.75, 0.4 }
-        lines[#lines + 1] = { L["此记录仅供查阅，不参与自动路线。"], 0.95, 0.75, 0.4 }
-    end
-    local pd = getPD()
-    local output = pd and type(pd.RecipeOutputText) == "function" and pd.RecipeOutputText(r) or nil
-    if output then lines[#lines + 1] = { output, 0.65, 0.75, 0.85 } end
-    local economy = getEco()
-    local ra = getRA()
-    if r and economy and economy.RouteRecipeEligibility then
-        local allowed, reason, detail = economy.RouteRecipeEligibility(r)
-        if not allowed then
-            local text = economy.DiagnosticText and economy.DiagnosticText(reason) or reason
-            lines[#lines + 1] = { text, 0.95, 0.75, 0.4 }
-            if reason == "learningDataMissing" or reason == "learningRequirementsUnknown" then
-                local diagnostic = ra and ra.LearningDiagnostic and ra.LearningDiagnostic(reason, r, detail)
-                    or { spell = r.spell, item = r.formula, missingReasons = detail and detail.missingReasons }
-                local gapText = pd and type(pd.LearningGapText) == "function" and pd.LearningGapText(diagnostic) or nil
-                if gapText then lines[#lines + 1] = { gapText, 0.95, 0.75, 0.4 } end
-                lines[#lines + 1] = { L["保留供查阅；取得已确认学习路径后才用于自动路线。"], 0.7, 0.7, 0.7 }
-            end
-        end
+    local lo, hi = r and tonumber(r.outputMin), r and tonumber(r.outputMax)
+    if r and r.variableOutput and lo and hi and lo > 0 and hi > lo then
+        lines[#lines + 1] = { format(L["每次产量：%d–%d"], lo, hi), 0.78, 0.88, 0.96 }
     end
     return lines
 end
 
 function TT.VendorBlockLines(lines, itemID)
-    local C_NM, C_MT, C_PR = { 0.92, 0.94, 0.98 }, { 0.63, 0.65, 0.70 }, { 0.55, 0.85, 0.60 }
+    local C_NM, C_MT = { 0.92, 0.94, 0.98 }, { 0.72, 0.76, 0.82 }
     local pd = getPD()
     local list = pd and type(pd.VendorOffersOf) == "function" and pd.VendorOffersOf(itemID) or nil
-    if not list then
-        lines[#lines + 1] = { format(L["商人：%s"], "—"), Unpack(C_MT) }
-        return
-    end
+    if not list or #list == 0 then return end
     local mine = pd and type(pd.MyVendorSide) == "function" and pd.MyVendorSide() or nil
     if mine then
         local keep, other = {}, 0
@@ -598,27 +579,26 @@ function TT.VendorBlockLines(lines, itemID)
         end
         list = keep
         if #list == 0 then
-            lines[#lines + 1] = { format(L["商人：%s"], other > 0 and L["对方阵营专属"] or "—"), Unpack(C_MT) }
+            if other > 0 then
+                lines[#lines + 1] = { format(L["商人：%s"], L["对方阵营专属"]), Unpack(C_MT) }
+            end
             return
         end
     end
     local ra = getRA()
-    local shown = #list
+    local shown = min(#list, (pd and pd.VENDOR_SHOW_MAX) or 2)
     for i = 1, shown do
         local o = list[i]
         local nm = pd and pd.VendorName and pd.VendorName(o) or nil
         if type(nm) ~= "string" or nm == "" or nm == "?" then nm = L["位置未收录的商人"] end
-        lines[#lines + 1] = { format(L["商人：%s"], nm), Unpack(C_NM) }
-        if pd and pd.PurchaseConditionLines then
-            pd.PurchaseConditionLines(lines, o.npcID or o.id, o.itemID or itemID, o)
-        end
+        local parts = { format(L["商人：%s"], nm) }
         local zone = o.area and pd and pd.CampZoneName and pd.CampZoneName(o.area) or nil
         local side = pd and pd.VendorSideOf and pd.VendorSideOf(o) or "n"
         local head = pd and pd.VendorSideText and pd.VendorSideText(side) or ""
-        if type(zone) == "string" and zone ~= "" then head = head .. " · " .. zone end
-        lines[#lines + 1] = { head, Unpack(C_MT) }
-        local stock = pd and pd.FormulaStockText and pd.FormulaStockText(o) or nil
-        if stock then lines[#lines + 1] = { stock, Unpack(C_MT) } end
+        if type(zone) == "string" and zone ~= "" then
+            head = (head ~= "") and (head .. "·" .. zone) or zone
+        end
+        if head ~= "" then parts[#parts + 1] = head end
         local ptxt, isCur
         if o.paymentOption ~= nil then
             ptxt, isCur = pd and pd.FormulaCostText and pd.FormulaCostText(o) or nil, true
@@ -642,9 +622,16 @@ function TT.VendorBlockLines(lines, itemID)
         end
         if ptxt then
             if not isCur and type(o.pack) == "number" and o.pack > 1 then
-                ptxt = ptxt .. " · " .. format(L["每组 %d 件"], o.pack)
+                ptxt = ptxt .. " (" .. format(L["每组 %d 件"], o.pack) .. ")"
             end
-            lines[#lines + 1] = { format(L["价格：%s"], ptxt), Unpack(C_PR) }
+            parts[#parts + 1] = ptxt
+        end
+        if o.limited then
+            parts[#parts + 1] = L["限量刷新"]
+        end
+        lines[#lines + 1] = { table.concat(parts, " · "), Unpack(C_NM) }
+        if pd and pd.PurchaseConditionLines then
+            pd.PurchaseConditionLines(lines, o.npcID or o.id, o.itemID or itemID, o)
         end
     end
     if #list > shown then
@@ -660,7 +647,7 @@ function TT.VendorBlockLines(lines, itemID)
 end
 
 function TT.DropBlockLines(lines, itemID)
-    local C_DR = { 0.72, 0.72, 0.76 }
+    local C_DR = { 0.78, 0.80, 0.84 }
     local pd = getPD()
     local list = pd and type(pd.DropRowsOf) == "function" and pd.DropRowsOf(itemID) or nil
     if not list then return end
@@ -679,83 +666,91 @@ function TT.DropBlockLines(lines, itemID)
     end
 end
 
+local TIP_GREEN = { 0.42, 0.94, 0.62 }
+
 function TT.PriceTipLines(itemID, mats, opts)
     local lines = {}
-    if not itemID then return lines end
+    local o = type(opts) == "table" and opts or nil
+    if not itemID and not (o and o.recipe and type(mats) == "table" and #mats > 0) then
+        return lines
+    end
     primeNamesOf(mats)
     local ra = getRA()
-    local ah = ra and ra.AHPriceOf and ra.AHPriceOf(itemID) or nil
-    local sell = ra and ra.NPCSellPriceOf and ra.NPCSellPriceOf(itemID) or nil
+    local ah = itemID and ra and ra.AHPriceOf and ra.AHPriceOf(itemID) or nil
+    local sell = itemID and ra and ra.NPCSellPriceOf and ra.NPCSellPriceOf(itemID) or nil
     local cost, unpriced, nMats
     if mats and #mats > 0 and ra and ra.MatListCost then
         cost, unpriced = ra.MatListCost(mats)
         nMats = #mats
     end
-    local costTxt, approx = "—", false
-    if cost and nMats then
-        if cost <= 0 or unpriced >= nMats then
-            costTxt = "—"
-        else
-            approx = unpriced > 0
-            costTxt = (approx and "≈" or "") .. (ra and ra.MoneyStr and ra.MoneyStr(cost, "copper") or tostring(cost))
-        end
+    local costTxt, approx = nil, false
+    if cost and nMats and cost > 0 and (unpriced or 0) < nMats then
+        approx = (unpriced or 0) > 0
+        costTxt = (approx and "≈" or "") .. (ra and ra.MoneyStrTip and ra.MoneyStrTip(cost) or tostring(cost))
     end
-    local o = type(opts) == "table" and opts or nil
     if o and o.recipe then
-        lines[#lines + 1] = { L["材料成本"], 1, 1, 1, false, nil, costTxt, 1, 1, 1 }
         if o.matDetail and nMats then
             local showN = min(nMats, 8)
             for i = 1, showN do
                 local m = mats[i]
                 local n = m[2] or 1
                 local p = ra and ra.MatPriceOf and ra.MatPriceOf(m[1]) or nil
-                lines[#lines + 1] = { format("  %s ×%d", tostring(itemNameOf(m[1]) or "?"), n),
-                                      0.85, 0.85, 0.85, false, nil,
-                                      (p and ra and ra.MoneyStrTip and ra.MoneyStrTip(p * n)) or "—", 0.9, 0.9, 0.9 }
+                lines[#lines + 1] = { format("%s ×%d", tostring(itemNameOf(m[1]) or "?"), n),
+                                      0.92, 0.92, 0.92, false, nil,
+                                      (p and ra and ra.MoneyStrTip and ra.MoneyStrTip(p * n)) or "—", 1, 1, 1 }
             end
             if nMats > showN then
-                lines[#lines + 1] = { format("  … +%d", nMats - showN), 0.6, 0.6, 0.6 }
+                lines[#lines + 1] = { format("… +%d", nMats - showN), 0.72, 0.76, 0.82 }
             end
         end
-        if type(o.patternCost) == "string" and o.patternCost ~= "" then
-            lines[#lines + 1] = { L["NPC 配方价格"], 0.92, 0.94, 0.98, false, nil,
-                                  o.patternCost, 1, 1, 1 }
+        if sell and sell > 0 then
+            lines[#lines + 1] = { L["卖商人价格"], 1, 1, 1, false, nil,
+                                  ra and ra.MoneyStrTip and ra.MoneyStrTip(sell) or tostring(sell), 1, 1, 1 }
         end
-        lines[#lines + 1] = { format(L["卖店: %s"], sell and ra and ra.MoneyStr and ra.MoneyStr(sell, "copper") or "—") }
-    else
-        lines[#lines + 1] = { format(L["拍卖: %s"], ah and ra and ra.MoneyStr and ra.MoneyStr(ah, "copper") or "—") }
-        local scanner = getScanner()
-        local sup = scanner and scanner.GetAuctionSupply and scanner.GetAuctionSupply(itemID) or nil
-        if sup and type(sup.quantity) == "number" then
-            lines[#lines + 1] = { format(L["在售: %d 件"], sup.quantity), 0.72, 0.84, 0.95 }
+        if ah and cost and nMats and cost > 0 then
+            local pre = approx and "≈" or ""
+            local net = floor(ah * 0.95) - cost
+            local netTxt = pre .. (net > 0 and "+" or "") .. (ra and ra.MoneyStrTip and ra.MoneyStrTip(net) or tostring(net))
+            local col = net < 0 and TIP_RED or (net > 0 and TIP_GREEN or nil)
+            local r, g, b = col and col[1] or 1, col and col[2] or 1, col and col[3] or 1
+            lines[#lines + 1] = { L["收益（扣除5%）"], 1, 1, 1, false, nil, netTxt, r, g, b }
         end
+        return lines
+    end
+    if ah then
+        lines[#lines + 1] = { L["拍卖行价格"], 1, 1, 1, false, nil,
+                              ra and ra.MoneyStrTip and ra.MoneyStrTip(ah) or tostring(ah), 1, 1, 1 }
+    elseif not (o and o.leveling) then
+        lines[#lines + 1] = { L["拍卖行价格"], 1, 1, 1, false, nil, "—", 0.72, 0.76, 0.82 }
+    end
+    local scanner = getScanner()
+    local sup = itemID and scanner and scanner.GetAuctionSupply and scanner.GetAuctionSupply(itemID) or nil
+    if sup and type(sup.quantity) == "number" then
+        lines[#lines + 1] = { format(L["在售: %d 件"], sup.quantity), 0.72, 0.84, 0.95 }
+    end
+    if not (o and o.skipSources) then
         TT.VendorBlockLines(lines, itemID)
         TT.DropBlockLines(lines, itemID)
-        lines[#lines + 1] = { format(L["卖店: %s"], sell and ra and ra.MoneyStr and ra.MoneyStr(sell, "copper") or "—") }
-        if o and o.matDetail and nMats then
+    end
+    if sell and sell > 0 then
+        lines[#lines + 1] = { L["卖商人价格"], 1, 1, 1, false, nil,
+                              ra and ra.MoneyStrTip and ra.MoneyStrTip(sell) or tostring(sell), 1, 1, 1 }
+    end
+    if nMats then
+        if o and o.matDetail then
             local mp = TT.MatPriceLines(mats, TT.MatsCostTextC(mats))
             for i = 1, #mp do lines[#lines + 1] = mp[i] end
-        else
-            lines[#lines + 1] = { format(L["成本: %s"], costTxt) }
+        elseif costTxt then
+            lines[#lines + 1] = { L["制造总成本"], 1, 1, 1, false, nil, costTxt, 1, 1, 1 }
         end
     end
-    if ah and cost and nMats and cost > 0 then
+    if ah and cost and nMats and cost > 0 and not (o and o.leveling) then
         local pre = approx and "≈" or ""
-        local diff = ah - cost
         local net = floor(ah * 0.95) - cost
-        local l4 = format(L["差价: %s"], pre .. (diff > 0 and "+" or "") .. (ra and ra.MoneyStr and ra.MoneyStr(diff, "copper") or tostring(diff)))
-        local l5 = format(L["净赚（扣 5%% 拍卖费）: %s"],
-                          pre .. (net > 0 and "+" or "") .. (ra and ra.MoneyStr and ra.MoneyStr(net, "copper") or tostring(net)))
-        if diff < 0 then
-            lines[#lines + 1] = { l4, Unpack(TIP_RED) }
-        else
-            lines[#lines + 1] = { l4 }
-        end
-        if net < 0 then
-            lines[#lines + 1] = { l5, Unpack(TIP_RED) }
-        else
-            lines[#lines + 1] = { l5 }
-        end
+        local netTxt = pre .. (net > 0 and "+" or "") .. (ra and ra.MoneyStrTip and ra.MoneyStrTip(net) or tostring(net))
+        local col = net < 0 and TIP_RED or (net > 0 and TIP_GREEN or nil)
+        local r, g, b = col and col[1] or 1, col and col[2] or 1, col and col[3] or 1
+        lines[#lines + 1] = { L["收益（扣除5%）"], 1, 1, 1, false, nil, netTxt, r, g, b }
     end
     return lines
 end
@@ -872,7 +867,7 @@ function TT.ShowFollowCardTip(owner, guide, it, mats, hasSpell)
         return
     end
     if not it then return end
-    local extra = TT.PriceTipLines(it[1], mats)
+    local extra = TT.PriceTipLines(it[1], mats, { skipSources = true, leveling = true })
     TT.ShowItemTip(owner, it, extra)
     if hasSpell then
         TT.TipAppendLines({ { L["点击卡片：打开专业面板、定位本步配方并填好制作次数"], 0.62, 0.86, 1 } })

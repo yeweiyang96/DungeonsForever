@@ -43,6 +43,7 @@ Config\ProfessionsConfig.lua
 Config\PricingConfig.lua
 Config\SolverConfig.lua
 Config\UIConfig.lua
+Config\MoonwellsConfig.lua
 Core\ProfHostBridge.lua
 Core\ProfPricingEngine.lua
 Core\ProfDB.lua

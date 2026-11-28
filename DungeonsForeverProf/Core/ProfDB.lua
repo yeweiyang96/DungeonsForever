@@ -156,6 +156,7 @@ local function seedProfDefaults(prof)
     ensureTable(prof, "matBan")
     ensureTable(prof, "customRecoveryRecipes")
     ensureTable(prof, "excludedRecoveryItems")
+    ensureTable(prof, "writFav")
     migrateLegacyFormulaBucket(prof)
     for _, bucket in pairs(ps) do
         migrateLegacyFormulaBucket(bucket)
@@ -183,6 +184,7 @@ local function initFresh(tbl)
         matBan = {},
         customRecoveryRecipes = {},
         excludedRecoveryItems = {},
+        writFav = {},
         cookingRoute = "fishing",
         gatherMode = "gather",
     }

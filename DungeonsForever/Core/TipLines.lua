@@ -465,8 +465,9 @@ local function BookNeedRows(id)
 end
 TL.BookNeedRows = BookNeedRows
 
-local function ExtraRows(id, title)
+local function ExtraRows(id, title, opts)
     local cfg = Cfg()
+    local skipCraft = type(opts) == "table" and opts.skipCraftPrice == true
     local out
     if cfg.need then
         local brows = BookNeedRows(id)
@@ -502,14 +503,14 @@ local function ExtraRows(id, title)
             for i = 1, #rows do out[#out + 1] = rows[i] end
         end
     end
-    if cfg.matPrice then
+    if cfg.matPrice and not skipCraft then
         local rows = PatternRows(id, title)
         if rows then
             out = out or {}
             for i = 1, #rows do out[#out + 1] = rows[i] end
         end
     end
-    if cfg.prodPrice then
+    if cfg.prodPrice and not skipCraft then
         local prows = ProductRows(id, title)
         if prows then
             out = out or {}
@@ -536,7 +537,7 @@ local function PackRows(rows, base)
     return out
 end
 
-function TL.Lines(id, link, title)
+function TL.Lines(id, link, title, opts)
     if type(id) ~= "number" then return nil end
     local cfg = Cfg()
     local out
@@ -603,7 +604,7 @@ function TL.Lines(id, link, title)
             end
         end
     end
-    local extra = ExtraRows(id, title)
+    local extra = ExtraRows(id, title, opts)
     if extra then
         if not out then out = {} end
         local base = #out
