@@ -1894,6 +1894,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 3780,
+        stats = { reqItemLevel = 15 },
         yellow = 145,
       },
       [3816] = {
@@ -2957,6 +2958,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 10487,
+        stats = { reqItemLevel = 25 },
         yellow = 195,
       },
       [10490] = {
@@ -4032,6 +4034,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 19058,
+        stats = { reqItemLevel = 35 },
         yellow = 225,
       },
       [19059] = {
@@ -5234,6 +5237,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 22727,
+        stats = { reqItemLevel = 45 },
         yellow = 320,
       },
       [22815] = {
@@ -6292,6 +6296,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 1254965,
+        stats = { reqItemLevel = 35 },
         yellow = 235,
       },
       [1254966] = {
@@ -6316,6 +6321,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 1254966,
+        stats = { reqItemLevel = 35 },
         yellow = 235,
       },
       [1254967] = {
@@ -8857,6 +8863,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 1255073,
+        stats = { reqItemLevel = 25 },
         yellow = 205,
       },
       [1255074] = {
@@ -8879,6 +8886,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 1255074,
+        stats = { reqItemLevel = 25 },
         yellow = 205,
       },
       [1255075] = {
@@ -9344,6 +9352,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 1255095,
+        stats = { reqItemLevel = 15 },
         yellow = 155,
       },
       [1255096] = {
@@ -9366,6 +9375,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         },
         skillLineID = 165,
         spellID = 1255096,
+        stats = { reqItemLevel = 15 },
         yellow = 155,
       },
       [1255097] = {
@@ -12574,6 +12584,7 @@ ns.Data._recipeLoaders["leatherworking"] = function()
         skillLineID = 165,
         spellID = 1306532,
         stationKey = "sewing_machine",
+        stats = { reqItemLevel = 45 },
         yellow = 310,
       },
     },
