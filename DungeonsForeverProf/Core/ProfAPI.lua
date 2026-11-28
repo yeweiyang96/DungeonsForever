@@ -435,14 +435,70 @@ function API.WritOf(itemID)
   return DS.WritByItem(itemID) or DS.Writ(itemID) or DS.WritByTarget(itemID)
 end
 
-function API.WritTurnInZone(targetID)
+function API.WritTurnInOf(id)
+  local fn = pickExportFn("WritTurnInOf")
+  if fn then
+    return fn(id)
+  end
   local DS = getDS()
-  if not DS or type(targetID) ~= "number" then return nil end
-  local writ = DS.WritByTarget(targetID) or DS.WritByItem(targetID) or DS.Writ(targetID)
+  if not DS or type(id) ~= "number" then return nil end
+  local writ = (DS.Writ and DS.Writ(id))
+    or (DS.WritByItem and DS.WritByItem(id))
+    or (DS.WritByTarget and DS.WritByTarget(id))
   if not writ or type(writ.questID) ~= "number" then return nil end
-  local q = DS.Quest(writ.questID)
+  local q = DS.Quest and DS.Quest(writ.questID)
   if not q then return nil end
-  return q.areaID or q.uiMapID, q.uiMapID
+  local areaID = (type(q.areaID) == "number" and q.areaID > 0) and q.areaID or nil
+  local uiMapID = (type(q.uiMapID) == "number" and q.uiMapID > 0) and q.uiMapID or nil
+  local npcID, npcName, x, y = nil, nil, nil, nil
+  local endNpcs = type(q.endNpcIDs) == "table" and q.endNpcIDs or nil
+  if endNpcs and #endNpcs > 0 then
+    for i = 1, #endNpcs do
+      local nid = endNpcs[i]
+      if type(nid) == "number" and nid > 0 then
+        local npc = DS.Npc and DS.Npc(nid)
+        local rawNpc = DS.RawText and DS.RawText("npc", nid) or nil
+        if not npcID then
+          npcID = nid
+          npcName = (type(rawNpc) == "string" and rawNpc ~= "") and rawNpc or nil
+        end
+        local spawns = npc and type(npc.spawns) == "table" and npc.spawns or nil
+        local sp = spawns and spawns[1] or nil
+        if type(sp) == "table" then
+          npcID = nid
+          if type(rawNpc) == "string" and rawNpc ~= "" then npcName = rawNpc end
+          if type(sp.areaID) == "number" and sp.areaID > 0 then areaID = sp.areaID end
+          if type(sp.uiMapID) == "number" and sp.uiMapID > 0 then uiMapID = sp.uiMapID end
+          if type(sp.x) == "number" and type(sp.y) == "number" then x, y = sp.x, sp.y end
+          break
+        end
+      end
+    end
+  end
+  if not uiMapID and areaID and DS.Zone then
+    local z = DS.Zone(areaID)
+    if type(z) == "table" and type(z.uiMapID) == "number" and z.uiMapID > 0 then
+      uiMapID = z.uiMapID
+    end
+  end
+  local zoneName = (areaID and DS.RawText and DS.RawText("zone", areaID)) or nil
+  if not (areaID or uiMapID or npcID or zoneName) then return nil end
+  return {
+    questID = writ.questID,
+    areaID = areaID,
+    uiMapID = uiMapID,
+    zoneName = zoneName,
+    npcID = npcID,
+    npcName = npcName,
+    x = x,
+    y = y,
+  }
+end
+
+function API.WritTurnInZone(targetID)
+  local info = API.WritTurnInOf(targetID)
+  if not info then return nil end
+  return info.areaID or info.uiMapID, info.uiMapID
 end
 
 function API.WritZoneOf(targetID)

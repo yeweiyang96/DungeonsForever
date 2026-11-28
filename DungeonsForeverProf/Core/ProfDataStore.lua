@@ -12,6 +12,7 @@ local campByStationCache = nil
 local campStationsByProfCache = nil
 local writByItemCache = nil
 local writByTargetCache = nil
+local writsByTargetCache = nil
 
 local _roMt = {
   __newindex = function() error("DungeonsForeverProf: static data table is read-only", 2) end,
@@ -38,6 +39,7 @@ local function resetCaches(root)
   campStationsByProfCache = nil
   writByItemCache = nil
   writByTargetCache = nil
+  writsByTargetCache = nil
 end
 
 local function getRoot()
@@ -547,20 +549,40 @@ function DS.Writ(questID)
 end
 
 local function ensureWritCaches()
-  if writByItemCache and writByTargetCache then return end
-  local byItem, byTarget = {}, {}
+  if writByItemCache and writByTargetCache and writsByTargetCache then return end
+  local ordered = {}
   for _, w in pairs(DS.Writs()) do
     if type(w) == "table" then
-      if type(w.writItemID) == "number" and not byItem[w.writItemID] then
-        byItem[w.writItemID] = w
-      end
-      if type(w.targetItemID) == "number" and not byTarget[w.targetItemID] then
+      ordered[#ordered + 1] = w
+    end
+  end
+  table.sort(ordered, function(a, b)
+    return (a.questID or 0) < (b.questID or 0)
+  end)
+  local byItem, byTarget, byTargetList = {}, {}, {}
+  for i = 1, #ordered do
+    local w = ordered[i]
+    if type(w.writItemID) == "number" and not byItem[w.writItemID] then
+      byItem[w.writItemID] = w
+    end
+    if type(w.targetItemID) == "number" then
+      if not byTarget[w.targetItemID] then
         byTarget[w.targetItemID] = w
       end
+      local list = byTargetList[w.targetItemID]
+      if not list then
+        list = {}
+        byTargetList[w.targetItemID] = list
+      end
+      list[#list + 1] = w
     end
+  end
+  for tid, list in pairs(byTargetList) do
+    byTargetList[tid] = setmetatable(list, _roMt)
   end
   writByItemCache = byItem
   writByTargetCache = byTarget
+  writsByTargetCache = byTargetList
 end
 
 function DS.WritByItem(itemID)
@@ -573,6 +595,12 @@ function DS.WritByTarget(itemID)
   if type(itemID) ~= "number" then return nil end
   ensureWritCaches()
   return writByTargetCache[itemID]
+end
+
+function DS.WritsByTarget(itemID)
+  if type(itemID) ~= "number" then return newReadOnlyEmpty() end
+  ensureWritCaches()
+  return writsByTargetCache[itemID] or newReadOnlyEmpty()
 end
 
 function DS.PlunderGoods()

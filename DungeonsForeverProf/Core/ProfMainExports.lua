@@ -469,17 +469,101 @@ function EX.WritOf(id)
         or (ds.WritByTarget and ds.WritByTarget(id))
 end
 
+local function resolveWritTurnIn(ds, writ)
+    if not (ds and type(writ) == "table" and type(writ.questID) == "number") then return nil end
+    local q = ds.Quest and ds.Quest(writ.questID)
+    if not q then return nil end
+    local areaID = (type(q.areaID) == "number" and q.areaID > 0) and q.areaID or nil
+    local uiMapID = (type(q.uiMapID) == "number" and q.uiMapID > 0) and q.uiMapID or nil
+    local npcID, npcName, x, y = nil, nil, nil, nil
+    local endNpcs = type(q.endNpcIDs) == "table" and q.endNpcIDs or nil
+    if endNpcs and #endNpcs > 0 then
+        for i = 1, #endNpcs do
+            local nid = endNpcs[i]
+            if type(nid) == "number" and nid > 0 then
+                local npc = ds.Npc and ds.Npc(nid)
+                local rawNpc = ds.RawText and ds.RawText("npc", nid) or nil
+                if not npcID then
+                    npcID = nid
+                    npcName = (type(rawNpc) == "string" and rawNpc ~= "") and rawNpc or nil
+                end
+                local spawns = npc and type(npc.spawns) == "table" and npc.spawns or nil
+                local sp = spawns and spawns[1] or nil
+                if type(sp) == "table" then
+                    npcID = nid
+                    if type(rawNpc) == "string" and rawNpc ~= "" then npcName = rawNpc end
+                    if type(sp.areaID) == "number" and sp.areaID > 0 then areaID = sp.areaID end
+                    if type(sp.uiMapID) == "number" and sp.uiMapID > 0 then uiMapID = sp.uiMapID end
+                    if type(sp.x) == "number" and type(sp.y) == "number" then
+                        x, y = sp.x, sp.y
+                    end
+                    break
+                end
+                if not areaID and npc and type(npc.areaIDs) == "table" and type(npc.areaIDs[1]) == "number" and npc.areaIDs[1] > 0 then
+                    areaID = npc.areaIDs[1]
+                end
+            end
+        end
+    end
+    if not uiMapID and areaID and ds.Zone then
+        local z = ds.Zone(areaID)
+        if type(z) == "table" and type(z.uiMapID) == "number" and z.uiMapID > 0 then
+            uiMapID = z.uiMapID
+        end
+    end
+    local zoneName = (areaID and EX.ZoneNameOf(areaID)) or (uiMapID and EX.ZoneNameOf(uiMapID)) or nil
+    if not (areaID or uiMapID or npcID or zoneName) then return nil end
+    return {
+        questID = writ.questID,
+        areaID = areaID,
+        uiMapID = uiMapID,
+        zoneName = zoneName,
+        npcID = npcID,
+        npcName = npcName,
+        x = x,
+        y = y,
+    }
+end
+
+function EX.WritTurnInOf(id)
+    if type(id) ~= "number" then return nil end
+    local ds = getDS()
+    if not ds then return nil end
+    local writ = (ds.Writ and ds.Writ(id))
+        or (ds.WritByItem and ds.WritByItem(id))
+        or (ds.WritByTarget and ds.WritByTarget(id))
+    return resolveWritTurnIn(ds, writ)
+end
+
 function EX.WritZoneOf(targetId)
+    local info = EX.WritTurnInOf(targetId)
+    if not info then return nil end
+    return info.areaID or info.uiMapID, info.uiMapID
+end
+
+function EX.WritZonesForTarget(targetId)
     if type(targetId) ~= "number" then return nil end
     local ds = getDS()
     if not ds then return nil end
-    local writ = (ds.WritByTarget and ds.WritByTarget(targetId))
-        or (ds.WritByItem and ds.WritByItem(targetId))
-        or (ds.Writ and ds.Writ(targetId))
-    if not writ or type(writ.questID) ~= "number" then return nil end
-    local q = ds.Quest and ds.Quest(writ.questID)
-    if not q then return nil end
-    return q.areaID or q.uiMapID, q.uiMapID
+    local list = ds.WritsByTarget and ds.WritsByTarget(targetId)
+    local names, seen = {}, {}
+    if type(list) == "table" and #list > 0 then
+        for i = 1, #list do
+            local info = resolveWritTurnIn(ds, list[i])
+            local nm = info and info.zoneName
+            if type(nm) == "string" and nm ~= "" and not seen[nm] then
+                seen[nm] = true
+                names[#names + 1] = nm
+            end
+        end
+    else
+        local info = EX.WritTurnInOf(targetId)
+        local nm = info and info.zoneName
+        if type(nm) == "string" and nm ~= "" then
+            names[1] = nm
+        end
+    end
+    return #names > 0 and names or nil
 end
 
 local zoneNames
@@ -602,7 +686,9 @@ function EX.RegisterDelegates()
         ProductTipLines   = EX.ProductTipLines,
         CrateOf           = EX.CrateOf,
         WritOf            = EX.WritOf,
+        WritTurnInOf      = EX.WritTurnInOf,
         WritZoneOf        = EX.WritZoneOf,
+        WritZonesForTarget = EX.WritZonesForTarget,
         WritNeedOf        = EX.WritNeedOf,
         CrateTipLines     = EX.CrateTipLines,
         WritTipLines      = EX.WritTipLines,

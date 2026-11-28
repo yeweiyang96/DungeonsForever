@@ -422,11 +422,31 @@ function TT.WritNeedLines(id, title)
     if not (ex and type(ex.WritNeedOf) == "function") then return nil end
     local tid, isItem = ex.WritNeedOf(id, title)
     if not tid then return nil end
-    local areaOrMap, mapFallback = ex.WritZoneOf and ex.WritZoneOf(tid)
-    local nm = (ex.ZoneNameOf and ex.ZoneNameOf(areaOrMap)) or (mapFallback and ex.ZoneNameOf and ex.ZoneNameOf(mapFallback))
     if isItem then
-        if not nm then return nil end
-        return { { L["上交地点"] .. ": " .. nm, 1, 0.82, 0.4 } }
+        local info = ex.WritTurnInOf and ex.WritTurnInOf(id)
+        local nm = info and info.zoneName
+        if not nm then
+            local areaOrMap, mapFallback = ex.WritZoneOf and ex.WritZoneOf(id)
+            nm = (ex.ZoneNameOf and ex.ZoneNameOf(areaOrMap)) or (mapFallback and ex.ZoneNameOf and ex.ZoneNameOf(mapFallback))
+        end
+        local npcName = info and info.npcName
+        local locText = nm or npcName
+        if not locText then return nil end
+        if nm and npcName then
+            locText = nm .. " · " .. npcName
+        end
+        if info and type(info.x) == "number" and type(info.y) == "number" then
+            locText = locText .. format(" (%.1f, %.1f)", info.x, info.y)
+        end
+        return { { L["上交地点"] .. ": " .. locText, 1, 0.82, 0.4 } }
+    end
+    local zones = ex.WritZonesForTarget and ex.WritZonesForTarget(tid)
+    local nm
+    if type(zones) == "table" and #zones > 0 then
+        nm = table.concat(zones, " / ")
+    else
+        local areaOrMap, mapFallback = ex.WritZoneOf and ex.WritZoneOf(tid)
+        nm = (ex.ZoneNameOf and ex.ZoneNameOf(areaOrMap)) or (mapFallback and ex.ZoneNameOf and ex.ZoneNameOf(mapFallback))
     end
     local txt = L["需求"] .. ": " .. L["工匠文书"]
     if nm then txt = txt .. " | " .. nm end

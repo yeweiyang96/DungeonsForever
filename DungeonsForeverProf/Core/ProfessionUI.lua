@@ -12849,6 +12849,12 @@ function PD.PatternIndex()
     return ex and ex.PatternIndex and ex.PatternIndex() or {}
 end
 
+function PD.WritTurnInOf(id)
+    local ex = getEX()
+    if ex and ex.WritTurnInOf then return ex.WritTurnInOf(id) end
+    return nil
+end
+
 function PD.WritZoneOf(targetId)
     local ex = getEX()
     if ex and ex.WritZoneOf then return ex.WritZoneOf(targetId) end
@@ -20579,12 +20585,17 @@ function PD.WritZoneItems()
     if PD.Setting("writOwnProfessionsOnly") then list = WritOwnList(list) end
     local counts, order = {}, {}
     for _, w in ipairs(list) do
-        local z = w.targetItemID and PD.WritZoneOf(w.targetItemID)
+        local key = w.questID or w.writItemID or w.targetItemID
+        local z = key and PD.WritZoneOf(key)
         if z then
             if not counts[z] then counts[z] = 0; order[#order + 1] = z end
             counts[z] = counts[z] + 1
         end
     end
+    table.sort(order, function(a, b)
+        if counts[a] ~= counts[b] then return counts[a] > counts[b] end
+        return (PD.ZoneNameOf(a) or tostring(a)) < (PD.ZoneNameOf(b) or tostring(b))
+    end)
     local items = { { text = format(L["全部地点 %d"], #list) } }
     for _, z in ipairs(order) do
         items[#items + 1] = { v = z, text = format("%s %d", PD.ZoneNameOf(z) or tostring(z), counts[z]) }
@@ -20714,7 +20725,8 @@ function PD.WritRows(rows)
     if zoneKey then
         local f = {}
         for _, w in ipairs(list) do
-            if w.targetItemID and PD.WritZoneOf(w.targetItemID) == zoneKey then f[#f + 1] = w end
+            local key = w.questID or w.writItemID or w.targetItemID
+            if key and PD.WritZoneOf(key) == zoneKey then f[#f + 1] = w end
         end
         list = f
     end
@@ -20738,9 +20750,14 @@ function PD.WritRows(rows)
                     end
                 end
             end
-            if not hit and w.targetItemID then
-                local zn = PD.ZoneNameOf(PD.WritZoneOf(w.targetItemID))
+            if not hit then
+                local key = w.questID or w.writItemID or w.targetItemID
+                local info = key and PD.WritTurnInOf(key)
+                local zn = (info and info.zoneName) or (key and PD.ZoneNameOf(PD.WritZoneOf(key)))
                 if zn and string.find(string.lower(zn), q, 1, true) then hit = true end
+                if not hit and info and info.npcName and string.find(string.lower(info.npcName), q, 1, true) then
+                    hit = true
+                end
             end
             if hit then f[#f + 1] = w end
         end
@@ -20860,7 +20877,8 @@ function PD.WritRows(rows)
         local tag = rowShortTags[i] or (craft and WritBadge(craft, learned))
         local name = PD.ItemName(wid)
         local disp = PD.ShortItemName(name)
-        local zone = w.targetItemID and PD.ZoneNameOf(PD.WritZoneOf(w.targetItemID))
+        local wkey = w.questID or w.writItemID or w.targetItemID
+        local zone = wkey and PD.ZoneNameOf(PD.WritZoneOf(wkey))
         rows[#rows + 1] = {
             kind = "row", col = 1, h = PD.CrateRowHeight(disp, cols, zone ~= nil), priceCols = cols,
             it = { wid }, qItem = wid,
@@ -20923,6 +20941,52 @@ function PD.WritRows(rows)
         tag = cinfo and WritBadge(cinfo, learned) or nil,
     }
     PushText(rows, format(L["声望 +%d · 需等级 %d"], sw.repReward or 0, sw.minLevel or 0), 12, C_GREY, 2)
+    local turnIn = PD.WritTurnInOf(sw.questID or sw.writItemID or sw.targetItemID)
+    if turnIn then
+        local locLabel = turnIn.zoneName or ""
+        if turnIn.npcName then
+            locLabel = (locLabel ~= "") and (locLabel .. " · " .. turnIn.npcName) or turnIn.npcName
+        end
+        local hasCoord = type(turnIn.x) == "number" and type(turnIn.y) == "number"
+        local mapID = turnIn.uiMapID
+        local actFn, rightTxt, rightCol, tipLines
+        if hasCoord and mapID then
+            rightTxt = format("%.1f, %.1f", turnIn.x, turnIn.y)
+            rightCol = C_GOLD
+            tipLines = {
+                { locLabel, 1, 0.82, 0.4 },
+                { L["点击在世界地图上标记交付位置"], 0.78, 0.86, 0.96 },
+            }
+            actFn = function() PD.MarkMapPoint(mapID, turnIn.x, turnIn.y) end
+        elseif mapID then
+            rightTxt = L["查看地图"]
+            rightCol = { 0.62, 0.84, 1.0 }
+            tipLines = {
+                { locLabel, 1, 0.82, 0.4 },
+                { L["点击打开世界地图"], 0.78, 0.86, 0.96 },
+            }
+            actFn = function()
+                if C_Map and C_Map.OpenWorldMap then
+                    pcall(C_Map.OpenWorldMap, mapID)
+                elseif OpenWorldMap then
+                    pcall(OpenWorldMap, mapID)
+                elseif WorldMapFrame and WorldMapFrame.SetMapID then
+                    if WorldMapFrame.Show then pcall(WorldMapFrame.Show, WorldMapFrame) end
+                    pcall(WorldMapFrame.SetMapID, WorldMapFrame, mapID)
+                end
+            end
+        end
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 13,
+            text = L["交付地点"] .. ": " .. locLabel,
+            right = rightTxt,
+            rightColor = rightCol,
+            lines = tipLines,
+            act = actFn,
+        }
+    else
+        PushText(rows, L["交付地点"] .. ": " .. L["暂未收录"], 12, C_GREY, 2)
+    end
     MarkSec(rows, secH, #rows, 1)
     PushGap(rows, PD.SEC_GAP + 2, 2)
     local buyPriceText = (buyAll and ra and ra.MoneyStr) and ra.MoneyStr(buyAll)
@@ -22604,6 +22668,7 @@ do
             ProductTipLines = PD.ProductTipLines,
             CrateOf = PD.CrateOf,
             WritOf = PD.WritOf,
+            WritTurnInOf = PD.WritTurnInOf,
             WritZoneOf = PD.WritZoneOf,
             WritNeedOf = PD.WritNeedOf,
             CrateTipLines = PD.CrateTipLines,

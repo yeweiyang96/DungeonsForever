@@ -3209,58 +3209,6 @@ ns.Data._loaders["sources"] = function()
         { areaID = 10, dropRatePct = 0.541, itemID = 22390, maxLevel = 9999, minLevel = 9999, npcID = 14889, sampleCount = 370 },
         { areaID = 10, dropRatePct = 0.534, itemID = 22390, maxLevel = 9999, minLevel = 9999, npcID = 14890, sampleCount = 562 },
       },
-      [22600] = {
-        { areaID = 139, itemID = 22600, maxLevel = 60, minLevel = 60, npcID = 16132 },
-      },
-      [22603] = {
-        { areaID = 139, itemID = 22603, maxLevel = 60, minLevel = 60, npcID = 16116 },
-      },
-      [22604] = {
-        { areaID = 139, itemID = 22604, maxLevel = 60, minLevel = 60, npcID = 16132 },
-      },
-      [22605] = {
-        { areaID = 139, itemID = 22605, maxLevel = 60, minLevel = 60, npcID = 16112 },
-        { areaID = 139, itemID = 22605, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22610] = {
-        { areaID = 139, itemID = 22610, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22611] = {
-        { areaID = 139, itemID = 22611, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22612] = {
-        { areaID = 139, itemID = 22612, maxLevel = 60, minLevel = 60, npcID = 16116 },
-      },
-      [22614] = {
-        { areaID = 139, itemID = 22614, maxLevel = 60, minLevel = 60, npcID = 16112 },
-      },
-      [22615] = {
-        { areaID = 139, itemID = 22615, maxLevel = 60, minLevel = 60, npcID = 16112 },
-        { areaID = 139, itemID = 22615, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22617] = {
-        { areaID = 139, itemID = 22617, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22618] = {
-        { areaID = 139, itemID = 22618, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22620] = {
-        { areaID = 139, itemID = 22620, maxLevel = 60, minLevel = 60, npcID = 16378 },
-      },
-      [22621] = {
-        { areaID = 139, itemID = 22621, maxLevel = 60, minLevel = 60, npcID = 16112 },
-      },
-      [22622] = {
-        { areaID = 139, itemID = 22622, maxLevel = 60, minLevel = 60, npcID = 16116 },
-        { areaID = 139, itemID = 22622, maxLevel = 60, minLevel = 60, npcID = 16131 },
-      },
-      [22623] = {
-        { areaID = 139, itemID = 22623, maxLevel = 60, minLevel = 60, npcID = 16112 },
-        { areaID = 139, itemID = 22623, maxLevel = 60, minLevel = 60, npcID = 16116 },
-      },
-      [22624] = {
-        { areaID = 139, itemID = 22624, maxLevel = 60, minLevel = 60, npcID = 16135 },
-      },
       [22682] = {
         { areaID = 3456, dropRatePct = 38.268, itemID = 22682, maxLevel = 9999, minLevel = 9999, npcID = 16060, sampleCount = 2263 },
         { areaID = 3456, dropRatePct = 11.192, itemID = 22682, maxLevel = 9999, minLevel = 9999, npcID = 15936, sampleCount = 3154 },
@@ -7713,10 +7661,6 @@ ns.Data._loaders["sources"] = function()
         { dropRatePct = 8.765, itemID = 13755, sampleCount = 22897, sourceKind = "fished", targetID = 440, targetType = "zone" },
         { dropRatePct = 7.539, itemID = 13755, sampleCount = 3568, sourceKind = "fished", targetID = 16, targetType = "zone" },
       },
-      [13757] = {
-        { dropRatePct = 28.916, itemID = 13757, sampleCount = 83, sourceKind = "fished", targetID = 139, targetType = "zone" },
-        { dropRatePct = 17.964, itemID = 13757, sampleCount = 167, sourceKind = "fished", targetID = 2597, targetType = "zone" },
-      },
       [13758] = {
         { dropRatePct = 89.286, itemID = 13758, sampleCount = 196, sourceKind = "contained_in_item", targetID = 13881, targetType = "item" },
         { dropRatePct = 100.541, itemID = 13758, sampleCount = 185, sourceKind = "fished", targetID = 361, targetType = "zone" },
@@ -8318,78 +8262,6 @@ ns.Data._loaders["sources"] = function()
       },
       [22388] = {
         { dropRatePct = 0.011, itemID = 22388, sampleCount = 18794, sourceKind = "contained_in_item", targetID = 5759, targetType = "item" },
-      },
-      [22600] = {
-        { dropRatePct = 3.032, itemID = 22600, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22601] = {
-        { dropRatePct = 3.547, itemID = 22601, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22602] = {
-        { dropRatePct = 2.574, itemID = 22602, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22603] = {
-        { dropRatePct = 2.86, itemID = 22603, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22604] = {
-        { dropRatePct = 2.918, itemID = 22604, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22605] = {
-        { dropRatePct = 4.462, itemID = 22605, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22606] = {
-        { dropRatePct = 4.405, itemID = 22606, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22607] = {
-        { dropRatePct = 3.833, itemID = 22607, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22608] = {
-        { dropRatePct = 4.348, itemID = 22608, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22609] = {
-        { dropRatePct = 4.863, itemID = 22609, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22610] = {
-        { dropRatePct = 3.719, itemID = 22610, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22611] = {
-        { dropRatePct = 3.776, itemID = 22611, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22612] = {
-        { dropRatePct = 4.863, itemID = 22612, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22613] = {
-        { dropRatePct = 5.378, itemID = 22613, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22614] = {
-        { dropRatePct = 3.604, itemID = 22614, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22615] = {
-        { dropRatePct = 3.547, itemID = 22615, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22616] = {
-        { dropRatePct = 4.805, itemID = 22616, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22617] = {
-        { dropRatePct = 4.634, itemID = 22617, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22618] = {
-        { dropRatePct = 4.405, itemID = 22618, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22620] = {
-        { dropRatePct = 4.634, itemID = 22620, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22621] = {
-        { dropRatePct = 3.89, itemID = 22621, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22622] = {
-        { dropRatePct = 5.378, itemID = 22622, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22623] = {
-        { dropRatePct = 5.606, itemID = 22623, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
-      },
-      [22624] = {
-        { dropRatePct = 4.92, itemID = 22624, sampleCount = 1748, sourceKind = "contained_in_item", targetID = 22568, targetType = "item" },
       },
       [211780] = {
         { dropRatePct = 4.204, itemID = 211780, sampleCount = 7208, sourceKind = "contained_in_object", targetID = 626752, targetType = "object" },
