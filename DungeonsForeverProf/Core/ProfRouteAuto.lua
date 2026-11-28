@@ -290,20 +290,44 @@ function RA.Available()
 end
 
 local priceCache = {}
+local priceCacheBridge = nil
+local priceCacheRev = nil
+local priceCacheForced = nil
+local knownQtyCache = {}
+local knownQtySupGen = nil
 local vendorCache = {}
 local sellCache = {}
 local ahReason, ahAge = {}, {}
 
+local function syncPriceCache(ab)
+    if not ab then return false end
+    local rev = type(ab.SupplyRevision) == "function" and ab.SupplyRevision() or nil
+    if rev == nil then return false end
+    local forced = type(ab.ForceExpiredActive) == "function" and ab.ForceExpiredActive() or false
+    if priceCacheBridge ~= ab or priceCacheRev ~= rev or priceCacheForced ~= forced then
+        priceCache = {}
+        knownQtyCache = {}
+        ahReason, ahAge = {}, {}
+        priceCacheBridge = ab
+        priceCacheRev = rev
+        priceCacheForced = forced
+    end
+    return true
+end
+
 local function AHPrice(id)
-    local c = priceCache[id]
-    if c ~= nil then
-        if c ~= false then return c end
-        local now = nowSec()
-        local t0 = priceCache.__t and priceCache.__t[id] or nil
-        if t0 and (now - t0) < cfgNegTTL() then return nil end
+    local ab = getAuctionBridge()
+    local canCache = syncPriceCache(ab)
+    if canCache then
+        local c = priceCache[id]
+        if c ~= nil then
+            if c ~= false then return c end
+            local now = nowSec()
+            local t0 = priceCache.__t and priceCache.__t[id] or nil
+            if t0 and (now - t0) < cfgNegTTL() then return nil end
+        end
     end
     local p
-    local ab = getAuctionBridge()
     if ab then
         if type(ab.GetReferencePrice) == "function" then
             p = ab.GetReferencePrice(id)
@@ -328,17 +352,26 @@ local function AHPrice(id)
     if not p and ahReason[id] ~= "stale" and ahReason[id] ~= "noapi" then
         ahReason[id] = "norec"
     end
-    priceCache[id] = p or false
-    if not p then
-        priceCache.__t = priceCache.__t or {}
-        priceCache.__t[id] = nowSec()
+    if canCache then
+        priceCache[id] = p or false
+        if not p then
+            priceCache.__t = priceCache.__t or {}
+            priceCache.__t[id] = nowSec()
+        end
+        if p then priceCache.__any = true end
+    elseif p then
+        priceCache.__any = true
     end
-    if p then priceCache.__any = true end
     return p
 end
 
 function RA.ResetPrices()
     priceCache = {}
+    priceCacheBridge = nil
+    priceCacheRev = nil
+    priceCacheForced = nil
+    knownQtyCache = {}
+    knownQtySupGen = nil
     vendorCache = {}
     sellCache = {}
     ahReason, ahAge = {}, {}
@@ -524,6 +557,9 @@ function RA.AHPriceOf(itemID, ctx)
         end
     end
     local bridge = getAuctionBridge()
+    if bridge and type(bridge.SupplyRevision) == "function" then
+        return AHPrice(itemID)
+    end
     local supply = bridge and type(bridge.GetAuctionSupply) == "function" and bridge.GetAuctionSupply(itemID) or nil
     if supply and (supply.quantity or 0) > 0 and type(supply.market) == "number" and supply.market > 0 and supply.market < math.huge then
         return supply.market
@@ -817,38 +853,70 @@ function RA.KnownQtyCost(id, need, ctx)
     end
     need = math.ceil(rawNeed)
 
-    local vendorCtx = buildVendorCtx(ctx)
     local sup = getSupply()
-    local economy = getEconomy()
     local bridge = getAuctionBridge()
-    local pe = getPE()
-
-    local offers = (sup and type(sup.DisplayList) == "function") and sup.DisplayList(id, vendorCtx) or evalStandaloneOffers(id, vendorCtx, true) or {}
-    local nonAuc = isNonAuctionable(id) or (economy and type(economy.NonAuctionableItem) == "function" and economy.NonAuctionableItem(id))
-    local snapStatus = bridge and type(bridge.FullScanSnapshotStatus) == "function" and bridge.FullScanSnapshotStatus() or nil
-    local snapAvailable = snapStatus and snapStatus.status == "available"
-    local refUnit = (not nonAuc) and RA.AHPriceOf(id, ctx) or nil
-    local depth = (not nonAuc and bridge and type(bridge.GetAuctionDepth) == "function") and bridge.GetAuctionDepth(id) or nil
-    local supply = (not nonAuc and bridge and type(bridge.GetAuctionSupply) == "function") and bridge.GetAuctionSupply(id) or nil
-
-    local available = nil
-    if depth and type(depth.quantity) == "number" then
-        available = depth.quantity
-    elseif supply and type(supply.quantity) == "number" then
-        available = supply.quantity
-    elseif snapAvailable and not nonAuc then
-        available = 0
+    local canCacheLive = (ctx == nil) and syncPriceCache(bridge) and (type(_G.debugprofilestop) == "function")
+    local cacheKey
+    if canCacheLive then
+        local supGen = sup and type(sup.CacheGen) == "function" and sup.CacheGen() or 0
+        if knownQtySupGen ~= supGen then
+            knownQtyCache = {}
+            knownQtySupGen = supGen
+        end
+        cacheKey = id .. ":" .. need
+        local hit = knownQtyCache[cacheKey]
+        if hit then return hit[1], hit[2] end
     end
 
-    local auctionAnchor = refUnit or (depth and depth.levels and depth.levels[1] and depth.levels[1][1]) or nil
-    local auctionCostFn = nil
-    if depth and type(depth.levels) == "table" and #depth.levels > 0 and pe and type(pe.ConsumeDepth) == "function" then
-        auctionCostFn = function(count)
-            local c = pe.ConsumeDepth(depth.levels, count, 0, true)
-            return c
+    local vendorCtx = ctx ~= nil and buildVendorCtx(ctx) or nil
+    local economy = getEconomy()
+    local pe = getPE()
+
+    local offers = (sup and type(sup.DisplayList) == "function") and sup.DisplayList(id, vendorCtx or {}) or evalStandaloneOffers(id, vendorCtx, true) or {}
+    local nonAuc = isNonAuctionable(id) or (economy and type(economy.NonAuctionableItem) == "function" and economy.NonAuctionableItem(id))
+
+    local snapAvailable, refUnit, available, auctionAnchor, auctionCostFn, supply
+    if ctx == nil and bridge and type(bridge.GetAuctionQuote) == "function" then
+        if nonAuc then
+            snapAvailable = type(bridge.HasAvailableSnapshot) == "function" and bridge.HasAvailableSnapshot() or false
+        else
+            local qRef, qAvail, qBook, qSnap, qMeta = bridge.GetAuctionQuote(id)
+            refUnit = qRef
+            available = qAvail
+            snapAvailable = qSnap
+            supply = qMeta
+            auctionAnchor = refUnit or (qBook and qBook.prices and qBook.prices[1]) or nil
+            if qBook and pe and type(pe.Cost) == "function" then
+                auctionCostFn = function(count)
+                    return pe.Cost(qBook, 0, count)
+                end
+            end
+        end
+    else
+        local snapStatus = bridge and type(bridge.FullScanSnapshotStatus) == "function" and bridge.FullScanSnapshotStatus() or nil
+        snapAvailable = snapStatus and snapStatus.status == "available"
+        refUnit = (not nonAuc) and RA.AHPriceOf(id, ctx) or nil
+        local depth = (not nonAuc and bridge and type(bridge.GetAuctionDepth) == "function") and bridge.GetAuctionDepth(id) or nil
+        supply = (not nonAuc and bridge and type(bridge.GetAuctionSupply) == "function") and bridge.GetAuctionSupply(id) or nil
+
+        if depth and type(depth.quantity) == "number" then
+            available = depth.quantity
+        elseif supply and type(supply.quantity) == "number" then
+            available = supply.quantity
+        elseif snapAvailable and not nonAuc then
+            available = 0
+        end
+
+        auctionAnchor = refUnit or (depth and depth.levels and depth.levels[1] and depth.levels[1][1]) or nil
+        if depth and type(depth.levels) == "table" and #depth.levels > 0 and pe and type(pe.ConsumeDepth) == "function" then
+            auctionCostFn = function(count)
+                local c = pe.ConsumeDepth(depth.levels, count, 0, true)
+                return c
+            end
         end
     end
 
+    local resCost, resInfo
     if economy and type(economy.MaterialPurchases) == "function" then
         local rawFaction = type(ctx) == "table" and ctx.faction or nil
         local ok, rows, cost, complete, reason = pcall(economy.MaterialPurchases, id, need, {
@@ -869,7 +937,7 @@ function RA.KnownQtyCost(id, need, ctx)
                 end
                 if hasVendor and hasAH then src = "mixed"
                 elseif hasVendor then src = "vendor" end
-                return cost, {
+                resCost, resInfo = cost, {
                     complete = true,
                     shortage = false,
                     available = available or need,
@@ -878,9 +946,8 @@ function RA.KnownQtyCost(id, need, ctx)
                     refUnit = refUnit,
                     rows = rows,
                 }
-            end
-            if reason == "auctionSupplyLimited" or (snapAvailable and not nonAuc and (available or 0) < need) then
-                return nil, {
+            elseif reason == "auctionSupplyLimited" or (snapAvailable and not nonAuc and (available or 0) < need) then
+                resCost, resInfo = nil, {
                     complete = false,
                     shortage = true,
                     available = available or 0,
@@ -888,26 +955,32 @@ function RA.KnownQtyCost(id, need, ctx)
                     source = "shortage",
                     refUnit = refUnit,
                 }
+            else
+                resCost, resInfo = nil, {
+                    complete = false,
+                    shortage = false,
+                    available = available or 0,
+                    required = need,
+                    source = "unpriced",
+                    refUnit = refUnit,
+                }
             end
-            return nil, {
-                complete = false,
-                shortage = false,
-                available = available or 0,
-                required = need,
-                source = "unpriced",
-                refUnit = refUnit,
-            }
         end
     end
-
-    return nil, {
-        complete = false,
-        shortage = snapAvailable and not nonAuc and (available or 0) < need or false,
-        available = available or 0,
-        required = need,
-        source = (snapAvailable and not nonAuc) and "shortage" or "unpriced",
-        refUnit = refUnit,
-    }
+    if not resInfo then
+        resCost, resInfo = nil, {
+            complete = false,
+            shortage = snapAvailable and not nonAuc and (available or 0) < need or false,
+            available = available or 0,
+            required = need,
+            source = (snapAvailable and not nonAuc) and "shortage" or "unpriced",
+            refUnit = refUnit,
+        }
+    end
+    if canCacheLive and cacheKey then
+        knownQtyCache[cacheKey] = { resCost, resInfo }
+    end
+    return resCost, resInfo
 end
 
 function RA.PreferSharedFormula(entry, materialNeed, opts)
@@ -2785,6 +2858,11 @@ local function baseInvalidate()
         if k ~= "__any" then priceCache[k] = nil end
     end
     priceCache.__any = nil
+    priceCacheBridge = nil
+    priceCacheRev = nil
+    priceCacheForced = nil
+    knownQtyCache = {}
+    knownQtySupGen = nil
     for k in pairs(vendorCache) do vendorCache[k] = nil end
     for k in pairs(sellCache) do sellCache[k] = nil end
     for k in pairs(ahReason) do ahReason[k] = nil end

@@ -1241,8 +1241,20 @@ function E.MaterialPurchases(id, need, context, tick)
     if need == 0 then return {}, 0, true end
     local offers, auction, supply = context.offers or {}, context.auction, context.supply
     local available, faction = context.available, context.faction
+    local ahCostMemo
     local function auctionCost(n)
-        if context.auctionCost then return context.auctionCost(n) or huge end
+        if n <= 0 then return 0 end
+        if context.auctionCost then
+            if ahCostMemo then
+                local hit = ahCostMemo[n]
+                if hit ~= nil then return hit end
+            else
+                ahCostMemo = {}
+            end
+            local c = context.auctionCost(n) or huge
+            ahCostMemo[n] = c
+            return c
+        end
         return n * (auction or 0)
     end
     local limit = auction and min(need, max(0, floor(available or need))) or 0
@@ -1272,9 +1284,41 @@ function E.MaterialPurchases(id, need, context, tick)
     if next(reliable) or (auction and limit >= need) then byPack = reliable end
     local sizes = {}
     for size in pairs(byPack) do sizes[#sizes + 1] = size; maxPack = max(maxPack, size) end
+    local function ahRow(count)
+        local c = auctionCost(count)
+        return {
+            id, count,
+            id = id, count = count, need = count,
+            cost = c, unit = count > 0 and c / count or 0,
+            source = "ah", vendor = false, availableCount = available, supplyRequired = count,
+            supplyObserved = available ~= nil, supplyComplete = supply and supply.complete,
+            supplyObservedAt = supply and supply.observedAt, supplySource = supply and supply.source,
+            supplyMethod = supply and supply.method,
+        }
+    end
+    if #sizes == 0 then
+        if auction and need <= limit then
+            local row = ahRow(need)
+            return { row }, row.cost, true, nil
+        end
+        local entry
+        if auction then
+            entry = ahRow(need)
+        else
+            entry = { id, need, id = id, count = need, need = need, cost = 0, unit = 0, unpriced = true }
+        end
+        entry.unavailable = true
+        entry.costComplete = false
+        if type(entry.cost) == "number" and entry.cost == huge then
+            entry.cost = nil
+            entry.unit = nil
+            entry.unpriced = true
+        end
+        return { entry }, entry.cost, false, auction and "auctionSupplyLimited" or "materialUnavailable"
+    end
     table.sort(sizes)
     local costs, previous, chosen = { [0] = 0 }, {}, {}
-    local maximum = #sizes > 0 and need + maxPack - 1 or 0
+    local maximum = need + maxPack - 1
     for quantity = 1, maximum do
         if tick then tick() end
         for _, size in ipairs(sizes) do
@@ -1300,17 +1344,6 @@ function E.MaterialPurchases(id, need, context, tick)
                 best, bestNPC, bestAH = cost, quantity, rest
             end
         end
-    end
-    local function ahRow(count)
-        return {
-            id, count,
-            id = id, count = count, need = count,
-            cost = auctionCost(count), unit = count > 0 and auctionCost(count) / count or 0,
-            source = "ah", vendor = false, availableCount = available, supplyRequired = count,
-            supplyObserved = available ~= nil, supplyComplete = supply and supply.complete,
-            supplyObservedAt = supply and supply.observedAt, supplySource = supply and supply.source,
-            supplyMethod = supply and supply.method,
-        }
     end
     if not best then
         local entry

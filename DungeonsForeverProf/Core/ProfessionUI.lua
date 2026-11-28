@@ -3963,6 +3963,10 @@ function PD.BindScanAct(r, spec)
 end
 
 function PD.BindRow(r, spec, h)
+    if type(spec) == "table" and spec._lazyKind and PD.MaterializeRecipeSpec then
+        PD.MaterializeRecipeSpec(spec)
+    end
+    r.__wiped = nil
     if spec.kind == "pcard" then
             PD.WipeRow(r, true)
         PD.PCApply(r, spec, r:GetWidth(), h)
@@ -4253,7 +4257,7 @@ function PD.BindRow(r, spec, h)
                 else
                     PD.recipeSort, PD.recipeSortDesc = nil, false
                 end
-                PD.RequestRender()
+                PD.RequestRender(true)
             end
         end
         local function _hc(fs, on)
@@ -4980,7 +4984,7 @@ function PD.BindRow(r, spec, h)
         r.d:SetPoint("RIGHT", r.dv, "LEFT", 0, 0)
         local vz = PD.IconZone(r)
         vz.__it = nil
-        vz.__tipLines = spec.vlines or PD.VendorLines(spec.src, spec.qItem)
+        vz.__tipLines = spec.vlines or function() return PD.VendorLines(spec.src, spec.qItem) end
         vz.__act = spec.dact or PD.VendorAct(spec.src)
         vz:ClearAllPoints()
         vz:SetPoint("TOPLEFT", r.dv, "TOPLEFT", 0, 1)
@@ -5638,11 +5642,7 @@ function PD.OpenZoneMap(zoneID)
     local z = zoneID and ds and ds.Zone and ds.Zone(zoneID)
     local mapID = z and z.uiMapID or nil
     if not mapID then return end
-    if C_Map and C_Map.OpenWorldMap then
-        pcall(C_Map.OpenWorldMap, mapID)
-    elseif OpenWorldMap then
-        pcall(OpenWorldMap, mapID)
-    end
+    PD.OpenMapID(mapID)
 end
 
 function PD.GCEnsure(i)
@@ -6231,7 +6231,7 @@ function PD.Build(page)
         bt:SetScript("OnClick", function()
             if PD.trFac ~= k then
                 PD.trFac = k
-                PD.RequestRender()
+                PD.RequestRender(true)
                 playSoundSafe(1)
             end
         end)
@@ -6252,7 +6252,7 @@ function PD.Build(page)
                   PD.RIGHT_X + PD.RIGHT_W - PD.LIST_PAD, -PD.SUB_Y)
     gear:SetScript("OnClick", function()
         PD.setOpen = not PD.setOpen
-        PD.RequestRender()
+        PD.RequestRender(true)
         playSoundSafe(1)
     end)
     PD.setGear = gear
@@ -6263,7 +6263,7 @@ function PD.Build(page)
     rev:SetScript("OnClick", function()
         if PD.RevertPlan() then
             playSoundSafe(1)
-            PD.RequestRender()
+            PD.RequestRender(true)
         end
     end)
     PD.revertBt = rev
@@ -9099,7 +9099,7 @@ function PD.SetSubTab(key)
     local db = ProfDB()
     if type(db.subTab) ~= "table" then db.subTab = {} end
     if PD.cur and PD.cur ~= "__index" then db.subTab[PD.cur] = key end
-    PD.RequestRender()
+    PD.RequestRender(true)
     playSoundSafe(1)
 end
 
@@ -9161,6 +9161,65 @@ local function MapIDAlive(mapID)
     return ok and mi ~= nil
 end
 
+local mapYieldStrata
+local mapYieldHooked
+local mapOpenSeq = 0
+
+local function RestoreMainFrameStrata()
+    local mf = _G.DungeonsForever_MainFrame
+    if mf and mapYieldStrata then
+        local prev = mapYieldStrata
+        mapYieldStrata = nil
+        if mf.SetFrameStrata then pcall(mf.SetFrameStrata, mf, prev) end
+    end
+end
+
+local function YieldMainFrameForWorldMap()
+    local mf = _G.DungeonsForever_MainFrame
+    if not (mf and mf.IsShown and mf:IsShown() and mf.GetFrameStrata and mf.SetFrameStrata) then return end
+    local cur = mf:GetFrameStrata()
+    if cur == "HIGH" or cur == "DIALOG" or cur == "FULLSCREEN" or cur == "FULLSCREEN_DIALOG" or cur == "MEDIUM" then
+        if not mapYieldStrata then mapYieldStrata = cur end
+        pcall(mf.SetFrameStrata, mf, "LOW")
+        if WorldMapFrame and WorldMapFrame.HookScript and not mapYieldHooked then
+            mapYieldHooked = true
+            pcall(WorldMapFrame.HookScript, WorldMapFrame, "OnHide", RestoreMainFrameStrata)
+        end
+        if mf.HookScript and not mf.__dfProfMapYieldHide then
+            mf.__dfProfMapYieldHide = true
+            pcall(mf.HookScript, mf, "OnHide", RestoreMainFrameStrata)
+        end
+    end
+end
+
+function PD.OpenMapID(mapID)
+    if not mapID then return end
+    local wasShown = WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown() or false
+    local function doOpen()
+        if C_Map and C_Map.OpenWorldMap then
+            pcall(C_Map.OpenWorldMap, mapID)
+        elseif OpenWorldMap then
+            pcall(OpenWorldMap, mapID)
+        elseif WorldMapFrame and WorldMapFrame.SetMapID then
+            if WorldMapFrame.Show then pcall(WorldMapFrame.Show, WorldMapFrame) end
+            pcall(WorldMapFrame.SetMapID, WorldMapFrame, mapID)
+        end
+    end
+    doOpen()
+    YieldMainFrameForWorldMap()
+    if not wasShown and C_Timer and C_Timer.After then
+        mapOpenSeq = mapOpenSeq + 1
+        local seq = mapOpenSeq
+        C_Timer.After(0.05, function()
+            if seq ~= mapOpenSeq then return end
+            if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
+            if WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+                doOpen()
+            end
+        end)
+    end
+end
+
 function PD.MarkMapPoint(mapID, x, y)
     if not MapIDAlive(mapID) then
         if UIErrorsFrame and UIErrorsFrame.AddMessage then
@@ -9175,11 +9234,7 @@ function PD.MarkMapPoint(mapID, x, y)
             pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
-    if C_Map and C_Map.OpenWorldMap then
-        pcall(C_Map.OpenWorldMap, mapID)
-    elseif OpenWorldMap then
-        pcall(OpenWorldMap, mapID)
-    end
+    PD.OpenMapID(mapID)
 end
 
 function PD.MarkCampPoint(areaID, x, y)
@@ -10020,6 +10075,7 @@ function PD.WireTipZone(z, r)
         if not self.__noHover then PD.SetRowHover(r, true) end
         if self.__it then PD.hoverRow = self end
         local lines = self.__tipLines
+        if type(lines) == "function" then lines = lines() end
         if lines then
             PD.TipShow(self, lines)
         elseif self.__spell and PD.ShowSpellTip then
@@ -10608,18 +10664,24 @@ function PD.NpcZoneLabel(npcID)
     return tostring(zn)
 end
 
+PD.__instNpcMemo = setmetatable({}, { __mode = "k" })
 function PD.IsInstanceNpc(npcID)
     if type(npcID) ~= "number" or npcID <= 0 then return false end
     local ds = getDS()
     if not (ds and ds.Npc and ds.Zone) then return false end
     local npc = ds.Npc(npcID)
     if type(npc) ~= "table" then return false end
+    local memo = PD.__instNpcMemo
+    local cached = memo[npc]
+    if cached ~= nil then return cached end
     for _, aid in ipairs(PD.NpcAreaIDs(npc)) do
         local z = ds.Zone(aid)
         if type(z) == "table" and (z.zoneType == "dungeon" or z.zoneType == "raid") then
+            memo[npc] = true
             return true
         end
     end
+    memo[npc] = false
     return false
 end
 
@@ -11203,6 +11265,7 @@ end
 
 function PD.WipeRow(r, keepShown)
     if not r then return end
+    if r.__wiped and not keepShown then return end
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
     PD.ClearRecipeMats(r)
@@ -11270,7 +11333,10 @@ function PD.WipeRow(r, keepShown)
     r.__routePolicy = nil
     r.__tipTitle = nil
     r.__tipExtra = nil
-    if not keepShown then r:Hide() end
+    if not keepShown then
+        r:Hide()
+        r.__wiped = true
+    end
 end
 
 function PD.PackMats(list, budget)
@@ -12479,22 +12545,69 @@ function PD.FinishSpecMats(s)
     return s
 end
 
-function PD.FitRecipeCols(list, maxW)
+function PD.PrepareRecipeCols()
     PD.RECIPE_NAME_W = PD.REC_NAME_W
     PD.MAT_X = 172
     PD.MAT_W = PD.MAT_ROW_W - (6 + PD.DiffBarW() + PD.REC_GAP_W + PD.REC_AH_W + PD.REC_COST_W) - PD.MAT_X - 8
     PD.SyncRows()
-    for _, s in ipairs(list) do
-        s.recipeCols=true
-        if s.text and s.text ~= "" then
-            s._fullText = s._fullText or s.text
-            s.tipTitle = s.tipTitle or s._fullText
-            s.text = PD.Fit(s._fullText, PD.REC_FS,
-                math.max(1, PD.MAT_X - 8 - PD.RECIPE_PADL))
-        end
-        PD.RecipeRowLayout(s)
-        PD.SrcLineFit(s)
+end
+
+function PD.FitOneRecipeSpec(s)
+    if type(s) ~= "table" then return s end
+    s.recipeCols = true
+    if s.text and s.text ~= "" then
+        s._fullText = s._fullText or s.text
+        s.tipTitle = s.tipTitle or s._fullText
+        s.text = PD.Fit(s._fullText, PD.REC_FS,
+            math.max(1, PD.MAT_X - 8 - PD.RECIPE_PADL))
     end
+    PD.RecipeRowLayout(s)
+    PD.SrcLineFit(s)
+    return s
+end
+
+function PD.FitRecipeCols(list, maxW)
+    PD.PrepareRecipeCols()
+    for _, s in ipairs(list) do
+        if not s._lazyKind then
+            PD.FitOneRecipeSpec(s)
+        end
+    end
+end
+
+function PD.MaterializeRecipeSpec(spec)
+    if type(spec) ~= "table" or not spec._lazyKind then return spec end
+    local kind = spec._lazyKind
+    local raw = spec._lazyRaw
+    local slug = spec._lazySlug
+    local recMap = spec._lazyRecipes
+    spec._lazyKind = nil
+    spec._lazyRaw = nil
+    spec._lazySlug = nil
+    spec._lazyRecipes = nil
+    local prevCur = PD.cur
+    if slug then PD.cur = slug end
+    local full
+    if kind == "recipe" then
+        full = PD.RecipeSpec(raw)
+    elseif kind == "enchant" then
+        full = PD.EnchantSpec(raw)
+    elseif kind == "favor" then
+        full = PD.FavorSpec(raw, recMap)
+    elseif kind == "scroll" then
+        full = PD.ScrollSpec(raw)
+    end
+    PD.cur = prevCur
+    if type(full) ~= "table" then return spec end
+    PD.FitOneRecipeSpec(full)
+    local keepGX, keepGW, keepGTop, keepGH = spec.__gx, spec.__gw, spec.__gtop, spec.__gh
+    local keepFixed, keepZ, keepCol, keepSec, keepLast = spec.__fixed, spec.z, spec.col, spec.sec, spec._lastInSec
+    for k, v in pairs(full) do
+        spec[k] = v
+    end
+    spec.__gx, spec.__gw, spec.__gtop, spec.__gh = keepGX, keepGW, keepGTop, keepGH
+    spec.__fixed, spec.z, spec.col, spec.sec, spec._lastInSec = keepFixed, keepZ, keepCol, keepSec, keepLast
+    return spec
 end
 
 function PD.BoundRecipeColumns(r,spec,padL)
@@ -13044,8 +13157,9 @@ function PD.RecipeSpec(r)
         local tval = PD.TeachVal(spell)
         if tval then
             dpre, dval = L["训练师"] .. ":", tval
-            dlines, dact = PD.TeachLines(spell), PD.TeachAct(spell)
-            dtip = PD.TeachLines(spell, true)
+            dlines = function() return PD.TeachLines(spell) end
+            dact = PD.TeachAct(spell)
+            dtip = function() return PD.TeachLines(spell, true) end
         end
     end
     local costStr, total, unpriced, ah
@@ -13088,7 +13202,8 @@ function PD.RecipeSpec(r)
             if specLabel then lines[#lines + 1] = { format(L["需要专精：%s"], specLabel), 0.88, 0.78, 0.50 } end
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
             if dtip then
-                for i = 1, #dtip do lines[#lines + 1] = dtip[i] end
+                local dt = type(dtip) == "function" and dtip() or dtip
+                for i = 1, #(dt or {}) do lines[#lines + 1] = dt[i] end
             end
             if wlCanQuick then
                 local recMod = getRec()
@@ -13238,40 +13353,37 @@ function PD.CurKeysOfFid(fid)
         if hit == false then return nil end
         return hit
     end
-    local supply = getSupply()
+    local ds = getDS()
+    local vo = ds and ds.VendorOffers and ds.VendorOffers(fid)
+    local offers = (type(vo) == "table" and vo.offers) or vo
     local ks = {}
-    if supply and supply.DisplayList then
-        for _, offer in ipairs(supply.DisplayList(fid) or {}) do
-            for _, cost in ipairs(offer.currencies or {}) do
-                local cid = type(cost) == "table" and (cost.currencyID or cost.id) or nil
-                if type(cid) == "number" and cid > 0 then ks[cid] = true end
-            end
-            for _, ci in ipairs(offer.costItems or {}) do
-                local ciid = type(ci) == "table" and (ci.itemID or ci.id) or nil
-                if type(ciid) == "number" and ciid > 0 then ks[PD.COST_ITEM_PREFIX .. ciid] = true end
-            end
-            if not offer.hasExtendedCost and offer.priceVerified then ks[0] = true end
-        end
-    else
-        local ds = getDS()
-        local vo = ds and ds.VendorOffers and ds.VendorOffers(fid)
-        local offers = (type(vo) == "table" and vo.offers) or vo
-        for _, offer in ipairs(offers or {}) do
-            if type(offer) == "table" and offer.maxStock ~= 0 then
-                local curList = type(offer.currencies) == "table" and offer.currencies or {}
-                for _, cost in ipairs(curList) do
-                    local cid = type(cost) == "table" and (cost.currencyID or cost.id) or nil
-                    if type(cid) == "number" and cid > 0 then ks[cid] = true end
+    if type(offers) == "table" then
+        for i = 1, #offers do
+            local offer = offers[i]
+            if type(offer) == "table" then
+                local curList = type(offer.currencies) == "table" and offer.currencies or nil
+                local hasCur = false
+                if curList and #curList > 0 then
+                    for j = 1, #curList do
+                        local cost = curList[j]
+                        local cid = type(cost) == "table" and (cost.currencyID or cost.id) or nil
+                        if type(cid) == "number" and cid > 0 then ks[cid] = true; hasCur = true end
+                    end
+                elseif type(offer.currencyID) == "number" and offer.currencyID > 0 then
+                    ks[offer.currencyID] = true
+                    hasCur = true
                 end
-                if type(offer.currencyID) == "number" and offer.currencyID > 0 then ks[offer.currencyID] = true end
-                local ciList = type(offer.costItems) == "table" and offer.costItems or {}
-                for _, ci in ipairs(ciList) do
-                    local ciid = type(ci) == "table" and (ci.itemID or ci.id) or nil
-                    if type(ciid) == "number" and ciid > 0 then ks[PD.COST_ITEM_PREFIX .. ciid] = true end
+                local ciList = type(offer.costItems) == "table" and offer.costItems or nil
+                local hasCi = false
+                if ciList and #ciList > 0 then
+                    for j = 1, #ciList do
+                        local ci = ciList[j]
+                        local ciid = type(ci) == "table" and (ci.itemID or ci.id) or nil
+                        if type(ciid) == "number" and ciid > 0 then ks[PD.COST_ITEM_PREFIX .. ciid] = true; hasCi = true end
+                    end
                 end
-                local hasExt = #curList > 0 or #ciList > 0
-                local priceVal = offer.priceCopper or offer.price
-                if not hasExt and (offer.priceVerified == true or (offer.priceVerified == nil and type(priceVal) == "number" and priceVal > 0)) then
+                local hasExt = hasCur or hasCi or offer.hasExtendedCost == true
+                if not hasExt and offer.priceVerified == true then
                     ks[0] = true
                 end
             end
@@ -13386,23 +13498,66 @@ function PD.CurCounts(d)
     local c = m[d]
     if c then return c end
     c = {}
+    local ds = getDS()
     for _, r in pairs(d.recipes or {}) do
         if type(r) == "table" and r.availability == "live" then
-            local _, fid = v2SrcInfo(r)
+            local kind, fid = v2SrcInfo(r)
             local ks = PD.CurKeysOfFid(fid)
             if ks then
                 for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
             end
-            local sk = PD.SrcBucketOf(r)
+            local sk
+            if kind == "trainer" then sk = PD.SRC_TRAINER_KEY
+            elseif kind == nil then sk = PD.SRC_UNKNOWN_KEY
+            elseif kind == "drop" then sk = PD.SRC_DROP_KEY
+            elseif kind == "vendor" then sk = PD.SRC_VENDOR_KEY end
             if sk then c[sk] = (c[sk] or 0) + 1 end
-            if PD.RecipeHasQuestUnlock(r) then
-                c[PD.SRC_QUEST_UNLOCK_KEY] = (c[PD.SRC_QUEST_UNLOCK_KEY] or 0) + 1
-            end
-            if PD.RecipeHasInstanceVendor(r) then
-                c[PD.SRC_INSTANCE_VENDOR_KEY] = (c[PD.SRC_INSTANCE_VENDOR_KEY] or 0) + 1
-            end
-            if PD.RecipeHasInstanceTrainer(r) then
-                c[PD.SRC_INSTANCE_TRAINER_KEY] = (c[PD.SRC_INSTANCE_TRAINER_KEY] or 0) + 1
+            local lr = r.spellID and ds and ds.LearningRoutes and ds.LearningRoutes(r.spellID)
+            local routes = (type(lr) == "table" and lr.routes) or lr
+            if type(routes) == "table" then
+                local hasQuest, hasInstVendor, hasInstTrainer = false, false, false
+                for i = 1, #routes do
+                    local rt = routes[i]
+                    if type(rt) == "table" then
+                        if not hasQuest then
+                            if rt.kind == "quest" or (type(rt.questIDs) == "table" and #rt.questIDs > 0) or PD.ConditionsHaveQuestGate(rt.conditions) then
+                                hasQuest = true
+                            end
+                        end
+                        if rt.kind == "trainer" then
+                            for _, tr in ipairs(rt.trainers or {}) do
+                                local nid = type(tr) == "table" and tr.npcID or tr
+                                if not hasQuest then
+                                    if type(tr) == "table" and PD.ConditionsHaveQuestGate(tr.conditions) then hasQuest = true end
+                                    local npc = type(nid) == "number" and ds.Npc and ds.Npc(nid) or nil
+                                    if npc and PD.ConditionsHaveQuestGate(npc.accessConditions) then hasQuest = true end
+                                end
+                                if not hasInstTrainer and PD.IsInstanceNpc(nid) then hasInstTrainer = true end
+                            end
+                            if not hasInstTrainer then
+                                for _, nid in ipairs(rt.trainerIDs or rt.npcIDs or {}) do
+                                    if PD.IsInstanceNpc(nid) then hasInstTrainer = true; break end
+                                end
+                            end
+                        elseif rt.kind == "item" and type(rt.teachingItemID) == "number" then
+                            local vo = ds.VendorOffers and ds.VendorOffers(rt.teachingItemID)
+                            local offers = (type(vo) == "table" and vo.offers) or vo
+                            for _, o in ipairs(type(offers) == "table" and offers or {}) do
+                                if type(o) == "table" then
+                                    if not hasQuest then
+                                        if PD.ConditionsHaveQuestGate(o.conditions) then hasQuest = true end
+                                        local npc = type(o.npcID) == "number" and ds.Npc and ds.Npc(o.npcID) or nil
+                                        if npc and PD.ConditionsHaveQuestGate(npc.accessConditions) then hasQuest = true end
+                                    end
+                                    if not hasInstVendor and PD.IsInstanceNpc(o.npcID) then hasInstVendor = true end
+                                end
+                            end
+                        end
+                    end
+                end
+                if hasQuest then c[PD.SRC_QUEST_UNLOCK_KEY] = (c[PD.SRC_QUEST_UNLOCK_KEY] or 0) + 1 end
+                if hasInstVendor then c[PD.SRC_INSTANCE_VENDOR_KEY] = (c[PD.SRC_INSTANCE_VENDOR_KEY] or 0) + 1 end
+                if hasInstTrainer then c[PD.SRC_INSTANCE_TRAINER_KEY] = (c[PD.SRC_INSTANCE_TRAINER_KEY] or 0) + 1 end
             end
         end
     end
@@ -13451,9 +13606,14 @@ function PD.CurName(id)
     return fb, ic
 end
 
+PD.__sortedRecMemo = setmetatable({}, { __mode = "k" })
 local function sortedRecipesOf(d)
+    if type(d) ~= "table" then return {}, {} end
+    local memo = PD.__sortedRecMemo
+    local hit = memo[d]
+    if hit then return hit[1], hit[2] end
     local items, enchants = {}, {}
-    for sid, r in pairs((d and d.recipes) or {}) do
+    for sid, r in pairs(d.recipes or {}) do
         if type(sid) == "number" and type(r) == "table" and r.availability == "live" then
             if r.outputKind == "enchant" then
                 enchants[#enchants + 1] = r
@@ -13469,12 +13629,18 @@ local function sortedRecipesOf(d)
     end
     table.sort(items, cmp)
     table.sort(enchants, cmp)
+    memo[d] = { items, enchants }
     return items, enchants
 end
 
+PD.__sortedCatMemo = setmetatable({}, { __mode = "k" })
 local function sortedCatalogOf(d, kind)
+    if type(d) ~= "table" then return {} end
+    local memo = PD.__sortedCatMemo
+    local byKind = memo[d]
+    if byKind and byKind[kind] then return byKind[kind] end
     local out = {}
-    for _, ce in pairs((d and d.catalogEntries) or {}) do
+    for _, ce in pairs(d.catalogEntries or {}) do
         if type(ce) == "table" and ce.availability == "live" and ce.entryKind == kind then
             out[#out + 1] = ce
         end
@@ -13484,6 +13650,8 @@ local function sortedCatalogOf(d, kind)
         if la ~= lb then return la < lb end
         return tostring(a.entryKey or "") < tostring(b.entryKey or "")
     end)
+    if not byKind then byKind = {}; memo[d] = byKind end
+    byKind[kind] = out
     return out
 end
 
@@ -13899,7 +14067,7 @@ function PD.RecipeTool(d)
                 PD.moneyKey = nil
                 if PD.scroll then PD.scroll:SetVerticalScroll(0) end
                 playSoundSafe(1)
-                PD.RequestRender()
+                PD.RequestRender(true)
             end)
             return
         end
@@ -13909,7 +14077,7 @@ function PD.RecipeTool(d)
                 PD.toolKey = "all"
                 if PD.scroll then PD.scroll:SetVerticalScroll(0) end
                 playSoundSafe(1)
-                PD.RequestRender()
+                PD.RequestRender(true)
             end)
             return
         end
@@ -13918,7 +14086,7 @@ function PD.RecipeTool(d)
                 PD.specKey = v
                 if PD.scroll then PD.scroll:SetVerticalScroll(0) end
                 playSoundSafe(1)
-                PD.RequestRender()
+                PD.RequestRender(true)
             end)
             return
         end
@@ -13926,7 +14094,7 @@ function PD.RecipeTool(d)
         PD.moneyKey = nil
         PD.specKey = nil
         if PD.scroll then PD.scroll:SetVerticalScroll(0) end
-        PD.RequestRender()
+        PD.RequestRender(true)
     end
 end
 
@@ -14261,6 +14429,235 @@ function PD.ScanRecipe()
     return n, maxW
 end
 
+function PD._MakeLazyRecipeStub(kind, raw, slug, recMap)
+    local outItem, spell
+    if kind == "recipe" or kind == "enchant" then
+        spell = raw.spellID
+        outItem = raw.outputItemID
+    elseif kind == "favor" then
+        outItem = raw.itemID or raw[1]
+    elseif kind == "scroll" then
+        outItem = raw.itemID
+    end
+    return {
+        kind = "row",
+        recipe = true,
+        recipeCols = true,
+        h = PD.REC_ROW_H,
+        spell = tonumber(spell),
+        it = outItem and { outItem } or nil,
+        qItem = outItem,
+        row = (kind == "recipe") and raw or nil,
+        _lazyKind = kind,
+        _lazyRaw = raw,
+        _lazySlug = slug,
+        _lazyRecipes = (kind == "favor") and recMap or nil,
+    }
+end
+
+function PD._ComputeLazySortKey(s, sortKind, ra)
+    if not s._lazyKind then
+        local kf = ({ ah = "ahVal", cost = "costVal", diff = "diffVal", gap = "gapVal" })[sortKind]
+        return kf and s[kf] or nil
+    end
+    local raw = s._lazyRaw
+    local kind = s._lazyKind
+    if sortKind == "diff" then
+        if kind == "scroll" then return tonumber(raw.reqSkill) end
+        return tonumber(raw.learnedAt)
+    end
+    if not ra then return nil end
+    local outItem = raw.outputItemID
+    if kind == "favor" then outItem = raw.outputItemID or raw[5] or raw.itemID or raw[1] end
+    if kind == "scroll" then return nil end
+    local ah
+    if (sortKind == "ah" or sortKind == "gap") and outItem and ra.AHPriceOf then
+        ah = ra.AHPriceOf(outItem)
+        if sortKind == "ah" then return ah end
+    end
+    if sortKind == "cost" or sortKind == "gap" then
+        local regs = raw.reagents
+        if kind == "favor" and type(s._lazyRecipes) == "table" and outItem then
+            for _, rec in pairs(s._lazyRecipes) do
+                if type(rec) == "table" and rec.outputItemID == outItem and rec.reagents and #rec.reagents > 0 then
+                    regs = rec.reagents
+                    break
+                end
+            end
+        end
+        local total
+        if type(regs) == "table" and #regs > 0 and ra.MatPriceOf then
+            total = 0
+            for i = 1, #regs do
+                local m = regs[i]
+                local iid = type(m) == "table" and (m.itemID or m[1]) or nil
+                local cnt = type(m) == "table" and (m.count or m[2] or 1) or 1
+                local p = iid and ra.MatPriceOf(iid) or nil
+                if p and cnt >= 0 then total = total + p * cnt end
+            end
+        end
+        if sortKind == "cost" then return total end
+        return (ah and total) and (ah - total) or nil
+    end
+    return nil
+end
+
+function PD._BuildLazyRecipeList(d, cap, q)
+    local out = {}
+    local realN = 0
+    if not d or cap < 1 then return out, 0 end
+    local key = PD.toolKey
+    local slug = PD.cur
+    local hasQ = (type(q) == "string" and q ~= "")
+    local rows, enchants = sortedRecipesOf(d)
+    local scrolls = sortedCatalogOf(d, "scroll")
+    local favors = sortedCatalogOf(d, "favor_exchange")
+    local allowNoSpecCatalog = (PD.specKey == nil or PD.specKey == PD.SPEC_NONE_KEY)
+
+    local function pushStub(kind, raw, recMap)
+        realN = realN + 1
+        if #out < cap then
+            out[#out + 1] = PD._MakeLazyRecipeStub(kind, raw, slug, recMap)
+        end
+    end
+
+    local function pushSpec(sp)
+        realN = realN + 1
+        if #out < cap then
+            out[#out + 1] = sp
+        end
+    end
+
+    if PD.moneyKey ~= nil then
+        for _, r in ipairs(rows) do
+            if PD.RowCurHit(r) and PD.RawHit(r, q) then
+                pushStub("recipe", r)
+            end
+        end
+        for _, e in ipairs(enchants) do
+            if PD.EnchCurHit(e, PD.moneyKey) and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                if not hasQ then
+                    pushStub("enchant", e)
+                else
+                    local sp = PD.EnchantSpec(e)
+                    if PD.SearchHit(sp, q) then pushSpec(sp) end
+                end
+            end
+        end
+        if PD.moneyKey == PD.FAVOR_CURID and allowNoSpecCatalog then
+            for _, f in ipairs(favors) do
+                if PD.LvStartHit(f.reqSkill) then
+                    if not hasQ then
+                        pushStub("favor", f, d.recipes)
+                    else
+                        local sp = PD.FavorSpec(f, d.recipes)
+                        if PD.SearchHit(sp, q) then pushSpec(sp) end
+                    end
+                end
+            end
+        end
+        return out, realN
+    end
+
+    if type(key) == "string" and key:sub(1, #STATION_KEY_PREFIX) == STATION_KEY_PREFIX then
+        local wantSt = key:sub(#STATION_KEY_PREFIX + 1)
+        for _, r in ipairs(rows) do
+            if r.stationKey == wantSt and PD.RawHit(r, q) then
+                pushStub("recipe", r)
+            end
+        end
+        for _, e in ipairs(enchants) do
+            if e.stationKey == wantSt and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                if not hasQ then
+                    pushStub("enchant", e)
+                else
+                    local sp = PD.EnchantSpec(e)
+                    if PD.SearchHit(sp, q) then pushSpec(sp) end
+                end
+            end
+        end
+        return out, realN
+    end
+
+    if key == "__enchant" then
+        for _, e in ipairs(enchants) do
+            if PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                if not hasQ then
+                    pushStub("enchant", e)
+                else
+                    local sp = PD.EnchantSpec(e)
+                    if PD.SearchHit(sp, q) then pushSpec(sp) end
+                end
+            end
+        end
+        return out, realN
+    end
+
+    if #enchants > 0 and #rows == 0 and key ~= "__rest" then
+        local want = (key and key ~= "all") and tostring(key) or nil
+        local hasSlot, hasScroll = false, false
+        if want then
+            for _, e in ipairs(enchants) do
+                local g = (type(e.enchantSlot) == "string" and e.enchantSlot ~= "") and e.enchantSlot or "other"
+                if g == want then hasSlot = true; break end
+            end
+            for _, sc in ipairs(scrolls) do
+                local tk = (type(sc.categoryKey) == "string" and sc.categoryKey ~= "") and sc.categoryKey or "__other"
+                if tk == want then hasScroll = true; break end
+            end
+            if not hasSlot and not hasScroll then want = nil end
+        end
+        if (not want) or hasSlot then
+            for _, e in ipairs(enchants) do
+                local g = (type(e.enchantSlot) == "string" and e.enchantSlot ~= "") and e.enchantSlot or "other"
+                if ((not want) or g == want) and PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                    if not hasQ then
+                        pushStub("enchant", e)
+                    else
+                        local sp = PD.EnchantSpec(e)
+                        if PD.SearchHit(sp, q) then pushSpec(sp) end
+                    end
+                end
+            end
+        end
+        if #scrolls == 0 then return out, realN end
+    end
+
+    local fk = PD.EffKeyFilter(d, rows, scrolls)
+    for _, r in ipairs(rows) do
+        if PD.RowKeyOK(r, fk) and PD.RawHit(r, q) then
+            pushStub("recipe", r)
+        end
+    end
+    if #enchants > 0 and (not fk) then
+        for _, e in ipairs(enchants) do
+            if PD.RowSpecHit(e) and PD.RecipeVisible(e.spellID) and PD.LvStartHit(e.learnedAt) then
+                if not hasQ then
+                    pushStub("enchant", e)
+                else
+                    local sp = PD.EnchantSpec(e)
+                    if PD.SearchHit(sp, q) then pushSpec(sp) end
+                end
+            end
+        end
+    end
+    if #scrolls > 0 and allowNoSpecCatalog then
+        local want = (fk and fk ~= "all" and fk ~= "__rest") and tostring(fk) or nil
+        for _, sc in ipairs(scrolls) do
+            local tk = (type(sc.categoryKey) == "string" and sc.categoryKey ~= "") and sc.categoryKey or "__other"
+            if ((not want) or tk == want) and PD.LvStartHit(sc.reqSkill) then
+                if not hasQ then
+                    pushStub("scroll", sc)
+                else
+                    local sp = PD.ScrollSpec(sc)
+                    if PD.SearchHit(sp, q) then pushSpec(sp) end
+                end
+            end
+        end
+    end
+    return out, realN
+end
+
 function PD.RowsRecipe(rows)
     local ds = getDS()
     local d = ds and ds.Recipes and ds.Recipes(PD.cur)
@@ -14297,20 +14694,18 @@ function PD.RowsRecipe(rows)
     end
     if not hasRecipes then return end
     local cap = PD.capNow or PD.ROW_CAP
-    local realN, maxW = PD.ScanRecipe()
-    local list
-    if realN then
-        list = PD.RecipeList(math.min(realN, cap), PD.searchQ)
-    else
-        list = PD.SearchFilter(PD.RecipeList(cap))
-        realN, maxW = #list, nil
-    end
+    PD.PrepareRecipeCols()
+    local list, realN = PD._BuildLazyRecipeList(d, cap, PD.searchQ)
     if PD.recipeSort then
-        local kf = ({ ah = "ahVal", cost = "costVal", diff = "diffVal", gap = "gapVal" })[PD.recipeSort]
-        if kf then
+        local sortKind = PD.recipeSort
+        if sortKind == "ah" or sortKind == "cost" or sortKind == "diff" or sortKind == "gap" then
+            local sortVals = {}
+            for i = 1, #list do
+                sortVals[list[i]] = PD._ComputeLazySortKey(list[i], sortKind, ra)
+            end
             local desc = PD.recipeSortDesc
             table.sort(list, function(a, b)
-                local ka, kb = a[kf], b[kf]
+                local ka, kb = sortVals[a], sortVals[b]
                 if ka and kb then
                     if desc then return ka > kb end
                     return ka < kb
@@ -14320,7 +14715,7 @@ function PD.RowsRecipe(rows)
             end)
         end
     end
-    PD.FitRecipeCols(list, maxW)
+    PD.FitRecipeCols(list)
     if realN == 0 and PD.searchQ and PD.searchQ ~= "" then
         PushGap(rows)
         PushText(rows, format(L["没有名称或材料匹配「%s」的配方 —— 换个关键词再试试。"],
@@ -14626,13 +15021,8 @@ function PD.ShowFishingArea(area)
     if not mapID then return end
     if type(area.x) == "number" and type(area.y) == "number" then
         PD.MarkMapPoint(mapID, area.x, area.y)
-    elseif C_Map and C_Map.OpenWorldMap then
-        pcall(C_Map.OpenWorldMap, mapID)
-    elseif OpenWorldMap then
-        pcall(OpenWorldMap, mapID)
-    elseif WorldMapFrame and WorldMapFrame.SetMapID then
-        if WorldMapFrame.Show then pcall(WorldMapFrame.Show, WorldMapFrame) end
-        pcall(WorldMapFrame.SetMapID, WorldMapFrame, mapID)
+    else
+        PD.OpenMapID(mapID)
     end
 end
 
@@ -19505,6 +19895,9 @@ function PD.LevelTool()
 end
 
 function PD.PurgeProfCaches()
+    PD.__warmedSlugs = {}
+    PD.__writSelState = nil
+    PD.__crateSelState = nil
     local dbMod = getDBMod()
     local prof = (dbMod and dbMod.Ensure and dbMod.Ensure()) or ProfDB()
     if type(prof) ~= "table" then return false end
@@ -20103,15 +20496,24 @@ function PD.ShortItemName(name)
     end
     return name
 end
+PD.__crateLineHCache = {}
 function PD.CrateRowHeight(text, cols, extraSub)
     local fs = PD.crateMeasure
     if not (fs and fs.SetFont) then return extraSub and 56 or 44 end
-    fs:SetFont((getFont() or "Fonts\\FRIZQT__.TTF"), 13, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
-    fs:SetWidth(math.max(1, PD.splitLW - cols.nameR - 32))
-    fs:SetWordWrap(false)
-    fs:SetNonSpaceWrap(true)
-    fs:SetText(text)
-    local h = math.max(44, math.ceil(fs:GetStringHeight() or 0) + 24)
+    local fontPath = getFont() or "Fonts\\FRIZQT__.TTF"
+    local cache = PD.__crateLineHCache
+    local lineH = cache[fontPath]
+    if not lineH then
+        fs:SetFont(fontPath, 13, getHui() and getHui().FontFlags and getHui().FontFlags("OUTLINE") or "OUTLINE")
+        fs:SetWidth(0)
+        fs:SetWordWrap(false)
+        fs:SetNonSpaceWrap(true)
+        fs:SetText((type(text) == "string" and text ~= "") and text or "Ag")
+        lineH = math.ceil(fs:GetStringHeight() or 0)
+        if lineH <= 0 then lineH = 14 end
+        cache[fontPath] = lineH
+    end
+    local h = math.max(44, lineH + 24)
     if extraSub then h = math.max(56, h + 16) end
     return h
 end
@@ -20297,10 +20699,15 @@ local function CrateMetaRow(rows, label, val, valOk, fs)
     }
 end
 
+CC._cratesMemo = setmetatable({}, { __mode = "k" })
 local function sortedCratesList()
     local ds = getDS()
+    local raw = ds and ds.Crates and ds.Crates()
+    if type(raw) ~= "table" then return {} end
+    local hit = CC._cratesMemo[raw]
+    if hit then return hit end
     local list = {}
-    for _, c in pairs((ds and ds.Crates and ds.Crates()) or {}) do
+    for _, c in pairs(raw) do
         if type(c) == "table" and type(c.itemID) == "number" then
             list[#list + 1] = c
         end
@@ -20310,13 +20717,19 @@ local function sortedCratesList()
         if ta ~= tb then return ta < tb end
         return (a.itemID or 0) < (b.itemID or 0)
     end)
+    CC._cratesMemo[raw] = list
     return list
 end
 
+CC._writsMemo = setmetatable({}, { __mode = "k" })
 local function sortedWritsList()
     local ds = getDS()
+    local raw = ds and ds.Writs and ds.Writs()
+    if type(raw) ~= "table" then return {} end
+    local hit = CC._writsMemo[raw]
+    if hit then return hit end
     local list = {}
-    for _, w in pairs((ds and ds.Writs and ds.Writs()) or {}) do
+    for _, w in pairs(raw) do
         if type(w) == "table" then
             list[#list + 1] = w
         end
@@ -20324,13 +20737,19 @@ local function sortedWritsList()
     table.sort(list, function(a, b)
         return (a.questID or a.targetItemID or 0) < (b.questID or b.targetItemID or 0)
     end)
+    CC._writsMemo[raw] = list
     return list
 end
 
+CC._plunderMemo = setmetatable({}, { __mode = "k" })
 local function sortedPlunderList()
     local ds = getDS()
+    local raw = ds and ds.PlunderGoods and ds.PlunderGoods()
+    if type(raw) ~= "table" then return {} end
+    local hit = CC._plunderMemo[raw]
+    if hit then return hit end
     local list = {}
-    for _, g in pairs((ds and ds.PlunderGoods and ds.PlunderGoods()) or {}) do
+    for _, g in pairs(raw) do
         if type(g) == "table" and type(g.itemID) == "number" then
             list[#list + 1] = g
         end
@@ -20338,116 +20757,109 @@ local function sortedPlunderList()
     table.sort(list, function(a, b)
         return (a.itemID or 0) < (b.itemID or 0)
     end)
+    CC._plunderMemo[raw] = list
     return list
 end
 
-function PD.CrateRows(rows)
-    local list = sortedCratesList()
-    local tiers = crateTiers()
-    local ra = getRA()
-    local q = PD.CrateQuery()
-    if q then
-        local f = {}
-        for _, c in ipairs(list) do
-            local hit = PD.CrateNameHit(c.itemID, q)
-            if not hit then
-                hit = string.find(string.lower(tiers[c.tier] or ""), q, 1, true) and true or false
+function CC.PaintFixedSideDetail(detailRows, secCount, secPadL)
+    if not (PD.sideFixed and PD.side) then return false end
+    local y0 = (secCount and secCount > 0) and PD.SEC_PAD or 0
+    local y2 = y0
+    local bb, bgold = {}, {}
+    local lw = PD.splitLW or PD.COL_LW
+    local rw = PD.splitRW or PD.COL_RW
+    local xBase = PD.GRID_X + lw + PD.OV_GUT
+    local n = #detailRows
+    local sideSpecs = {}
+    for i = 1, n do
+        local spec = detailRows[i]
+        local h = PD.RowHeight(spec)
+        if spec.sec then
+            local nxt
+            for j = i + 1, n do
+                local s2 = detailRows[j]
+                if s2.kind ~= "gap" then nxt = s2 break end
             end
-            if not hit then
-                for _, o in ipairs(c.options or {}) do
-                    if PD.CrateNameHit(o.itemID, q) or PD.CrateProfProduct(o.itemID) then hit = true break end
+            spec._lastInSec = not (nxt and nxt.sec == spec.sec)
+        end
+        if spec.kind == "gap" then
+            y2 = y2 + h
+        else
+            local top = y2
+            local w = rw
+            if spec.sec and spec.sec > 0 and not PD.noSecCard then
+                w = w - PD.SEC_IN
+            end
+            if spec.kind == "exgrid" then
+                w = w - 14
+            elseif spec.wpad then
+                w = w - spec.wpad
+            end
+            spec.z = nil
+            spec.__fixed = true
+            spec.__gx, spec.__gw, spec.__gtop, spec.__gh = xBase, w, top, h
+            sideSpecs[#sideSpecs + 1] = spec
+            if spec.sec then
+                local b = bb[spec.sec]
+                if spec.goldSec then bgold[spec.sec] = true end
+                if not b then
+                    bb[spec.sec] = { x0 = xBase, y0 = top, x1 = xBase + w, y1 = top + h }
+                else
+                    b.x0 = math.min(b.x0, xBase)
+                    b.y0 = math.min(b.y0, top)
+                    b.x1 = math.max(b.x1, xBase + w)
+                    b.y1 = math.max(b.y1, top + h)
                 end
             end
-            if hit then f[#f + 1] = c end
+            y2 = top + h + 2
         end
-        list = f
-        local valid
-        for _, c in ipairs(list) do
-            if c.itemID == PD.crateSel then valid = true break end
-        end
-        if not valid then PD.crateSel = list[1] and list[1].itemID end
     end
-    local cols = PD.CrateColumns(false)
-    if not PD.crateSel and list[1] then PD.crateSel = list[1].itemID end
-    local sel = PD.crateSel
-    local owns, bests, units, tags = {}, {}, {}, {}
-    for i, c in ipairs(list) do
-        local own, ownInfo = CrateOptCost(c.itemID, 1)
-        local mat, bestShortInfo
-        for _, o in ipairs(c.options or {}) do
-            local v, oinfo = CrateOptCost(o.itemID, o.count)
-            if v then
-                if not mat or v < mat then mat = v end
-            elseif oinfo and oinfo.shortage and not bestShortInfo then
-                bestShortInfo = oinfo
+    PD.PaintSide(sideSpecs)
+    if PD.sideCards then
+        for i = 1, #PD.sideCards do PD.sideCards[i]:Hide() end
+    end
+    if PD.sidePlainCards then
+        for i = 1, #PD.sidePlainCards do PD.sidePlainCards[i]:Hide() end
+    end
+    if secCount and secCount > 0 and not PD.noSecCard then
+        local ciP, ciS = 0, 0
+        local padL = secPadL or PD.SEC_PAD_X
+        local ox = PD.__sideOffX or 0
+        for s = 1, secCount do
+            local b = bb[s]
+            if b then
+                local pool, idx
+                if bgold[s] then
+                    ciS = ciS + 1; idx = ciS; pool = PD.sideCards
+                else
+                    ciP = ciP + 1; idx = ciP; pool = PD.sidePlainCards
+                end
+                local c = pool and pool[idx]
+                if c then
+                    c:ClearAllPoints()
+                    c:SetPoint("TOPLEFT", PD.side, "TOPLEFT",
+                               b.x0 - padL - ox, -(b.y0 - PD.SEC_PAD))
+                    c:SetSize((b.x1 - b.x0) + padL + PD.SEC_PAD_X,
+                              (b.y1 - b.y0) + 2 * PD.SEC_PAD)
+                    c:Show()
+                end
             end
         end
-        owns[i] = own
-        bests[i] = (own and mat) and (own + mat) or nil
-        local fav = c.rewardAmount or 0
-        units[i] = (bests[i] and fav > 0) and (bests[i] / fav) or nil
-        if ownInfo and ownInfo.shortage then
-            tags[i] = ShortageTag(ownInfo)
-        elseif not mat and bestShortInfo then
-            tags[i] = ShortageTag(bestShortInfo)
-        end
     end
-    local mode = PD.crateSort
-    local order = {}
-    for i = 1, #list do order[i] = i end
-    if mode then
-        local key = (mode == "favor") and units or (mode == "own") and owns or bests
-        table.sort(order, function(a, b)
-            local ca, cb = key[a], key[b]
-            if ca ~= cb then
-                if ca and cb then return ca < cb end
-                return ca ~= nil
-            end
-            return (list[a].itemID or 0) < (list[b].itemID or 0)
-        end)
+    PD.side:SetHeight(math.max(y2 + PD.SEC_PAD + 10, 10))
+    if PD.sideScroll then
+        local sKey = tostring(PD.__pageKey) .. "|" .. tostring(PD.writSel) .. "|" .. tostring(PD.crateSel)
+        PD.__sideScrollKey = sKey
+        PD.sideScroll:SetVerticalScroll(0)
     end
-    rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H, priceCols = cols,
-                        text = L["名称"], right = L["总价格"], ownRight = L["自身价格"],
-                        sortOn = (mode == "total"), ownOn = (mode == "own"),
-                        unitText = L["每点青睐"], unitOn = (mode == "favor"),
-                        unitAct = function()
-                            PD.crateSort = (mode ~= "favor") and "favor" or nil
-                            PD.RequestRender()
-                        end,
-                        act = function()
-                            PD.crateSort = (mode ~= "total") and "total" or nil
-                            PD.RequestRender()
-                        end,
-                        ownAct = function()
-                            PD.crateSort = (mode ~= "own") and "own" or nil
-                            PD.RequestRender()
-                        end }
-    if q and #list == 0 then
-        PushText(rows, L["没有匹配的条目"], 12, C_GREY, 1)
-        return
-    end
-    for _, i in ipairs(order) do
-        local c = list[i]
-        local name = PD.ItemName(c.itemID)
-        rows[#rows + 1] = {
-            kind = "row", col = 1, h = PD.CrateRowHeight(PD.ShortItemName(name), cols), priceCols = cols,
-            it = { c.itemID }, qItem = c.itemID,
-            text = PD.ShortItemName(name),
-            sub = tiers[c.tier] or "?",
-            tag = tags[i],
-            right = (bests[i] and ra and ra.MoneyStr) and ra.MoneyStr(bests[i]) or "—",
-            rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "—",
-            rightUnit = (units[i] and ra and ra.MoneyStr) and ra.MoneyStr(units[i]) or "—",
-            rightOwnColor = C_TEXT,
-            cur = (c.itemID == sel),
-            act = function()
-                if PD.crateSel ~= c.itemID then PD.crateSel = c.itemID; PD.RequestRender() end
-            end,
-        }
-    end
-    local sc
-    for _, c in ipairs(list) do if c.itemID == sel then sc = c break end end
+    if PD.UpdateSideVScroll then PD.UpdateSideVScroll() end
+    PD.RequestRows(detailRows)
+    return true
+end
+
+function CC.BuildCrateDetailRows(rows, sc)
     if not sc then return end
+    local ra = getRA()
     PD.secPadL = 0
     local secH = #rows + 1
     rows[#rows + 1] = {
@@ -20525,6 +20937,150 @@ function PD.CrateRows(rows)
     PD.hasSecs = true
     PD.secCount = 3
     PushText(rows, CrateSnapText(), 11, C_GREY, 2)
+end
+
+function PD.SelectCrate(itemID)
+    if PD.crateSel == itemID then return end
+    local oldKey = PD.crateSel
+    PD.crateSel = itemID
+    local st = PD.__crateSelState
+    if st and PD.built and PD.page and PD.sideFixed and PD.side
+       and PD.cur == "crates" and PD.tab == "crate" and not PD.setOpen
+       and PD.curRows == st.rows and st.byKey[itemID] then
+        local oldIdx = oldKey and st.rowIdx[oldKey]
+        if oldIdx and PD.curRows[oldIdx] then
+            PD.curRows[oldIdx].cur = false
+            local rr = PD.rows and PD.rows[oldIdx]
+            if rr and rr.__spec == PD.curRows[oldIdx] then PD.RowBorder(rr, false) end
+        end
+        local newIdx = st.rowIdx[itemID]
+        if newIdx and PD.curRows[newIdx] then
+            PD.curRows[newIdx].cur = true
+            local rr = PD.rows and PD.rows[newIdx]
+            if rr and rr.__spec == PD.curRows[newIdx] then PD.RowBorder(rr, true) end
+        end
+        local detailRows = {}
+        CC.BuildCrateDetailRows(detailRows, st.byKey[itemID])
+        CC.PaintFixedSideDetail(detailRows, 3, 0)
+        return
+    end
+    PD.RequestRender(true)
+end
+
+function PD.CrateRows(rows)
+    local list = sortedCratesList()
+    local tiers = crateTiers()
+    local ra = getRA()
+    local q = PD.CrateQuery()
+    if q then
+        local f = {}
+        for _, c in ipairs(list) do
+            local hit = PD.CrateNameHit(c.itemID, q)
+            if not hit then
+                hit = string.find(string.lower(tiers[c.tier] or ""), q, 1, true) and true or false
+            end
+            if not hit then
+                for _, o in ipairs(c.options or {}) do
+                    if PD.CrateNameHit(o.itemID, q) or PD.CrateProfProduct(o.itemID) then hit = true break end
+                end
+            end
+            if hit then f[#f + 1] = c end
+        end
+        list = f
+        local valid
+        for _, c in ipairs(list) do
+            if c.itemID == PD.crateSel then valid = true break end
+        end
+        if not valid then PD.crateSel = list[1] and list[1].itemID end
+    end
+    local cols = PD.CrateColumns(false)
+    if not PD.crateSel and list[1] then PD.crateSel = list[1].itemID end
+    local sel = PD.crateSel
+    local owns, bests, units, tags = {}, {}, {}, {}
+    for i, c in ipairs(list) do
+        local own, ownInfo = CrateOptCost(c.itemID, 1)
+        local mat, bestShortInfo
+        for _, o in ipairs(c.options or {}) do
+            local v, oinfo = CrateOptCost(o.itemID, o.count)
+            if v then
+                if not mat or v < mat then mat = v end
+            elseif oinfo and oinfo.shortage and not bestShortInfo then
+                bestShortInfo = oinfo
+            end
+        end
+        owns[i] = own
+        bests[i] = (own and mat) and (own + mat) or nil
+        local fav = c.rewardAmount or 0
+        units[i] = (bests[i] and fav > 0) and (bests[i] / fav) or nil
+        if ownInfo and ownInfo.shortage then
+            tags[i] = ShortageTag(ownInfo)
+        elseif not mat and bestShortInfo then
+            tags[i] = ShortageTag(bestShortInfo)
+        end
+    end
+    local mode = PD.crateSort
+    local order = {}
+    for i = 1, #list do order[i] = i end
+    if mode then
+        local key = (mode == "favor") and units or (mode == "own") and owns or bests
+        table.sort(order, function(a, b)
+            local ca, cb = key[a], key[b]
+            if ca ~= cb then
+                if ca and cb then return ca < cb end
+                return ca ~= nil
+            end
+            return (list[a].itemID or 0) < (list[b].itemID or 0)
+        end)
+    end
+    rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H, priceCols = cols,
+                        text = L["名称"], right = L["总价格"], ownRight = L["自身价格"],
+                        sortOn = (mode == "total"), ownOn = (mode == "own"),
+                        unitText = L["每点青睐"], unitOn = (mode == "favor"),
+                        unitAct = function()
+                            PD.crateSort = (mode ~= "favor") and "favor" or nil
+                            PD.RequestRender(true)
+                        end,
+                        act = function()
+                            PD.crateSort = (mode ~= "total") and "total" or nil
+                            PD.RequestRender(true)
+                        end,
+                        ownAct = function()
+                            PD.crateSort = (mode ~= "own") and "own" or nil
+                            PD.RequestRender(true)
+                        end }
+    if q and #list == 0 then
+        PD.__crateSelState = nil
+        PushText(rows, L["没有匹配的条目"], 12, C_GREY, 1)
+        return
+    end
+    local byKey, rowIdx = {}, {}
+    for _, i in ipairs(order) do
+        local c = list[i]
+        local name = PD.ItemName(c.itemID)
+        local disp = PD.ShortItemName(name)
+        local rIdx = #rows + 1
+        byKey[c.itemID] = c
+        rowIdx[c.itemID] = rIdx
+        rows[rIdx] = {
+            kind = "row", col = 1, h = PD.CrateRowHeight(disp, cols), priceCols = cols,
+            it = { c.itemID }, qItem = c.itemID,
+            text = disp,
+            sub = tiers[c.tier] or "?",
+            tag = tags[i],
+            right = (bests[i] and ra and ra.MoneyStr) and ra.MoneyStr(bests[i]) or "—",
+            rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "—",
+            rightUnit = (units[i] and ra and ra.MoneyStr) and ra.MoneyStr(units[i]) or "—",
+            rightOwnColor = C_TEXT,
+            cur = (c.itemID == sel),
+            act = function()
+                if PD.crateSel ~= c.itemID then PD.SelectCrate(c.itemID) end
+            end,
+        }
+    end
+    PD.__crateSelState = { rows = rows, byKey = byKey, rowIdx = rowIdx }
+    local sc = sel and byKey[sel] or nil
+    if not sc then return end
+    CC.BuildCrateDetailRows(rows, sc)
 end
 
 local function CraftInfoForItem(itemID, learnedFilter)
@@ -20630,7 +21186,7 @@ function PD.WritTool()
                 PD.writZone = v
                 if PD.scroll then PD.scroll:SetVerticalScroll(0) end
                 playSoundSafe(1)
-                PD.RequestRender()
+                PD.RequestRender(true)
             end)
             return
         end
@@ -20638,7 +21194,7 @@ function PD.WritTool()
         PD.SetSettingRaw("writOwnProfessionsOnly", not PD.Setting("writOwnProfessionsOnly"))
         PD.__scrollV = 0
         if PD.scroll then PD.scroll:SetVerticalScroll(0) end
-        PD.RequestRender()
+        PD.RequestRender(true)
     end
 end
 
@@ -20702,6 +21258,226 @@ end
 function PD.CrateProfProduct(id)
     local set = PD.__crateProfProducts
     return (set and set[id]) and true or false
+end
+
+function CC.BuildWritDetailRows(rows, sw, craftMap, learned)
+    if not sw then return end
+    local ra = getRA()
+    local wid = sw.writItemID or sw.targetItemID
+    local wu, wuInfo
+    if wid then wu, wuInfo = CrateOptCost(wid, 1) end
+    local buyQty = sw.qty or 1
+    local buyAll, buyInfo
+    if sw.targetItemID then buyAll, buyInfo = CrateOptCost(sw.targetItemID, buyQty) end
+    local cinfo = sw.targetItemID and craftMap and craftMap[sw.targetItemID]
+    local craft = cinfo and cinfo.rec or nil
+    local craftOnceSum, craftOnceOk, craftCost, allPriced, craftShortInfo
+    if craft then
+        craftOnceSum, craftOnceOk = 0, true
+        craftCost, allPriced = 0, true
+        local batches = math.ceil(buyQty / (craft[3] or 1))
+        for _, m in ipairs(craft[12] or {}) do
+            local onceCost = CrateOptCost(m[1], m[2] or 1)
+            if onceCost then craftOnceSum = craftOnceSum + onceCost else craftOnceOk = false end
+            local batchCost, minfo = CrateOptCost(m[1], batches * (m[2] or 1))
+            if batchCost then
+                craftCost = craftCost + batchCost
+            else
+                allPriced = false
+                if minfo and minfo.shortage and not craftShortInfo then craftShortInfo = minfo end
+            end
+        end
+        if not craftOnceOk then craftOnceSum = nil end
+        if not allPriced then craftCost = nil end
+    end
+    local secH = #rows + 1
+    rows[#rows + 1] = {
+        kind = "head", col = 2, h = 28, fs = 16,
+        it = { wid },
+        text = PD.ItemName(wid),
+        tag = cinfo and WritBadge(cinfo, learned) or nil,
+    }
+    PushText(rows, format(L["声望 +%d · 需等级 %d"], sw.repReward or 0, sw.minLevel or 0), 12, C_GREY, 2)
+    local turnIn = PD.WritTurnInOf(sw.questID or sw.writItemID or sw.targetItemID)
+    if turnIn then
+        local locLabel = turnIn.zoneName or ""
+        if turnIn.npcName then
+            locLabel = (locLabel ~= "") and (locLabel .. " · " .. turnIn.npcName) or turnIn.npcName
+        end
+        local hasCoord = type(turnIn.x) == "number" and type(turnIn.y) == "number"
+        local mapID = turnIn.uiMapID
+        local actFn, tipLines
+        if hasCoord and mapID then
+            tipLines = {
+                { locLabel, 1, 0.82, 0.4 },
+                { L["点击在世界地图上标记交付位置"], 0.78, 0.86, 0.96 },
+            }
+            actFn = function() PD.MarkMapPoint(mapID, turnIn.x, turnIn.y) end
+        elseif mapID then
+            tipLines = {
+                { locLabel, 1, 0.82, 0.4 },
+                { L["点击打开世界地图"], 0.78, 0.86, 0.96 },
+            }
+            actFn = function() PD.OpenMapID(mapID) end
+        end
+        local rowW = math.max(120, (PD.splitRW or PD.COL_RW) - (PD.SEC_IN or 0) - 12)
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 13,
+            text = PD.Fit(L["交付地点"] .. ": " .. locLabel, 13, rowW),
+            lines = tipLines,
+            act = actFn,
+        }
+    else
+        PushText(rows, L["交付地点"] .. ": " .. L["暂未收录"], 12, C_GREY, 2)
+    end
+    MarkSec(rows, secH, #rows, 1)
+    PushGap(rows, PD.SEC_GAP + 2, 2)
+    local buyPriceText = (buyAll and ra and ra.MoneyStr) and ra.MoneyStr(buyAll)
+        or (buyInfo and buyInfo.shortage and format(L["缺货（仅有 %d/%d）"], buyInfo.available or 0, buyInfo.required or buyQty))
+        or "—"
+    local craftPriceText = (craftCost and ra and ra.MoneyStr) and ra.MoneyStr(craftCost)
+        or (craftShortInfo and format(L["缺货（仅有 %d/%d）"], craftShortInfo.available or 0, craftShortInfo.required or 0))
+        or "—"
+    local cards = {
+        { lab = L["直接买齐"], it = sw.targetItemID, priceOk = buyAll and true or false,
+          name = format(L["%s ×%d"], PD.ItemName(sw.targetItemID), buyQty),
+          price = buyPriceText,
+          tipExtra = function() return PD.PriceTipLines(sw.targetItemID) end },
+        nil,
+    }
+    if craft then
+        local yn = craft[3] or 1
+        cards[2] = {
+            lab = L["自己制造"], it = craft[2], priceOk = craftCost and true or false,
+            name = yn > 1 and format(L["%s ×%d"], PD.ItemName(craft[2]), yn) or PD.ItemName(craft[2]),
+            price = craftPriceText,
+            tipExtra = function() return PD.PriceTipLines(craft[2]) end,
+        }
+    else
+        cards[2] = { lab = L["自己制造"], name = L["未登记配方"], dim = true }
+    end
+    if craftCost and buyAll then
+        if craftCost < buyAll then
+            cards[2].win = true
+        elseif craftCost > buyAll then
+            cards[1].win = true
+        end
+    end
+    rows[#rows + 1] = { kind = "vs", col = 2, h = PD.VsHeight(PD.splitRW), vw = PD.splitRW, cards = cards }
+    if craft and #(craft[12] or {}) > 0 then
+        PushGap(rows, PD.SEC_GAP + 2, 2)
+        local secA = #rows + 1
+        rows[#rows + 1] = { kind = "head", col = 2,
+                            text = L["自己制造材料明细"], right = L["制造一次"] }
+        local batches = math.ceil(buyQty / (craft[3] or 1))
+        for _, m in ipairs(craft[12]) do
+            local onceCost = CrateOptCost(m[1], m[2] or 1)
+            local _, batchInfo = CrateOptCost(m[1], batches * (m[2] or 1))
+            rows[#rows + 1] = {
+                kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+                it = { m[1] }, qItem = m[1],
+                text = PD.ItemName(m[1]) .. " ×" .. (m[2] or 1),
+                tag = ShortageTag(batchInfo),
+                right = (onceCost and ra and ra.MoneyStr) and ra.MoneyStr(onceCost) or "—",
+                rightColor = onceCost and C_TEXT or C_GREY,
+                tipExtra = function() return PD.PriceTipLines(m[1]) end,
+            }
+        end
+        CrateMetaRow(rows, L["制造一次的成本"], craftOnceSum, craftOnceOk, 14)
+        CrateMetaRow(rows, L["制造上交所需物的成本"], craftCost, allPriced, 14)
+        MarkSec(rows, secA, #rows, 2)
+    end
+    local buyTotal = (wu and buyAll) and (wu + buyAll) or nil
+    local craftTotal = (wu and craftCost) and (wu + craftCost) or nil
+    local lowest
+    if buyTotal and craftTotal then
+        lowest = math.min(buyTotal, craftTotal)
+    else
+        lowest = buyTotal or craftTotal
+    end
+    local cheapest = (buyTotal and craftTotal and craftTotal < buyTotal) and "craft"
+                    or (buyTotal and craftTotal and buyTotal < craftTotal) and "buy" or nil
+    local rep = sw.repReward or 0
+    local repUnit = (lowest and rep > 0) and (lowest / rep) or nil
+    PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
+    local secB = #rows + 1
+    PushHead(rows, L["成本汇总"], 2)
+    if wuInfo and wuInfo.shortage then
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+            text = L["文书自身成本"],
+            tag = ShortageTag(wuInfo),
+            right = "—",
+            rightColor = C_GREY,
+        }
+    else
+        CrateMetaRow(rows, L["文书自身成本"], wu, wu, 14)
+    end
+    rows[#rows + 1] = {
+        kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+        text = L["直接买齐总成本"],
+        right = (buyTotal and ra and ra.MoneyStr) and ra.MoneyStr(buyTotal) or "—",
+        rightColor = buyTotal and (cheapest == "buy" and { 0.42, 0.94, 0.62 } or C_TEXT) or C_GREY,
+    }
+    rows[#rows + 1] = {
+        kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+        text = L["自己制造总成本"],
+        right = (craftTotal and ra and ra.MoneyStr) and ra.MoneyStr(craftTotal) or "—",
+        rightColor = craftTotal and (cheapest == "craft" and { 0.42, 0.94, 0.62 } or C_TEXT) or C_GREY,
+    }
+    MarkSec(rows, secB, #rows, 3)
+    PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
+    local secC = #rows + 1
+    PushHead(rows, L["总结"], 2)
+    if cheapest == "buy" then
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+            text = L["直接买便宜"],
+            right = (ra and ra.MoneyStr) and ra.MoneyStr(craftTotal - buyTotal) or "—",
+            rightColor = { 0.42, 0.94, 0.62 },
+        }
+    elseif cheapest == "craft" then
+        rows[#rows + 1] = {
+            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
+            text = L["自己造省"],
+            right = (ra and ra.MoneyStr) and ra.MoneyStr(buyTotal - craftTotal) or "—",
+            rightColor = { 0.42, 0.94, 0.62 },
+        }
+    end
+    CrateMetaRow(rows, L["每点声望"], repUnit, repUnit, 14)
+    MarkSec(rows, secC, #rows, 4)
+    PD.hasSecs = true
+    PD.secCount = 4
+    PushGap(rows, 6, 2)
+    PushText(rows, CrateSnapText(), 11, C_GREY, 2)
+end
+
+function PD.SelectWrit(key)
+    if PD.writSel == key then return end
+    local oldKey = PD.writSel
+    PD.writSel = key
+    local st = PD.__writSelState
+    if st and PD.built and PD.page and PD.sideFixed and PD.side
+       and PD.cur == "crates" and PD.tab == "writ" and not PD.setOpen
+       and PD.curRows == st.rows and st.byKey[key] then
+        local oldIdx = oldKey and st.rowIdx[oldKey]
+        if oldIdx and PD.curRows[oldIdx] then
+            PD.curRows[oldIdx].cur = false
+            local rr = PD.rows and PD.rows[oldIdx]
+            if rr and rr.__spec == PD.curRows[oldIdx] then PD.RowBorder(rr, false) end
+        end
+        local newIdx = st.rowIdx[key]
+        if newIdx and PD.curRows[newIdx] then
+            PD.curRows[newIdx].cur = true
+            local rr = PD.rows and PD.rows[newIdx]
+            if rr and rr.__spec == PD.curRows[newIdx] then PD.RowBorder(rr, true) end
+        end
+        local detailRows = {}
+        CC.BuildWritDetailRows(detailRows, st.byKey[key], st.craftMap, st.learned)
+        CC.PaintFixedSideDetail(detailRows, 4, 0)
+        return
+    end
+    PD.RequestRender(true)
 end
 
 function PD.WritRows(rows)
@@ -20844,32 +21620,36 @@ function PD.WritRows(rows)
                         unitText = L["每点声望"], unitOn = (mode == "rep"),
                         unitAct = function()
                             PD.writSort = (mode ~= "rep") and "rep" or nil
-                            PD.RequestRender()
+                            PD.RequestRender(true)
                         end,
                         act = function()
                             PD.writSort = (mode ~= "total") and "total" or nil
-                            PD.RequestRender()
+                            PD.RequestRender(true)
                         end,
                         craftAct = function()
                             PD.writSort = (mode ~= "craft") and "craft" or nil
-                            PD.RequestRender()
+                            PD.RequestRender(true)
                         end,
                         ownAct = function()
                             PD.writSort = (mode ~= "own") and "own" or nil
-                            PD.RequestRender()
+                            PD.RequestRender(true)
                         end }
     if q and #order == 0 then
+        PD.__writSelState = nil
         PushText(rows, L["没有匹配的条目"], 12, C_GREY, 1)
         return
     end
     if zoneKey and #order == 0 then
+        PD.__writSelState = nil
         PushText(rows, L["没有匹配的条目"], 12, C_GREY, 1)
         return
     end
     if ownOnly and #order == 0 then
+        PD.__writSelState = nil
         PushText(rows, L["没有符合本角色专业的工匠文书。"], 12, C_GREY, 1)
         return
     end
+    local byKey, rowIdx = {}, {}
     for _, i in ipairs(order) do
         local w = list[i]
         local wid = w.writItemID or w.targetItemID
@@ -20878,8 +21658,12 @@ function PD.WritRows(rows)
         local name = PD.ItemName(wid)
         local disp = PD.ShortItemName(name)
         local wkey = w.questID or w.writItemID or w.targetItemID
+        local selKey = w.questID or w.targetItemID
         local zone = wkey and PD.ZoneNameOf(PD.WritZoneOf(wkey))
-        rows[#rows + 1] = {
+        local rIdx = #rows + 1
+        byKey[selKey] = w
+        rowIdx[selKey] = rIdx
+        rows[rIdx] = {
             kind = "row", col = 1, h = PD.CrateRowHeight(disp, cols, zone ~= nil), priceCols = cols,
             it = { wid }, qItem = wid,
             text = disp,
@@ -20893,220 +21677,16 @@ function PD.WritRows(rows)
             rightOwn = (owns[i] and ra and ra.MoneyStr) and ra.MoneyStr(owns[i]) or "—",
             rightUnit = (units[i] and ra and ra.MoneyStr) and ra.MoneyStr(units[i]) or "—",
             rightOwnColor = C_TEXT,
-            cur = ((w.questID or w.targetItemID) == sel),
+            cur = (selKey == sel),
             act = function()
-                local key = w.questID or w.targetItemID
-                if sel ~= key then PD.writSel = key; PD.RequestRender() end
+                if PD.writSel ~= selKey then PD.SelectWrit(selKey) end
             end,
         }
     end
-    local sw
-    for _, i in ipairs(order) do
-        local w = list[i]
-        if (w.questID or w.targetItemID) == sel then sw = w break end
-    end
+    PD.__writSelState = { rows = rows, byKey = byKey, rowIdx = rowIdx, craftMap = craftMap, learned = learned }
+    local sw = sel and byKey[sel] or nil
     if not sw then return end
-    local wid = sw.writItemID or sw.targetItemID
-    local wu, wuInfo
-    if wid then wu, wuInfo = CrateOptCost(wid, 1) end
-    local buyQty = sw.qty or 1
-    local buyAll, buyInfo
-    if sw.targetItemID then buyAll, buyInfo = CrateOptCost(sw.targetItemID, buyQty) end
-    local cinfo = sw.targetItemID and craftMap[sw.targetItemID]
-    local craft = cinfo and cinfo.rec or nil
-    local craftOnceSum, craftOnceOk, craftCost, allPriced, craftShortInfo
-    if craft then
-        craftOnceSum, craftOnceOk = 0, true
-        craftCost, allPriced = 0, true
-        local batches = math.ceil(buyQty / (craft[3] or 1))
-        for _, m in ipairs(craft[12] or {}) do
-            local onceCost = CrateOptCost(m[1], m[2] or 1)
-            if onceCost then craftOnceSum = craftOnceSum + onceCost else craftOnceOk = false end
-            local batchCost, minfo = CrateOptCost(m[1], batches * (m[2] or 1))
-            if batchCost then
-                craftCost = craftCost + batchCost
-            else
-                allPriced = false
-                if minfo and minfo.shortage and not craftShortInfo then craftShortInfo = minfo end
-            end
-        end
-        if not craftOnceOk then craftOnceSum = nil end
-        if not allPriced then craftCost = nil end
-    end
-    local secH = #rows + 1
-    rows[#rows + 1] = {
-        kind = "head", col = 2, h = 28, fs = 16,
-        it = { wid },
-        text = PD.ItemName(wid),
-        tag = cinfo and WritBadge(cinfo, learned) or nil,
-    }
-    PushText(rows, format(L["声望 +%d · 需等级 %d"], sw.repReward or 0, sw.minLevel or 0), 12, C_GREY, 2)
-    local turnIn = PD.WritTurnInOf(sw.questID or sw.writItemID or sw.targetItemID)
-    if turnIn then
-        local locLabel = turnIn.zoneName or ""
-        if turnIn.npcName then
-            locLabel = (locLabel ~= "") and (locLabel .. " · " .. turnIn.npcName) or turnIn.npcName
-        end
-        local hasCoord = type(turnIn.x) == "number" and type(turnIn.y) == "number"
-        local mapID = turnIn.uiMapID
-        local actFn, rightTxt, rightCol, tipLines
-        if hasCoord and mapID then
-            rightTxt = format("%.1f, %.1f", turnIn.x, turnIn.y)
-            rightCol = C_GOLD
-            tipLines = {
-                { locLabel, 1, 0.82, 0.4 },
-                { L["点击在世界地图上标记交付位置"], 0.78, 0.86, 0.96 },
-            }
-            actFn = function() PD.MarkMapPoint(mapID, turnIn.x, turnIn.y) end
-        elseif mapID then
-            rightTxt = L["查看地图"]
-            rightCol = { 0.62, 0.84, 1.0 }
-            tipLines = {
-                { locLabel, 1, 0.82, 0.4 },
-                { L["点击打开世界地图"], 0.78, 0.86, 0.96 },
-            }
-            actFn = function()
-                if C_Map and C_Map.OpenWorldMap then
-                    pcall(C_Map.OpenWorldMap, mapID)
-                elseif OpenWorldMap then
-                    pcall(OpenWorldMap, mapID)
-                elseif WorldMapFrame and WorldMapFrame.SetMapID then
-                    if WorldMapFrame.Show then pcall(WorldMapFrame.Show, WorldMapFrame) end
-                    pcall(WorldMapFrame.SetMapID, WorldMapFrame, mapID)
-                end
-            end
-        end
-        rows[#rows + 1] = {
-            kind = "row", col = 2, h = PD.ROW_H1, fs = 13,
-            text = L["交付地点"] .. ": " .. locLabel,
-            right = rightTxt,
-            rightColor = rightCol,
-            lines = tipLines,
-            act = actFn,
-        }
-    else
-        PushText(rows, L["交付地点"] .. ": " .. L["暂未收录"], 12, C_GREY, 2)
-    end
-    MarkSec(rows, secH, #rows, 1)
-    PushGap(rows, PD.SEC_GAP + 2, 2)
-    local buyPriceText = (buyAll and ra and ra.MoneyStr) and ra.MoneyStr(buyAll)
-        or (buyInfo and buyInfo.shortage and format(L["缺货（仅有 %d/%d）"], buyInfo.available or 0, buyInfo.required or buyQty))
-        or "—"
-    local craftPriceText = (craftCost and ra and ra.MoneyStr) and ra.MoneyStr(craftCost)
-        or (craftShortInfo and format(L["缺货（仅有 %d/%d）"], craftShortInfo.available or 0, craftShortInfo.required or 0))
-        or "—"
-    local cards = {
-        { lab = L["直接买齐"], it = sw.targetItemID, priceOk = buyAll and true or false,
-          name = format(L["%s ×%d"], PD.ItemName(sw.targetItemID), buyQty),
-          price = buyPriceText,
-          tipExtra = function() return PD.PriceTipLines(sw.targetItemID) end },
-        nil,
-    }
-    if craft then
-        local yn = craft[3] or 1
-        cards[2] = {
-            lab = L["自己制造"], it = craft[2], priceOk = craftCost and true or false,
-            name = yn > 1 and format(L["%s ×%d"], PD.ItemName(craft[2]), yn) or PD.ItemName(craft[2]),
-            price = craftPriceText,
-            tipExtra = function() return PD.PriceTipLines(craft[2]) end,
-        }
-    else
-        cards[2] = { lab = L["自己制造"], name = L["未登记配方"], dim = true }
-    end
-    if craftCost and buyAll then
-        if craftCost < buyAll then
-            cards[2].win = true
-        elseif craftCost > buyAll then
-            cards[1].win = true
-        end
-    end
-    rows[#rows + 1] = { kind = "vs", col = 2, h = PD.VsHeight(PD.splitRW), vw = PD.splitRW, cards = cards }
-    if craft and #(craft[12] or {}) > 0 then
-        PushGap(rows, PD.SEC_GAP + 2, 2)
-        local secA = #rows + 1
-        rows[#rows + 1] = { kind = "head", col = 2,
-                            text = L["自己制造材料明细"], right = L["制造一次"] }
-        local batches = math.ceil(buyQty / (craft[3] or 1))
-        for _, m in ipairs(craft[12]) do
-            local onceCost = CrateOptCost(m[1], m[2] or 1)
-            local _, batchInfo = CrateOptCost(m[1], batches * (m[2] or 1))
-            rows[#rows + 1] = {
-                kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
-                it = { m[1] }, qItem = m[1],
-                text = PD.ItemName(m[1]) .. " ×" .. (m[2] or 1),
-                tag = ShortageTag(batchInfo),
-                right = (onceCost and ra and ra.MoneyStr) and ra.MoneyStr(onceCost) or "—",
-                rightColor = onceCost and C_TEXT or C_GREY,
-                tipExtra = function() return PD.PriceTipLines(m[1]) end,
-            }
-        end
-        CrateMetaRow(rows, L["制造一次的成本"], craftOnceSum, craftOnceOk, 14)
-        CrateMetaRow(rows, L["制造上交所需物的成本"], craftCost, allPriced, 14)
-        MarkSec(rows, secA, #rows, 2)
-    end
-    local buyTotal = (wu and buyAll) and (wu + buyAll) or nil
-    local craftTotal = (wu and craftCost) and (wu + craftCost) or nil
-    local lowest
-    if buyTotal and craftTotal then
-        lowest = math.min(buyTotal, craftTotal)
-    else
-        lowest = buyTotal or craftTotal
-    end
-    local cheapest = (buyTotal and craftTotal and craftTotal < buyTotal) and "craft"
-                    or (buyTotal and craftTotal and buyTotal < craftTotal) and "buy" or nil
-    local rep = sw.repReward or 0
-    local repUnit = (lowest and rep > 0) and (lowest / rep) or nil
-    PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
-    local secB = #rows + 1
-    PushHead(rows, L["成本汇总"], 2)
-    if wuInfo and wuInfo.shortage then
-        rows[#rows + 1] = {
-            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
-            text = L["文书自身成本"],
-            tag = ShortageTag(wuInfo),
-            right = "—",
-            rightColor = C_GREY,
-        }
-    else
-        CrateMetaRow(rows, L["文书自身成本"], wu, wu, 14)
-    end
-    rows[#rows + 1] = {
-        kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
-        text = L["直接买齐总成本"],
-        right = (buyTotal and ra and ra.MoneyStr) and ra.MoneyStr(buyTotal) or "—",
-        rightColor = buyTotal and (cheapest == "buy" and { 0.42, 0.94, 0.62 } or C_TEXT) or C_GREY,
-    }
-    rows[#rows + 1] = {
-        kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
-        text = L["自己制造总成本"],
-        right = (craftTotal and ra and ra.MoneyStr) and ra.MoneyStr(craftTotal) or "—",
-        rightColor = craftTotal and (cheapest == "craft" and { 0.42, 0.94, 0.62 } or C_TEXT) or C_GREY,
-    }
-    MarkSec(rows, secB, #rows, 3)
-    PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
-    local secC = #rows + 1
-    PushHead(rows, L["总结"], 2)
-    if cheapest == "buy" then
-        rows[#rows + 1] = {
-            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
-            text = L["直接买便宜"],
-            right = (ra and ra.MoneyStr) and ra.MoneyStr(craftTotal - buyTotal) or "—",
-            rightColor = { 0.42, 0.94, 0.62 },
-        }
-    elseif cheapest == "craft" then
-        rows[#rows + 1] = {
-            kind = "row", col = 2, h = PD.ROW_H1, fs = 14,
-            text = L["自己造省"],
-            right = (ra and ra.MoneyStr) and ra.MoneyStr(buyTotal - craftTotal) or "—",
-            rightColor = { 0.42, 0.94, 0.62 },
-        }
-    end
-    CrateMetaRow(rows, L["每点声望"], repUnit, repUnit, 14)
-    MarkSec(rows, secC, #rows, 4)
-    PD.hasSecs = true
-    PD.secCount = 4
-    PushGap(rows, 6, 2)
-    PushText(rows, CrateSnapText(), 11, C_GREY, 2)
+    CC.BuildWritDetailRows(rows, sw, craftMap, learned)
 end
 
 function PD.PlunderRows(rows)
@@ -21144,7 +21724,7 @@ function PD.PlunderRows(rows)
                         sortOn = (mode == "cost"),
                         act = function()
                             PD.plunderSort = (mode ~= "cost") and "cost" or nil
-                            PD.RequestRender()
+                            PD.RequestRender(true)
                         end }
     for _, i in ipairs(order) do
         local g = list[i]
@@ -21156,7 +21736,7 @@ function PD.PlunderRows(rows)
             right = (costs[i] and ra and ra.MoneyStr) and ra.MoneyStr(costs[i]) or "",
             cur = (g.itemID == sel),
             act = function()
-                if PD.plunderSel ~= g.itemID then PD.plunderSel = g.itemID; PD.RequestRender() end
+                if PD.plunderSel ~= g.itemID then PD.plunderSel = g.itemID; PD.RequestRender(true) end
             end,
         }
     end
@@ -21475,6 +22055,7 @@ end
 do
 local _warmTok = 0
 local PD_WARM_PER_FRAME = 96
+PD.__warmedSlugs = PD.__warmedSlugs or {}
 function PD.WarmId(id)
     if not id then return end
     local _, got = PD.ItemName(id)
@@ -21486,8 +22067,11 @@ function PD.WarmId(id)
     if type(gi) == "function" then pcall(gi, id) end
 end
 function PD.WarmNames()
+    local slug = PD.cur
+    if not slug or slug == "__index" then return end
+    if PD.__warmedSlugs and PD.__warmedSlugs[slug] then return end
     local ds = getDS()
-    local d = ds and ds.Recipes and ds.Recipes(PD.cur)
+    local d = ds and ds.Recipes and ds.Recipes(slug)
     local recMap = d and d.recipes
     if type(recMap) ~= "table" or next(recMap) == nil then return end
     if not (C_Timer and C_Timer.After) then return end
@@ -21496,6 +22080,8 @@ function PD.WarmNames()
         if type(rec) == "table" and rec.availability == "live" then all[#all + 1] = rec end
     end
     if #all == 0 then return end
+    PD.__warmedSlugs = PD.__warmedSlugs or {}
+    PD.__warmedSlugs[slug] = true
     _warmTok = _warmTok + 1
     local tok = _warmTok
     local i, n = 0, math.min(#all, PD.capNow or PD.ROW_CAP)
@@ -21599,7 +22185,7 @@ function PD.Show(slug, tab, subTab)
     if not PD.built then
         PD.wantOpen = true
     end
-    PD.RequestRender()
+    PD.RequestRender(true)
 end
 
 function PD.SetTab(key)
@@ -21626,7 +22212,7 @@ function PD.SetTab(key)
         PD.writSort = "rep"
     end
     PD.tab = key
-    PD.RequestRender()
+    PD.RequestRender(true)
 end
 
 function PD.DefaultSlug()
@@ -21676,39 +22262,73 @@ local function HookTrack()
     end)
 end
 
-local RD_MIN_MS = 350
-function PD.RequestRender()
+local RD_MIN_MS = 100
+function PD.RequestRender(immediate)
     PD.UpdateCalculationNotice()
     HookTrack()
     if not PD.built then
         PD.wantOpen = true
         return
     end
-    local paint, idle = getFrom("ProfPaint"), getFrom("ProfIdle")
-    if paint and paint.Active and paint.Active("Profession") then
+    local running = coroutine.running and coroutine.running() or nil
+    if PD.__inRender and (not PD.__renderCo or PD.__renderCo == running) then
         PD.__pend = true
         return
     end
-    local now = debugprofilestop and debugprofilestop() or nil
-    if now then
-        local wait = PD.__rdLast and (PD.__rdLast + RD_MIN_MS - now) or 0
-        if wait > 0 and C_Timer and C_Timer.After then
-            if not PD.__rdWait then
-                PD.__rdWait = true
-                C_Timer.After(wait / 1000, function()
-                    PD.__rdWait = nil
-                    PD.RequestRender()
-                end)
-            end
+    local paint, idle = getFrom("ProfPaint"), getFrom("ProfIdle")
+    if paint and paint.Active and paint.Active("Profession") then
+        if immediate and paint.Cancel then
+            paint.Cancel("Profession")
+            PD.__inRender = false
+            PD.__renderCo = nil
+            PD.__pend = false
+        else
+            PD.__pend = true
             return
         end
-        PD.__rdLast = now
+    end
+    local now = debugprofilestop and debugprofilestop() or nil
+    if now then
+        if immediate then
+            PD.__rdWait = nil
+            PD.__rdLast = now
+        else
+            local wait = PD.__rdLast and (PD.__rdLast + RD_MIN_MS - now) or 0
+            if wait > 0 and C_Timer and C_Timer.After then
+                if not PD.__rdWait then
+                    PD.__rdWait = true
+                    C_Timer.After(wait / 1000, function()
+                        if not PD.__rdWait then return end
+                        PD.__rdWait = nil
+                        PD.RequestRender()
+                    end)
+                end
+                return
+            end
+            PD.__rdLast = now
+        end
     end
     if not (paint and paint.Run and idle) then
-        PD.Render()
+        PD.__inRender = true
+        PD.__renderCo = nil
+        local ok, err = pcall(PD.Render)
+        PD.__inRender = false
+        if not ok then error(err, 0) end
+        if PD.__pend then
+            PD.__pend = false
+            PD.RequestRender()
+        end
         return
     end
-    paint.Run("Profession", function() PD.Render() end, function()
+    paint.Run("Profession", function()
+        PD.__inRender = true
+        PD.__renderCo = coroutine.running and coroutine.running() or nil
+        PD.Render()
+        PD.__inRender = false
+        PD.__renderCo = nil
+    end, function()
+        PD.__inRender = false
+        PD.__renderCo = nil
         if PD.__pend then
             PD.__pend = false
             PD.RequestRender()
@@ -21724,7 +22344,7 @@ function PD.Open()
     end
     PD.ResetItemNameMemo()
     PD.EnsureCur()
-    PD.RequestRender()
+    PD.RequestRender(true)
 end
 
 function PD.Refresh()

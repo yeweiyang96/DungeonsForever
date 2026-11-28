@@ -50,7 +50,9 @@ local function stepJob(key, gen)
     local cap = j.cap or CAP
     local t0 = nowMs()
     while true do
-        if coroutine.status(j.co) == "dead" then break end
+        local st = coroutine.status(j.co)
+        if st == "dead" then break end
+        if st ~= "suspended" then return false end
         local ok, err = coroutine.resume(j.co)
         if jobs[key] ~= j or j.gen ~= gen or jobGen[key] ~= gen then
             return true
@@ -342,8 +344,11 @@ function Step.Push(fn)
 end
 
 function Step.Run()
+    if #qStep > 0 then
+        runQueue(qStep, false, CAP)
+    end
     if not idleNow() then
-        pumpTick()
+        arm()
     end
 end
 

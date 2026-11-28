@@ -20,9 +20,21 @@ local EMPTY = setmetatable({}, {
     __metatable = false,
 })
 local formulaFactsCache = setmetatable({}, { __mode = "k" })
+local flushGen = 0
+local liveCache = nil
+local liveCacheStamp = nil
+local liveCacheFaction = nil
 local invalidating = false
 local delegateInvalidate = nil
 local ahPriceGuard = false
+
+function M.CacheGen()
+    return flushGen
+end
+
+local function isEmptyCtx(ctx)
+    return ctx == nil or (type(ctx) == "table" and next(ctx) == nil)
+end
 
 local function getDS()
     return ns.ProfDataStore or (type(gns) == "table" and gns.ProfDataStore) or nil
@@ -194,6 +206,18 @@ local function quietMs()
         return cache.quietDebounceMs
     end
     return 300
+end
+
+local function getLiveCache(playerFaction)
+    local now = Now()
+    if not now then return nil end
+    if liveCache and liveCacheFaction == playerFaction and liveCacheStamp and (now - liveCacheStamp) <= quietMs() then
+        return liveCache
+    end
+    liveCache = { vp = {}, disp = {}, form = {} }
+    liveCacheStamp = now
+    liveCacheFaction = playerFaction
+    return liveCache
 end
 
 local function normalizeFaction(raw)
@@ -488,16 +512,25 @@ function M.AccessSignature(ctx)
     return table.concat(parts, ";")
 end
 
-function M.ApplyVendorDiscounts(itemID, rawPrice, bundleSize, npc, offer, ctx, npcFaction)
+function M.ApplyVendorDiscounts(itemID, rawPrice, bundleSize, npc, offer, ctx, npcFaction, preBarterMult, standingCache)
     local DS = getDS()
     local item = DS and type(DS.Item) == "function" and DS.Item(itemID) or nil
     local db2Buy = type(item) == "table" and type(item.buyPriceCopper) == "number" and item.buyPriceCopper > 0 and item.buyPriceCopper or nil
     local npcFactionID = resolveNpcFactionID(npc, offer, npcFaction)
-    local barterMult = M.LegacyBarterMultiplier(ctx)
+    local barterMult = preBarterMult ~= nil and preBarterMult or M.LegacyBarterMultiplier(ctx)
     local repMult = 1.0
     local basePrice = db2Buy or rawPrice
     if db2Buy then
-        repMult = M.FactionDiscountMultiplier(npcFactionID, ctx)
+        if standingCache and type(npcFactionID) == "number" and npcFactionID > 0 then
+            local cached = standingCache[npcFactionID]
+            if cached == nil then
+                cached = M.FactionDiscountMultiplier(npcFactionID, ctx)
+                standingCache[npcFactionID] = cached
+            end
+            repMult = cached
+        else
+            repMult = M.FactionDiscountMultiplier(npcFactionID, ctx)
+        end
     end
     if type(basePrice) ~= "number" or basePrice ~= basePrice or basePrice < 0 or basePrice >= math.huge then
         return nil, nil, nil, 1.0, barterMult, npcFactionID
@@ -512,7 +545,7 @@ function M.ApplyVendorDiscounts(itemID, rawPrice, bundleSize, npc, offer, ctx, n
     return discounted, unit, basePrice, repMult, barterMult, npcFactionID
 end
 
-local function normalizeOffer(itemID, offer, index, DS, Cond, ctx, playerFaction, checkAccess, commonVendorCount)
+local function normalizeOffer(itemID, offer, index, DS, Cond, ctx, playerFaction, checkAccess, commonVendorCount, preBarterMult, standingCache)
     if type(offer) ~= "table" then return nil end
     local rawNpc = offer.npcID ~= nil and offer.npcID or offer.id
     local npcID = rawNpc ~= nil and tonumber(rawNpc) or nil
@@ -561,7 +594,7 @@ local function normalizeOffer(itemID, offer, index, DS, Cond, ctx, playerFaction
     local finalPrice, unitCopper, basePriceCopper, repMult, barterMult, npcFactionID
     if not isMixed then
         finalPrice, unitCopper, basePriceCopper, repMult, barterMult, npcFactionID =
-            M.ApplyVendorDiscounts(itemID, hasRawPrice and rawPrice or nil, bundleSize, npc, offer, ctx, npcFaction)
+            M.ApplyVendorDiscounts(itemID, hasRawPrice and rawPrice or nil, bundleSize, npc, offer, ctx, npcFaction, preBarterMult, standingCache)
     elseif hasRawPrice then
         finalPrice = rawPrice
         unitCopper = rawPrice / bundleSize
@@ -624,9 +657,11 @@ local function buildOfferList(itemID, withCurrency, ctx, checkAccess)
 
     local playerFaction = checkAccess and resolvePlayerFaction(ctx) or nil
     local commonCount = type(vo.commonVendorCount) == "number" and vo.commonVendorCount or nil
+    local preBarterMult = M.LegacyBarterMultiplier(ctx)
+    local standingCache = {}
     local list = {}
     for index = 1, #vo.offers do
-        local entry = normalizeOffer(itemID, vo.offers[index], index, DS, Cond, ctx, playerFaction, checkAccess, commonCount)
+        local entry = normalizeOffer(itemID, vo.offers[index], index, DS, Cond, ctx, playerFaction, checkAccess, commonCount, preBarterMult, standingCache)
         if entry and (withCurrency or not entry.hasExtendedCost) then
             list[#list + 1] = entry
         end
@@ -675,18 +710,51 @@ end
 
 function M.FormulaList(itemID, ctx)
     if not Int(itemID, 1) then return nil end
+    if isEmptyCtx(ctx) then
+        local lc = getLiveCache(resolvePlayerFaction(nil))
+        if lc then
+            local k = (ctx ~= nil) and (-itemID) or itemID
+            local hit = lc.form[k]
+            if hit ~= nil then return hit ~= false and hit or nil end
+            local res = buildOfferList(itemID, false, ctx, ctx ~= nil)
+            lc.form[k] = res or false
+            return res
+        end
+    end
     return buildOfferList(itemID, false, ctx, ctx ~= nil)
 end
 
 function M.DisplayList(itemID, ctx)
     if not Int(itemID, 1) then return nil end
+    if isEmptyCtx(ctx) then
+        local lc = getLiveCache(resolvePlayerFaction(nil))
+        if lc then
+            local k = (ctx ~= nil) and (-itemID) or itemID
+            local hit = lc.disp[k]
+            if hit ~= nil then return hit ~= false and hit or nil end
+            local res = buildOfferList(itemID, true, ctx, ctx ~= nil)
+            lc.disp[k] = res or false
+            return res
+        end
+    end
     return buildOfferList(itemID, true, ctx, ctx ~= nil)
 end
 
 function M.VendorPrice(itemID, ctx)
     if not Int(itemID, 1) then return nil end
+    local lc
+    if isEmptyCtx(ctx) then
+        lc = getLiveCache(resolvePlayerFaction(nil))
+        if lc then
+            local hit = lc.vp[itemID]
+            if hit ~= nil then return hit ~= false and hit or nil end
+        end
+    end
     local list = buildOfferList(itemID, true, ctx, true)
-    if type(list) ~= "table" or #list == 0 then return nil end
+    if type(list) ~= "table" or #list == 0 then
+        if lc then lc.vp[itemID] = false end
+        return nil
+    end
     local bestPure, bestMixed
     for i = 1, #list do
         local e = list[i]
@@ -720,7 +788,9 @@ function M.VendorPrice(itemID, ctx)
             end
         end
     end
-    return bestPure or bestMixed
+    local res = bestPure or bestMixed
+    if lc then lc.vp[itemID] = res or false end
+    return res
 end
 
 function M.Price(itemID, ctx)
@@ -877,8 +947,12 @@ function M.Ensure()
 end
 
 function M.Flush()
+    flushGen = flushGen + 1
     M.cache = nil
     M.stamp = nil
+    liveCache = nil
+    liveCacheStamp = nil
+    liveCacheFaction = nil
     formulaFactsCache = setmetatable({}, { __mode = "k" })
 end
 

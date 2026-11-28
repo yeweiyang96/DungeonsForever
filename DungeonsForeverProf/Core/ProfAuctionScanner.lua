@@ -332,14 +332,16 @@ local function MarketKey()
         and WholeNumber(region) and region > 0 and (faction == "Alliance" or faction == "Horde")) then
         return nil
     end
-    local bits = {}
-    for _, name in ipairs({ "PvPRuleset", "RPRuleset", "HardcoreRuleset" }) do
-        if ids[name] == nil then return nil end
-        local ok, value = pcall(rules.IsGameRuleActive, ids[name])
-        if not ok or type(value) ~= "boolean" then return nil end
-        bits[#bits + 1] = value and "1" or "0"
-    end
-    return "rules:1:forever:" .. region .. ":" .. table.concat(bits) .. ":" .. faction
+    local isActive = rules.IsGameRuleActive
+    local id1, id2, id3 = ids.PvPRuleset, ids.RPRuleset, ids.HardcoreRuleset
+    if id1 == nil or id2 == nil or id3 == nil then return nil end
+    local ok1, v1 = pcall(isActive, id1)
+    if not ok1 or type(v1) ~= "boolean" then return nil end
+    local ok2, v2 = pcall(isActive, id2)
+    if not ok2 or type(v2) ~= "boolean" then return nil end
+    local ok3, v3 = pcall(isActive, id3)
+    if not ok3 or type(v3) ~= "boolean" then return nil end
+    return "rules:1:forever:" .. region .. ":" .. (v1 and "1" or "0") .. (v2 and "1" or "0") .. (v3 and "1" or "0") .. ":" .. faction
 end
 
 local function ObserverKey()
@@ -398,16 +400,24 @@ local function NotifyListeners(id, reason)
     end
 end
 
+local countCache = setmetatable({}, { __mode = "k" })
+local supplyMetaCache = setmetatable({}, { __mode = "k" })
+local denoisedCache = setmetatable({}, { __mode = "k" })
+
+local function ClearBatchCaches()
+    countCache = setmetatable({}, { __mode = "k" })
+    supplyMetaCache = setmetatable({}, { __mode = "k" })
+end
+
 local function SupplyChanged(id)
     supplyRevision = supplyRevision + 1
+    ClearBatchCaches()
     NotifyListeners(id, "supply")
     local ra = getRouteAuto()
     if ra and type(ra.NotifyPricesChanged) == "function" then
         pcall(ra.NotifyPricesChanged)
     end
 end
-
-local denoisedCache = setmetatable({}, { __mode = "k" })
 
 local function getDenoisedItem(batch, id)
     local item = type(batch) == "table" and type(batch.items) == "table" and batch.items[id] or nil
@@ -429,8 +439,14 @@ local function getDenoisedItem(batch, id)
     end
     local cached = byId[id]
     if cached then return cached end
-    local levels, denoisedTotal, trimmedQty, trimmedLots = S.TrimFishingOrders(item.d)
-    local robust = S.RobustReferencePrice(item.d)
+    local levels, denoisedTotal, trimmedQty, trimmedLots, robust
+    local pe = getPE()
+    if pe and type(pe.DenoiseItem) == "function" then
+        levels, denoisedTotal, trimmedQty, trimmedLots, _, robust = pe.DenoiseItem(item.d)
+    else
+        levels, denoisedTotal, trimmedQty, trimmedLots = S.TrimFishingOrders(item.d)
+        robust = S.RobustReferencePrice(item.d)
+    end
     local price = (type(robust) == "number" and robust > 0) and robust or item.p
     cached = {
         p = price,
@@ -444,6 +460,23 @@ local function getDenoisedItem(batch, id)
     return cached
 end
 
+local function getPrefixBook(dEntry)
+    if not dEntry then return nil end
+    local book = dEntry.prefixBook
+    if book ~= nil then
+        return book ~= false and book or nil
+    end
+    local levels = dEntry.levels
+    local pe = getPE()
+    if type(levels) == "table" and #levels > 0 and pe and type(pe.BuildPrefixBook) == "function" then
+        book = pe.BuildPrefixBook(levels, true)
+        dEntry.prefixBook = book or false
+        return book
+    end
+    dEntry.prefixBook = false
+    return nil
+end
+
 local fullBatch, fullFailure, fullExpiryTimer, fullExpiryToken
 local restoredSnapshot = false
 local currentMarket = false
@@ -452,6 +485,7 @@ local UpdateScanButton
 local UpdateScanBanner
 
 local function StoreBatch(batch)
+    ClearBatchCaches()
     local key = batch.mk or currentMarket
     if type(key) ~= "string" or key == "" then return false end
     batch.mk = key
@@ -507,13 +541,13 @@ local function ReleaseFullBatch(reason, observation, snapshotStatus)
     StoreBatch(fullFailure)
 end
 
-local function FullBatchFailure(batch)
-    local key = MarketKey()
+local function FullBatchFailure(batch, preKey, preNow)
+    local key = preKey ~= nil and preKey or MarketKey()
     if not key or batch.mk ~= key then return "unverified" end
     local v = SnapshotVersion()
     if batch.v ~= v or batch.c ~= true or type(batch.items) ~= "table" then return "incomplete" end
     local stamp = batch.t
-    local now = Now()
+    local now = preNow or Now()
     if not WholeNumber(stamp) or stamp <= 0 or stamp > now then return "incomplete" end
     if now - stamp > SupplyMaxAge() and not S.ForceExpiredActive() then return "expired" end
 end
@@ -650,12 +684,32 @@ local function PruneLegacyBatch(batch)
 end
 
 local function CountSnapshotItems(batch)
+    if type(batch) ~= "table" then return 0, 0 end
+    local hit = countCache[batch]
+    if hit then return hit[1], hit[2] end
     local nItems, nRef = 0, 0
-    if type(batch) == "table" then
-        for _ in pairs(batch.items or {}) do nItems = nItems + 1 end
-        for _ in pairs(batch.ref or {}) do nRef = nRef + 1 end
+    if type(batch.items) == "table" then
+        for _ in pairs(batch.items) do nItems = nItems + 1 end
     end
+    if type(batch.ref) == "table" then
+        for _ in pairs(batch.ref) do nRef = nRef + 1 end
+    end
+    countCache[batch] = { nItems, nRef }
     return nItems, nRef
+end
+
+function S.HasAvailableSnapshot()
+    if SelectMarket then SelectMarket() end
+    local batch = fullBatch
+    local failure = batch and FullBatchFailure(batch)
+    if failure and failure ~= "unverified" then ReleaseFullBatch(failure); batch = nil end
+    if batch then return failure ~= "unverified" end
+    local meta = fullFailure
+    if S.ForceExpiredActive() and type(meta) == "table" and meta.failure == "expired" then
+        local key = MarketKey()
+        if key and meta.mk == key then return true end
+    end
+    return false
 end
 
 function S.FullScanSnapshotStatus()
@@ -692,11 +746,12 @@ function S.FullScanSnapshotStatus()
     }
 end
 
-local function ActiveReadableBatch()
-    if SelectMarket then SelectMarket() end
+local function ActiveReadableBatch(preKey, preNow)
+    local key = preKey ~= nil and preKey or MarketKey()
+    if SelectMarket then SelectMarket(key) end
     local batch = fullBatch
     if batch then
-        local failure = FullBatchFailure(batch)
+        local failure = FullBatchFailure(batch, key, preNow)
         if failure == "unverified" then
             return nil, { mk = batch.mk, ob = batch.ob, failure = failure }
         end
@@ -706,7 +761,7 @@ local function ActiveReadableBatch()
         end
     end
     if batch then return batch, nil end
-    if S.ForceExpiredActive() and type(fullFailure) == "table" and fullFailure.mk == MarketKey() and fullFailure.failure == "expired"
+    if S.ForceExpiredActive() and type(fullFailure) == "table" and fullFailure.mk == key and fullFailure.failure == "expired"
         and ((type(fullFailure.items) == "table" and next(fullFailure.items) ~= nil)
              or (type(fullFailure.ref) == "table" and next(fullFailure.ref) ~= nil)) then
         return fullFailure, nil, true
@@ -782,43 +837,108 @@ local function OwnRecord(id)
     }
 end
 
+local function batchSupplyMeta(batch)
+    local m = supplyMetaCache[batch]
+    if m then return m end
+    m = {
+        complete = true,
+        observedAt = tonumber(batch.t) or 0,
+        source = "client-auction-results",
+        method = batch.method or "native-replicate-scan",
+    }
+    supplyMetaCache[batch] = m
+    return m
+end
+
+local function verifiedBatchFast()
+    local key = MarketKey()
+    local now = Now()
+    local batch, failRec, isForcedExpired = ActiveReadableBatch(key, now)
+    if not batch then
+        if type(failRec) == "table" and failRec.failure then return nil, failRec.failure end
+        return nil, "unknown"
+    end
+    if not key or batch.mk ~= key then return nil, "unverified" end
+    local stamp = tonumber(batch.t)
+    if not stamp or stamp ~= stamp or stamp <= 0 or stamp > now then return nil, "expired" end
+    if now - stamp > SupplyMaxAge() and not S.ForceExpiredActive() then return nil, "expired" end
+    return batch, nil, isForcedExpired, key, now
+end
+
 function S.SupplyRevision()
+    if SelectMarket then SelectMarket() end
     return supplyRevision
 end
 
 function S.GetAuctionSupplyStatus(id)
     if type(id) ~= "number" or id <= 0 then return nil end
-    local rec = OwnRecord(id)
-    if type(rec) ~= "table" then return "unknown" end
-    if rec.failure then return rec.failure end
-    local now = Now()
-    local qty, stamp = tonumber(rec.q), tonumber(rec.t)
-    if not MarketKey() or rec.mk ~= MarketKey() then return "unverified" end
-    if rec.c ~= true or type(rec.ox) ~= "boolean" or rec.s ~= "client-auction-results" then return "incomplete" end
-    if not qty or qty < 0 or qty == huge or qty ~= floor(qty) then return "incomplete" end
-    if not stamp or stamp ~= stamp or stamp <= 0 or stamp > now then return "expired" end
-    if now - stamp > SupplyMaxAge() and not S.ForceExpiredActive() then return "expired" end
+    local batch, err, isForcedExpired = verifiedBatchFast()
+    if not batch then return err end
+    local item = type(batch.items) == "table" and batch.items[id] or nil
+    if item ~= nil then
+        if type(item) ~= "table" then return "incomplete" end
+        if item.failure then return item.failure end
+        if not isForcedExpired and batch.c ~= true then return "incomplete" end
+        local dEntry = getDenoisedItem(batch, id)
+        local qty = tonumber(dEntry and dEntry.quantity or (item.dq or item.q or 0))
+        if not qty or qty < 0 or qty == huge or qty ~= floor(qty) then return "incomplete" end
+        return "verified"
+    end
+    local refItem = type(batch.ref) == "table" and batch.ref[id] or nil
+    if refItem ~= nil and type(refItem) == "table" then
+        if not isForcedExpired and batch.c ~= true then return "incomplete" end
+        local qty = tonumber(refItem.q) or 0
+        if not qty or qty < 0 or qty == huge or qty ~= floor(qty) then return "incomplete" end
+        return "verified"
+    end
+    if not isForcedExpired and batch.c ~= true then return "incomplete" end
     return "verified"
 end
 
 function S.GetAuctionSupply(id)
-    if S.GetAuctionSupplyStatus(id) ~= "verified" then return nil end
-    local rec = OwnRecord(id)
+    if type(id) ~= "number" or id <= 0 then return nil end
+    local batch, _, isForcedExpired, _, now = verifiedBatchFast()
+    if not batch then return nil end
+    if not isForcedExpired and batch.c ~= true then return nil end
+    local q, rawQ, trimmedQ, p
+    local item = type(batch.items) == "table" and batch.items[id] or nil
+    if item ~= nil then
+        if type(item) ~= "table" or item.failure then return nil end
+        local dEntry = getDenoisedItem(batch, id)
+        q = tonumber(dEntry and dEntry.quantity or (item.dq or item.q or 0))
+        if not q or q < 0 or q == huge or q ~= floor(q) then return nil end
+        rawQ = tonumber(dEntry and dEntry.rawQuantity or (item.q or 0))
+        trimmedQ = tonumber(dEntry and dEntry.trimmedQuantity) or 0
+        p = tonumber(dEntry and dEntry.p or item.p)
+    else
+        local refItem = type(batch.ref) == "table" and batch.ref[id] or nil
+        if refItem and type(refItem) == "table" then
+            q = tonumber(refItem.q) or 0
+            if not q or q < 0 or q == huge or q ~= floor(q) then return nil end
+            rawQ = q
+            trimmedQ = 0
+            p = tonumber(refItem.p)
+        else
+            q, rawQ, trimmedQ, p = 0, 0, 0, nil
+        end
+    end
+    local forced = S.ForceExpiredActive() or nil
+    local stamp = tonumber(batch.t) or 0
     return {
-        quantity = tonumber(rec.q),
-        rawQuantity = tonumber(rec.rawQuantity ~= nil and rec.rawQuantity or rec.q),
-        trimmedQuantity = tonumber(rec.trimmedQuantity) or 0,
-        observedAt = tonumber(rec.t) or 0,
-        complete = rec.c == true,
-        ownerExcluded = rec.ox == true,
-        source = rec.s or "client-auction-results",
-        market = tonumber(rec.p),
-        marketKey = rec.mk,
-        observer = rec.ob,
-        method = rec.method or "native-replicate-scan",
-        schemaVersion = rec.v,
-        forced = S.ForceExpiredActive() or nil,
-        expiresAt = max(tonumber(rec.t) or 0, S.ForceExpiredActive() and Now() or 0) + SupplyMaxAge(),
+        quantity = q,
+        rawQuantity = rawQ,
+        trimmedQuantity = trimmedQ,
+        observedAt = stamp,
+        complete = true,
+        ownerExcluded = (batch.ox ~= false),
+        source = "client-auction-results",
+        market = p,
+        marketKey = batch.mk,
+        observer = batch.ob,
+        method = batch.method or "native-replicate-scan",
+        schemaVersion = SnapshotVersion(),
+        forced = forced,
+        expiresAt = max(stamp, forced and now or 0) + SupplyMaxAge(),
     }
 end
 
@@ -828,25 +948,79 @@ end
 
 function S.GetReferencePrice(id)
     if type(id) ~= "number" or id <= 0 then return nil end
-    if S.GetAuctionSupplyStatus(id) ~= "verified" then return nil end
-    local rec = OwnRecord(id)
-    local p = type(rec) == "table" and tonumber(rec.p) or nil
-    local q = type(rec) == "table" and tonumber(rec.q) or 0
-    if q and q > 0 and validNum(p) and p > 0 then
-        return p
+    local batch, _, isForcedExpired = verifiedBatchFast()
+    if not batch or (not isForcedExpired and batch.c ~= true) then return nil end
+    local item = type(batch.items) == "table" and batch.items[id] or nil
+    if item ~= nil then
+        if type(item) ~= "table" or item.failure then return nil end
+        local dEntry = getDenoisedItem(batch, id)
+        local q = tonumber(dEntry and dEntry.quantity or (item.dq or item.q or 0))
+        if not q or q <= 0 or q == huge or q ~= floor(q) then return nil end
+        local p = tonumber(dEntry and dEntry.p or item.p)
+        if validNum(p) and p > 0 then return p end
+        return nil
+    end
+    local refItem = type(batch.ref) == "table" and batch.ref[id] or nil
+    if refItem and type(refItem) == "table" then
+        local q = tonumber(refItem.q) or 0
+        if q <= 0 or q == huge or q ~= floor(q) then return nil end
+        local p = tonumber(refItem.p)
+        if validNum(p) and p > 0 then return p end
     end
     return nil
 end
 
+function S.GetAuctionQuote(id)
+    if type(id) ~= "number" or id <= 0 then return nil, nil, nil, false, nil end
+    local batch, _, isForcedExpired = verifiedBatchFast()
+    if not batch or (not isForcedExpired and batch.c ~= true) then
+        return nil, nil, nil, false, nil
+    end
+    local meta = batchSupplyMeta(batch)
+    local item = type(batch.items) == "table" and batch.items[id] or nil
+    if item ~= nil then
+        if type(item) ~= "table" or item.failure then
+            return nil, nil, nil, true, nil
+        end
+        local dEntry = getDenoisedItem(batch, id)
+        local q = tonumber(dEntry and dEntry.quantity or (item.dq or item.q or 0))
+        if not q or q < 0 or q == huge or q ~= floor(q) then
+            return nil, nil, nil, true, nil
+        end
+        local p = tonumber(dEntry and dEntry.p or item.p)
+        if not (q > 0 and validNum(p) and p > 0) then p = nil end
+        local book = (batch.dv == 1 and dEntry and dEntry.levels and #dEntry.levels > 0) and getPrefixBook(dEntry) or nil
+        return p, q, book, true, meta
+    end
+    local refItem = type(batch.ref) == "table" and batch.ref[id] or nil
+    if refItem and type(refItem) == "table" then
+        local q = tonumber(refItem.q) or 0
+        if q < 0 or q == huge or q ~= floor(q) then
+            return nil, nil, nil, true, nil
+        end
+        local p = tonumber(refItem.p)
+        if not (q > 0 and validNum(p) and p > 0) then p = nil end
+        return p, q, nil, true, meta
+    end
+    return nil, 0, nil, true, meta
+end
+
 function S.GetAuctionDepth(id)
-    if S.GetAuctionSupplyStatus(id) ~= "verified" then return nil end
-    local batch = ActiveReadableBatch()
-    if not batch or batch.dv ~= 1 or type(batch.items) ~= "table" then return nil end
+    if type(id) ~= "number" or id <= 0 then return nil end
+    local batch, _, isForcedExpired = verifiedBatchFast()
+    if not batch or (not isForcedExpired and batch.c ~= true) or batch.dv ~= 1 or type(batch.items) ~= "table" then
+        return nil
+    end
     local item = batch.items[id]
+    if item ~= nil and (type(item) ~= "table" or item.failure) then return nil end
     local dEntry = item and getDenoisedItem(batch, id)
     local levels = {}
-    for i, row in ipairs(dEntry and dEntry.levels or {}) do
-        levels[i] = { row[1], row[2] }
+    if dEntry and type(dEntry.levels) == "table" then
+        local src = dEntry.levels
+        for i = 1, #src do
+            local row = src[i]
+            levels[i] = { row[1], row[2] }
+        end
     end
     return {
         levels = levels,
@@ -2044,9 +2218,11 @@ function S.HookReplicateModeSetting()
     return true
 end
 
-SelectMarket = function()
-    local key = MarketKey()
+SelectMarket = function(preKey)
+    local key = preKey ~= nil and preKey or MarketKey()
     if currentMarket == key then return end
+    supplyRevision = supplyRevision + 1
+    ClearBatchCaches()
     StopActiveScan()
     if fullExpiryTimer then fullExpiryTimer:Cancel(); fullExpiryTimer = nil end
     fullExpiryToken = nil

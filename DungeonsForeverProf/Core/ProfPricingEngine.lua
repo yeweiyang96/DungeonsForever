@@ -72,13 +72,41 @@ function PE.NormalizeLevels(levels)
     return rows, rawTotal
 end
 
-function PE.TrimFishingOrders(levels, cfgOverride)
+local function cleanNormalizedTotal(levels)
+    if type(levels) ~= "table" then return nil end
+    local n = #levels
+    if n == 0 then return 0 end
+    if type(levels[1]) == "number" then return nil end
+    local last = 0
+    local total = 0
+    for i = 1, n do
+        local row = levels[i]
+        if type(row) ~= "table" then return nil end
+        local p, q = row[1], row[2]
+        if not validNum(p) or p <= last or not validNum(q) or q <= 0 or q ~= floor(q) then
+            return nil
+        end
+        last = p
+        total = total + q
+    end
+    return total
+end
+
+local function normalizeLevelsFast(levels)
+    local cleanTotal = cleanNormalizedTotal(levels)
+    if cleanTotal ~= nil then
+        if cleanTotal <= 0 then return {}, 0, false end
+        return levels, cleanTotal, true
+    end
     local rows, rawTotal = PE.NormalizeLevels(levels)
+    return rows, rawTotal, false
+end
+
+local function trimNormalized(rows, rawTotal, cfgOverride)
     local n = #rows
     if n == 0 or rawTotal <= 0 then
-        return {}, 0, 0, 0, 0
+        return 1, 0, 0, 0
     end
-
     local ff = (type(cfgOverride) == "table" and cfgOverride) or cfgTable("FISHING_FILTER") or {}
     local startIdx = 1
     local remTotal = rawTotal
@@ -110,7 +138,16 @@ function PE.TrimFishingOrders(levels, cfgOverride)
             remTotal = rawTotal - trimmedQty
         end
     end
+    return startIdx, remTotal, trimmedQty, trimmedLots
+end
 
+function PE.TrimFishingOrders(levels, cfgOverride)
+    local rows, rawTotal = normalizeLevelsFast(levels)
+    local n = #rows
+    if n == 0 or rawTotal <= 0 then
+        return {}, 0, 0, 0, 0
+    end
+    local startIdx, remTotal, trimmedQty, trimmedLots = trimNormalized(rows, rawTotal, cfgOverride)
     local denoised = {}
     for i = startIdx, n do
         denoised[#denoised + 1] = { rows[i][1], rows[i][2] }
@@ -118,15 +155,14 @@ function PE.TrimFishingOrders(levels, cfgOverride)
     return denoised, remTotal, trimmedQty, trimmedLots, rawTotal
 end
 
-function PE.RobustReferencePrice(levels, shareOverride, cfgOverride)
-    local denoised, remTotal, _, _, rawTotal = PE.TrimFishingOrders(levels, cfgOverride)
-    if #denoised == 0 or remTotal <= 0 then
+function PE.RobustPriceFromDenoised(denoised, remTotal, rawTotal, shareOverride)
+    if type(denoised) ~= "table" or #denoised == 0 or not validNum(remTotal) or remTotal <= 0 then
         return nil
     end
 
     local rf = cfgTable("ROBUST_FLOOR") or {}
     local minSupply = type(rf.minConfidenceSupply) == "number" and rf.minConfidenceSupply or 1
-    if rawTotal < minSupply then
+    if (rawTotal or remTotal) < minSupply then
         return nil
     end
 
@@ -161,6 +197,31 @@ function PE.RobustReferencePrice(levels, shareOverride, cfgOverride)
     return rounded
 end
 
+function PE.DenoiseItem(levels, shareOverride, cfgOverride)
+    local rows, rawTotal = normalizeLevelsFast(levels)
+    local n = #rows
+    if n == 0 or rawTotal <= 0 then
+        return {}, 0, 0, 0, 0, nil
+    end
+    local startIdx, remTotal, trimmedQty, trimmedLots = trimNormalized(rows, rawTotal, cfgOverride)
+    local denoised
+    if startIdx == 1 then
+        denoised = rows
+    else
+        denoised = {}
+        for i = startIdx, n do
+            denoised[#denoised + 1] = rows[i]
+        end
+    end
+    local robust = PE.RobustPriceFromDenoised(denoised, remTotal, rawTotal, shareOverride)
+    return denoised, remTotal, trimmedQty, trimmedLots, rawTotal, robust
+end
+
+function PE.RobustReferencePrice(levels, shareOverride, cfgOverride)
+    local denoised, remTotal, _, _, rawTotal = PE.TrimFishingOrders(levels, cfgOverride)
+    return PE.RobustPriceFromDenoised(denoised, remTotal, rawTotal, shareOverride)
+end
+
 PE.RobustFloorPrice = PE.RobustReferencePrice
 
 function PE.ConsumeDepth(levels, need, used, alreadyDenoised)
@@ -174,9 +235,9 @@ function PE.ConsumeDepth(levels, need, used, alreadyDenoised)
     local skip = (validNum(used) and used > 0) and floor(used) or 0
     local denoised
     if alreadyDenoised then
-        denoised = PE.NormalizeLevels(levels)
+        denoised = normalizeLevelsFast(levels)
     else
-        denoised = PE.TrimFishingOrders(levels)
+        denoised = PE.DenoiseItem(levels)
     end
     if #denoised == 0 then
         return nil, 0, need, nil
@@ -210,7 +271,12 @@ function PE.ConsumeDepth(levels, need, used, alreadyDenoised)
 end
 
 function PE.BuildPrefixBook(rows, alreadyDenoised)
-    local source = alreadyDenoised and PE.NormalizeLevels(rows) or PE.TrimFishingOrders(rows)
+    local source
+    if alreadyDenoised then
+        source = normalizeLevelsFast(rows)
+    else
+        source = PE.DenoiseItem(rows)
+    end
     local prices = {}
     local quantity = {}
     local cost = {}
