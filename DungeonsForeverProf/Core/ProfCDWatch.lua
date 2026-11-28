@@ -120,6 +120,30 @@ end
 local TODO_DEF = { [17187] = true, [1317279] = true }
 local slugOf
 
+local ITEM_COOLDOWNS = {
+    {
+        spell = 19566,          -- 筛盐器 (Salt Shaker use spell)
+        slug = "leatherworking",
+        skillLineID = 165,      -- Leatherworking
+        reqSkill = 250,
+        useItemID = 15846,      -- 筛盐器 (Salt Shaker)
+        outputItemID = 15409,   -- 精炼石中盐 (Refined Deeprock Salt)
+        reagents = { { 8150, 1 } }, -- 石中盐 (Deeprock Salt)
+    },
+}
+local ITEM_CD_BY_SPELL = {}
+local ITEM_CD_BY_SLUG = {}
+for i = 1, #ITEM_COOLDOWNS do
+    local e = ITEM_COOLDOWNS[i]
+    ITEM_CD_BY_SPELL[e.spell] = e
+    local bucket = ITEM_CD_BY_SLUG[e.slug]
+    if not bucket then
+        bucket = {}
+        ITEM_CD_BY_SLUG[e.slug] = bucket
+    end
+    bucket[#bucket + 1] = e
+end
+
 function W.TodoOn(spell)
     local v = todoOns()[spell]
     if v ~= nil then return v == true end
@@ -254,13 +278,67 @@ local function baseCD(spell)
     return nil
 end
 
+local function liveItemCD(itemID)
+    if type(itemID) ~= "number" or itemID <= 0 then return nil end
+    local function tryFn(fn)
+        if type(fn) ~= "function" then return nil end
+        local ok, st, du, en = pcall(fn, itemID)
+        if ok and type(st) == "number" and type(du) == "number" and st > 0 and du > 60 and en ~= 0 then
+            local left = st + du - clock()
+            if left > 0 then return left, du end
+        end
+        return nil
+    end
+    local cc = _G.C_Container
+    if type(cc) == "table" then
+        local left, du = tryFn(cc.GetItemCooldown)
+        if left then return left, du end
+    end
+    local ci = _G.C_Item
+    if type(ci) == "table" then
+        local left, du = tryFn(ci.GetItemCooldown)
+        if left then return left, du end
+    end
+    return tryFn(_G.GetItemCooldown)
+end
+
+local function playerProfSkill(skillLineID)
+    if type(skillLineID) ~= "number" or skillLineID <= 0 then return nil, false end
+    local gp, gpi = _G.GetProfessions, _G.GetProfessionInfo
+    if type(gp) ~= "function" or type(gpi) ~= "function" then return nil, false end
+    local ok, p1, p2, p3, p4, p5, p6 = pcall(gp)
+    if not ok then return nil, false end
+    local slots = { p1, p2, p3, p4, p5, p6 }
+    local loaded = false
+    for i = 1, 6 do
+        local idx = slots[i]
+        if type(idx) == "number" then
+            local oki, _, _, cur, _, _, _, sid = pcall(gpi, idx)
+            if oki and type(sid) == "number" and sid > 0 then
+                loaded = true
+                if sid == skillLineID then
+                    return tonumber(cur) or 0, true
+                end
+            end
+        end
+    end
+    if loaded then return 0, true end
+    return nil, false
+end
+
 local function liveCD(spell)
+    local ic = ITEM_CD_BY_SPELL[spell]
+    if ic then
+        local ileft, idu = liveItemCD(ic.useItemID)
+        if ileft then return ileft, idu end
+    end
+    local minDur = ic and 60 or 0
     local api = _G.C_Spell
     if type(api) == "table" and type(api.GetSpellCooldown) == "function" then
         local ok, sc = pcall(api.GetSpellCooldown, spell)
         if ok and type(sc) == "table" then
             local st, du = sc.startTime, sc.duration
-            if type(st) == "number" and type(du) == "number" and st > 0 and du > 0 then
+            if type(st) == "number" and type(du) == "number" and st > 0 and du > minDur then
                 local left = st + du - clock()
                 if left > 0 then return left, du end
                 return nil
@@ -270,16 +348,18 @@ local function liveCD(spell)
     local gsc = _G.GetSpellCooldown
     if type(gsc) == "function" then
         local ok, st, du = pcall(gsc, spell)
-        if ok and type(st) == "number" and type(du) == "number" and st > 0 and du > 0 then
+        if ok and type(st) == "number" and type(du) == "number" and st > 0 and du > minDur then
             local left = st + du - clock()
             if left > 0 then return left, du end
             return nil
         end
     end
-    local ct = _G.C_TradeSkillUI
-    if type(ct) == "table" and type(ct.GetRecipeCooldown) == "function" then
-        local ok, sec = pcall(ct.GetRecipeCooldown, spell)
-        if ok and type(sec) == "number" and sec > 0 then return sec, sec end
+    if not ic then
+        local ct = _G.C_TradeSkillUI
+        if type(ct) == "table" and type(ct.GetRecipeCooldown) == "function" then
+            local ok, sec = pcall(ct.GetRecipeCooldown, spell)
+            if ok and type(sec) == "number" and sec > 0 then return sec, sec end
+        end
     end
     return nil
 end
@@ -355,6 +435,11 @@ local function confirmedUnlearned(spell, info)
 end
 
 slugOf = function(spell)
+    local ic = ITEM_CD_BY_SPELL[spell]
+    if ic then
+        W.Mark(spell, ic.slug)
+        return ic.slug
+    end
     local l = list()
     if type(l[spell]) == "string" then return l[spell] end
     local DS = getDS()
@@ -394,6 +479,7 @@ local function isCraftableCooldownRecipe(rec)
 end
 
 local function hasRecipeCooldown(spell, rec)
+    if ITEM_CD_BY_SPELL[spell] then return true end
     if type(rec) == "table" then
         if rec.availability ~= "live" then return false end
         if rec.categoryKey == "camping" or rec.outputKind == "effect" then return false end
@@ -411,6 +497,11 @@ function W.HasCooldownRecipes(slug)
     if type(slug) ~= "string" or slug == "" then return false end
     local cached = hasCDCache[slug]
     if cached ~= nil then return cached end
+    local icList = ITEM_CD_BY_SLUG[slug]
+    if type(icList) == "table" and #icList > 0 then
+        hasCDCache[slug] = true
+        return true
+    end
     local DS = getDS()
     if not DS or type(DS.Recipes) ~= "function" then return false end
     if type(DS.RecipeProfessions) == "function" then
@@ -475,6 +566,15 @@ end
 
 function W.Observe(spell, slug)
     if type(spell) ~= "number" or spell <= 0 then return false end
+    local ic = ITEM_CD_BY_SPELL[spell]
+    if ic then
+        slug = ic.slug
+        local left, dur = liveCD(spell)
+        if not left then return false end
+        W.Mark(spell, slug)
+        W.MarkChar(spell, W.CharKey(), charName())
+        return W.Record(spell, slug, left, dur)
+    end
     if type(slug) ~= "string" then slug = slugOf(spell) end
     if type(slug) ~= "string" then return false end
     local rds = recipeEntryDS(slug, spell)
@@ -487,37 +587,62 @@ function W.Observe(spell, slug)
     return W.Record(spell, slug, left, dur)
 end
 
-local function scanRows(slug)
-    local DS = getDS()
-    if not DS or type(DS.Recipes) ~= "function" then return 0 end
-    local bucket = DS.Recipes(slug)
-    local recipes = type(bucket) == "table" and bucket.recipes or nil
-    if type(recipes) ~= "table" then return 0 end
-    local ids = {}
-    for spell in pairs(recipes) do
-        if type(spell) == "number" then ids[#ids + 1] = spell end
-    end
-    table.sort(ids)
+local function scanItemCooldowns(slug)
+    local entries = slug and ITEM_CD_BY_SLUG[slug] or ITEM_COOLDOWNS
+    if type(entries) ~= "table" or #entries == 0 then return 0 end
     local hit = 0
     local key, nm = W.CharKey(), charName()
-    for i = 1, #ids do
-        local spell = ids[i]
-        local rec = recipes[spell]
-        if hasRecipeCooldown(spell, rec) then
-            W.Mark(spell, slug)
-            local info = recipeInfo(spell)
-            if info and info.learned == true then
-                W.UnmarkChar(spell, key)
-                W.MarkChar(spell, key, nm)
-                local left, dur = liveCD(spell)
-                if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
-            elseif confirmedUnlearned(spell, info) then
-                W.UnmarkChar(spell, key)
-                local by = store()[spell]
-                if type(by) == "table" then by[key] = nil end
+    for i = 1, #entries do
+        local ic = entries[i]
+        W.Mark(ic.spell, ic.slug)
+        local rank, loaded = playerProfSkill(ic.skillLineID)
+        local left, dur = liveCD(ic.spell)
+        local eligible = (type(rank) == "number" and rank >= (ic.reqSkill or 1)) or (left ~= nil)
+        if eligible then
+            W.UnmarkChar(ic.spell, key)
+            W.MarkChar(ic.spell, key, nm)
+            if left and W.Record(ic.spell, ic.slug, left, dur) then hit = hit + 1 end
+        elseif loaded then
+            W.UnmarkChar(ic.spell, key)
+            local by = store()[ic.spell]
+            if type(by) == "table" then by[key] = nil end
+        end
+    end
+    return hit
+end
+
+local function scanRows(slug)
+    local hit = 0
+    local DS = getDS()
+    local bucket = DS and type(DS.Recipes) == "function" and DS.Recipes(slug) or nil
+    local recipes = type(bucket) == "table" and bucket.recipes or nil
+    if type(recipes) == "table" then
+        local ids = {}
+        for spell in pairs(recipes) do
+            if type(spell) == "number" then ids[#ids + 1] = spell end
+        end
+        table.sort(ids)
+        local key, nm = W.CharKey(), charName()
+        for i = 1, #ids do
+            local spell = ids[i]
+            local rec = recipes[spell]
+            if hasRecipeCooldown(spell, rec) then
+                W.Mark(spell, slug)
+                local info = recipeInfo(spell)
+                if info and info.learned == true then
+                    W.UnmarkChar(spell, key)
+                    W.MarkChar(spell, key, nm)
+                    local left, dur = liveCD(spell)
+                    if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
+                elseif confirmedUnlearned(spell, info) then
+                    W.UnmarkChar(spell, key)
+                    local by = store()[spell]
+                    if type(by) == "table" then by[key] = nil end
+                end
             end
         end
     end
+    hit = hit + scanItemCooldowns(slug)
     return hit
 end
 
@@ -533,7 +658,23 @@ local function ensureEvents()
     pcall(f.RegisterEvent, f, "UNIT_SPELLCAST_SUCCEEDED")
     pcall(f.RegisterEvent, f, "TRADE_SKILL_SHOW")
     pcall(f.RegisterEvent, f, "TRADE_SKILL_UPDATE")
+    pcall(f.RegisterEvent, f, "BAG_UPDATE_COOLDOWN")
+    pcall(f.RegisterEvent, f, "SKILL_LINES_CHANGED")
     pcall(f.SetScript, f, "OnEvent", function(_, event, unit, _, spell)
+        if event == "BAG_UPDATE_COOLDOWN" then
+            local changed = false
+            for i = 1, #ITEM_COOLDOWNS do
+                local ic = ITEM_COOLDOWNS[i]
+                if W.Observe(ic.spell, ic.slug) then changed = true end
+            end
+            if changed then
+                local pd = getProfModule()
+                if pd and pd.RequestRender then pcall(pd.RequestRender) end
+                local zh = getZoneHint()
+                if zh and zh.ScheduleSoft then pcall(zh.ScheduleSoft, 1) end
+            end
+            return
+        end
         if event == "UNIT_SPELLCAST_SUCCEEDED" then
             if unit ~= "player" or type(spell) ~= "number" then return end
             local slug = slugOf(spell)
@@ -542,6 +683,8 @@ local function ensureEvents()
                 if W.Observe(spell, slug) then
                     local pd = getProfModule()
                     if pd and pd.RequestRender then pcall(pd.RequestRender) end
+                    local zh = getZoneHint()
+                    if zh and zh.ScheduleSoft then pcall(zh.ScheduleSoft, 1) end
                 end
             end
             local ct = _G.C_Timer
@@ -655,6 +798,15 @@ local function itemName(id, spell)
 end
 
 local function recipeName(spell, item)
+    local ic = ITEM_CD_BY_SPELL[spell]
+    if ic then
+        local DS = getDS()
+        if DS and type(DS.RawText) == "function" and type(ic.outputItemID) == "number" then
+            local inm = DS.RawText("item", ic.outputItemID)
+            if type(inm) == "string" and inm ~= "" then return inm end
+        end
+        return itemName(ic.outputItemID, spell)
+    end
     if type(spell) == "number" then
         local DS = getDS()
         if DS and type(DS.RawText) == "function" then
@@ -851,9 +1003,10 @@ function W.Cards(slug)
         if rdsCheck == nil or hasRecipeCooldown(spell, rdsCheck) then
             local shown, free, best, count = buildCharStatus(spell, slug, db, k, cur, t)
             if count > 0 then
-                local rds = recipeEntryDS(slug, spell)
-                local item = rds and rds.outputItemID or nil
-                local mats = recipeMats(rds)
+                local ic = ITEM_CD_BY_SPELL[spell]
+                local rds = (not ic) and recipeEntryDS(slug, spell) or nil
+                local item = (ic and ic.outputItemID) or (rds and rds.outputItemID) or nil
+                local mats = (ic and ic.reagents) or recipeMats(rds)
                 out[#out + 1] = {
                     spell = spell,
                     item = item,
@@ -928,8 +1081,9 @@ function W.TodoList()
             if #names > 0 then
                 table.sort(names)
                 table.sort(byc, function(a, b) return (a.name or "") < (b.name or "") end)
-                local rds = recipeEntryDS(slug, spell)
-                local item = rds and rds.outputItemID or nil
+                local ic = ITEM_CD_BY_SPELL[spell]
+                local rds = (not ic) and recipeEntryDS(slug, spell) or nil
+                local item = (ic and ic.outputItemID) or (rds and rds.outputItemID) or nil
                 out[#out + 1] = {
                     spell = spell,
                     slug = slug,
@@ -952,48 +1106,84 @@ function W.Manage(slug)
     local out = {}
     if type(slug) ~= "string" then return out end
     local DS = getDS()
-    if not DS or type(DS.Recipes) ~= "function" then return out end
-    local bucket = DS.Recipes(slug)
+    local bucket = DS and type(DS.Recipes) == "function" and DS.Recipes(slug) or nil
     local recipes = type(bucket) == "table" and bucket.recipes or nil
-    if type(recipes) ~= "table" then return out end
-    local ids = {}
-    for spell in pairs(recipes) do
-        if type(spell) == "number" then ids[#ids + 1] = spell end
-    end
-    table.sort(ids)
     local l = list()
     local db = store()
     local k = know()
     local cur = W.CharKey()
     local t = now()
-    for i = 1, #ids do
-        local spell = ids[i]
-        local recDS = recipes[spell]
-        if type(recDS) == "table" and (isCraftableCooldownRecipe(recDS)
-            or (l[spell] == slug and hasRecipeCooldown(spell, recDS))) then
-            local by = type(db[spell]) == "table" and db[spell] or {}
-            local rec = by[cur]
-            local left
-            if type(rec) == "table" and type(rec.u) == "number" then
-                left = rec.u - t
-                if left < 0 then left = 0 end
+    local seen = {}
+    if type(recipes) == "table" then
+        local ids = {}
+        for spell in pairs(recipes) do
+            if type(spell) == "number" then ids[#ids + 1] = spell end
+        end
+        table.sort(ids)
+        for i = 1, #ids do
+            local spell = ids[i]
+            local recDS = recipes[spell]
+            if type(recDS) == "table" and (isCraftableCooldownRecipe(recDS)
+                or (l[spell] == slug and hasRecipeCooldown(spell, recDS))) then
+                seen[spell] = true
+                local by = type(db[spell]) == "table" and db[spell] or {}
+                local rec = by[cur]
+                local left
+                if type(rec) == "table" and type(rec.u) == "number" then
+                    left = rec.u - t
+                    if left < 0 then left = 0 end
+                end
+                local shown, free, best, count = buildCharStatus(spell, slug, db, k, cur, t)
+                local item = recDS.outputItemID
+                local todo = W.TodoOn(spell)
+                out[#out + 1] = {
+                    spell = spell,
+                    item = item,
+                    name = recipeName(spell, item),
+                    on = todo,
+                    todo = todo,
+                    rows = shown,
+                    free = free,
+                    best = best,
+                    count = count,
+                    left = left,
+                    has = (type(rec) == "table"),
+                }
             end
-            local shown, free, best, count = buildCharStatus(spell, slug, db, k, cur, t)
-            local item = recDS.outputItemID
-            local todo = W.TodoOn(spell)
-            out[#out + 1] = {
-                spell = spell,
-                item = item,
-                name = recipeName(spell, item),
-                on = todo,
-                todo = todo,
-                rows = shown,
-                free = free,
-                best = best,
-                count = count,
-                left = left,
-                has = (type(rec) == "table"),
-            }
+        end
+    end
+    local icList = ITEM_CD_BY_SLUG[slug]
+    if type(icList) == "table" then
+        for i = 1, #icList do
+            local ic = icList[i]
+            local spell = ic.spell
+            if not seen[spell] then
+                seen[spell] = true
+                local by = type(db[spell]) == "table" and db[spell] or {}
+                local rec = by[cur]
+                local left
+                if type(rec) == "table" and type(rec.u) == "number" then
+                    left = rec.u - t
+                    if left < 0 then left = 0 end
+                end
+                local shown, free, best, count = buildCharStatus(spell, slug, db, k, cur, t)
+                local item = ic.outputItemID
+                local todo = W.TodoOn(spell)
+                out[#out + 1] = {
+                    spell = spell,
+                    item = item,
+                    useItemID = ic.useItemID,
+                    name = recipeName(spell, item),
+                    on = todo,
+                    todo = todo,
+                    rows = shown,
+                    free = free,
+                    best = best,
+                    count = count,
+                    left = left,
+                    has = (type(rec) == "table"),
+                }
+            end
         end
     end
     table.sort(out, function(a, b)
