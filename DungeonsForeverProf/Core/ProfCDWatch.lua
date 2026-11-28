@@ -4,7 +4,9 @@ local gns = _G.DF_NS
 
 local format = string.format
 
-local W = {}
+local W = (type(gns) == "table" and type(gns.ProfCDWatch) == "table" and gns.ProfCDWatch)
+    or (type(ns.ProfCDWatch) == "table" and ns.ProfCDWatch)
+    or {}
 ns.ProfCDWatch = W
 if type(gns) == "table" and gns ~= ns then
     gns.ProfCDWatch = W
@@ -647,12 +649,18 @@ local function scanRows(slug)
 end
 
 local function ensureEvents()
-    if W.__ef or type(_G.CreateFrame) ~= "function" then return end
-    local ok, f = pcall(_G.CreateFrame, "Frame")
-    if not ok or type(f) ~= "table" or type(f.RegisterEvent) ~= "function" or type(f.SetScript) ~= "function" then
-        return
+    if W.__ef and W.__efVer == 2 then return end
+    local f = W.__ef
+    if not f then
+        if type(_G.CreateFrame) ~= "function" then return end
+        local ok, made = pcall(_G.CreateFrame, "Frame")
+        if not ok or type(made) ~= "table" or type(made.RegisterEvent) ~= "function" or type(made.SetScript) ~= "function" then
+            return
+        end
+        f = made
+        W.__ef = f
     end
-    W.__ef = f
+    W.__efVer = 2
     pcall(f.RegisterEvent, f, "PLAYER_ENTERING_WORLD")
     pcall(f.RegisterEvent, f, "SPELLS_CHANGED")
     pcall(f.RegisterEvent, f, "UNIT_SPELLCAST_SUCCEEDED")
