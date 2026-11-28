@@ -1012,6 +1012,71 @@ local function LayPath(id, lay)
     return WM .. ART[id][1] .. "\\" .. lay
 end
 
+local ART_BY_NAME, ART_FB = nil, {}
+local function ArtNameIndex()
+    if ART_BY_NAME then return ART_BY_NAME end
+    ART_BY_NAME = {}
+    if not (C_Map and C_Map.GetMapInfo) then return ART_BY_NAME end
+    local function add(name, mid)
+        if type(name) ~= "string" or name == "" then return end
+        local l = ART_BY_NAME[name]
+        if not l then l = {} ART_BY_NAME[name] = l end
+        l[#l + 1] = mid
+    end
+    for mid = 1, 2600 do
+        local ok, info = pcall(C_Map.GetMapInfo, mid)
+        if ok and info and (info.mapType == 4 or info.mapType == 5) then
+            add(info.name, mid)
+            if C_Map.GetMapGroupID and C_Map.GetMapGroupMembersInfo then
+                local okg, gid = pcall(C_Map.GetMapGroupID, mid)
+                if okg and gid then
+                    local okm, mem = pcall(C_Map.GetMapGroupMembersInfo, gid)
+                    if okm and type(mem) == "table" then
+                        for _, m in ipairs(mem) do
+                            if m.mapID == mid then add(m.name, mid) end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return ART_BY_NAME
+end
+
+function M.ArtFallback(id, idx)
+    local key = tostring(id) .. ":" .. tostring(idx)
+    local hit = ART_FB[key]
+    if hit ~= nil then return hit or nil end
+    ART_FB[key] = false
+    if not (C_Map and C_Map.GetMapArtLayerTextures) then return nil end
+    local fn = (M.FloorNumAt and M.FloorNumAt(id, idx)) or idx
+    local row = FLOOR_NAMES[FLOOR_KEY[id] or id]
+    local en = row and row[fn] and row[fn][1]
+    local cands = en and ArtNameIndex()[en]
+    if not cands then return nil end
+    for _, mid in ipairs(cands) do
+        local ok, tex = pcall(C_Map.GetMapArtLayerTextures, mid, 1)
+        if ok and type(tex) == "table" and #tex > 0 then
+            ART_FB[key] = tex
+            return tex
+        end
+    end
+    return nil
+end
+
+function M.SetTile(t, id, idx, path, n, fixed)
+    if fixed then t:SetTexture(fixed) return end
+    t:SetTexture(path .. n)
+    if t:GetTexture() then return end
+    local alt = path:gsub("Old\\", "\\")
+    if alt ~= path then
+        t:SetTexture(alt .. n)
+        if t:GetTexture() then return end
+    end
+    local fb = M.ArtFallback(id, idx)
+    if fb and fb[n] then t:SetTexture(fb[n]) end
+end
+
 function M.PathFor(id)
     local layers = M.LayersFor(id)
     if not (layers and layers[1]) then return nil end
@@ -1053,8 +1118,13 @@ function M.BossesFor(id)
            and ((s[4] and s[4] ~= "") or M.PosFor(id, s[1]) or M.GuideFor(id, s[1])) then
             out = out or {}
             local meta = s[3]
-            out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {},
-                rare = type(meta) == "string" and meta:find(IN_ZH_RARE, 1, true) ~= nil or false }
+            local lv
+            if type(meta) == "string" then
+                local n = tonumber(meta:match("%s*(%d+)%s*级"))
+                if n then lv = n end
+            end
+            out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {}, lv = lv,
+                rare = type(meta) == "string" and (meta:find(IN_ZH_RARE, 1, true) ~= nil or meta:find("Rare", 1, true) ~= nil) or false }
         end
     end
     return out
@@ -1097,7 +1167,7 @@ function M.RareBoss(id, en)
             for i = 1, #loot do
                 local s = loot[i]
                 if type(s) == "table" and s[1] and type(s[3]) == "string"
-                   and s[3]:find(IN_ZH_RARE, 1, true) then
+                   and (s[3]:find(IN_ZH_RARE, 1, true) or s[3]:find("Rare", 1, true)) then
                     set[s[1]] = true
                 end
             end
@@ -1686,6 +1756,9 @@ local function BuildListRows(host)
         r.fs = MakeFS(r, 14, C_TEXT, "LEFT")
         r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
         r.fs:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        r.lv = MakeFS(r, 12, C_GREY, "RIGHT")
+        r.lv:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        r.lv:Hide()
         r.npc = MakeFS(r, 12, C_GREY, "LEFT")
         r.npc:Hide()
         if ns.hui and ns.hui.MakeSolidChip and ns.hui.ChipH then
@@ -3454,7 +3527,7 @@ function M.ShowRouteMenu(owner)
         local k = M.RouteSegKey(id, floor, i)
         local hid = (M.routeOff or M.routeHidden[k]) and true or false
         items[#items + 1] = {
-            text = FloorWord(segs[i].from) .. " → " .. FloorWord(segs[i].to),
+            text = FloorWord(segs[i].from) .. (" " .. ns.SYM.arrow .. " ") .. FloorWord(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()
@@ -3889,15 +3962,11 @@ function M.GotoQuest(qid, inWorld)
         if M.curId and ns.ShowDungeonDetail then ns.ShowDungeonDetail(M.curId) end
     end
     if not U then return end
-    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
-    local qsd = (type(row) == "table") and row[2] or nil
-    if (qsd == "A" or qsd == "H") and U.dungeonQSide ~= qsd then U.dungeonQSide = qsd end
-    U.dungeonQView = "list"
-    U.dungeonQFlow = nil
-    U.dungeonQuestSel = qid
-    U.dungeonQListKey = nil
     if U.SetDungeonTab then
         pcall(U.SetDungeonTab, U, "quest")
+    end
+    if U.SelectDungeonQuest then
+        U:SelectDungeonQuest(qid)
     elseif U.RenderDungeonQuests then
         U:RenderDungeonQuests()
     end
@@ -4066,7 +4135,7 @@ function M.PinOnEnter(self)
             end
         end
     elseif self.__kind == "rare" then
-        GameTooltip:AddLine(L["稀有"] .. "：" .. (p.name or ""), 0.72, 0.76, 0.85, true)
+        GameTooltip:AddLine(L["稀有"] .. L["："] .. (p.name or ""), 0.72, 0.76, 0.85, true)
     elseif self.__kind == "note" then
         GameTooltip:AddLine(L["注释"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
@@ -4279,6 +4348,7 @@ local function ApplyModel(m, npc, disp)
     if disp and type(m.SetDisplayInfo) == "function" then
         pcall(m.SetDisplayInfo, m, disp)
     elseif npc then
+        if m.ClearModel then pcall(m.ClearModel, m) end
         m:SetCreature(npc)
     end
 end
@@ -4405,7 +4475,7 @@ function M.SyncSide(forceFrame)
                     n = n + 1
                     local r = frame.questRows[n]
                     local nm = DG.QuestName(qid)
-                    r.name:SetText(format("《%s》", nm or tostring(qid)))
+                    r.name:SetText(format(L["《%s》"], nm or tostring(qid)))
                     local mk = QMARK_STATE[st]
                     if mk then
                         r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
@@ -4691,9 +4761,24 @@ function M.SyncSide(forceFrame)
         n = n + 1
         local r = frame.listRows[n]
         r.__en = bosses[i].en
+        local blv = bosses[i].lv
+        if blv then
+            if blv >= 999 then
+                r.lv:SetText("??")
+            else
+                r.lv:SetText(format(L["等级%d"], blv))
+            end
+            r.lv:Show()
+        else
+            r.lv:Hide()
+        end
         r.fs:SetText(bosses[i].zh or bosses[i].en)
         r.fs:ClearAllPoints()
-        r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        if blv then
+            r.fs:SetPoint("LEFT", r.lv, "RIGHT", 6, 0)
+        else
+            r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        end
         local npcId = M.SHOW_NPC_ID and bosses[i].npc
         if npcId and npcId ~= "" then
             r.npc:SetText("#" .. npcId)
@@ -4956,7 +5041,7 @@ function M.Paint(d)
     else
         for _, p in ipairs(lay) do
             local t = frame.tiles[p.n]
-            t:SetTexture((fixTile and fixTile[p.n]) or (path .. p.n))
+            M.SetTile(t, id, idx, path, p.n, fixTile and fixTile[p.n])
             t:SetTexCoord(p.u0, p.u1, p.v0, p.v1)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", p.x, -p.y)
@@ -5127,9 +5212,10 @@ local function wpPinAcquire(canvas)
                 end
             end
             if not dk then return end
-            U.dungeonQuestSel = qid
             if ns.ShowDungeonDetail then ns.ShowDungeonDetail(dk) end
             if U.SetDungeonTab then U:SetDungeonTab("quest") end
+            if U.SelectDungeonQuest then U:SelectDungeonQuest(qid) end
+            M.QuestScrollTo(qid)
             ns.PlaySound(1)
         end)
     end
@@ -5139,7 +5225,7 @@ local function wpPinAcquire(canvas)
     return p
 end
 
-local WP_DEF = { size = 18, world = false, layer = "below", scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
+local WP_DEF = { size = 18, world = false, layer = "above", scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
 local WP_LAYER_BELOW = 2019
 
 local function wpCfg()
@@ -5157,12 +5243,43 @@ local function wpCfg()
     end
     if c.size == nil then c.size = WP_DEF.size end
     if c.world == nil then c.world = WP_DEF.world end
+    if c.layerVer ~= 2 then
+        c.layerVer = 2
+        c.layer = "above"
+    end
     if c.layer ~= "above" and c.layer ~= "below" then c.layer = WP_DEF.layer end
     if type(c.scope) ~= "table" then c.scope = {} end
     for k, v in pairs(WP_DEF.scope) do
         if c.scope[k] == nil then c.scope[k] = v end
     end
     return c
+end
+
+function M.PinsLayer()
+    return wpCfg().layer
+end
+
+function M.SetPinsLayer(v)
+    local c = wpCfg()
+    c.layer = (v == "below") and "below" or "above"
+    c.layerVer = 2
+    if M.SyncWorldQuestPins then pcall(M.SyncWorldQuestPins) end
+    if ns.MapWorldModule and ns.MapWorldModule.RefreshPins then pcall(ns.MapWorldModule.RefreshPins) end
+    if ns.ExploreMapRefresh then pcall(ns.ExploreMapRefresh) end
+    if ns.SyncQuestPinIcon then pcall(ns.SyncQuestPinIcon) end
+    return c.layer
+end
+
+function M.TogglePinsLayer()
+    return M.SetPinsLayer(M.PinsLayer() == "above" and "below" or "above")
+end
+
+function ns.MapPinLevel(natural)
+    if type(natural) ~= "number" then return natural end
+    if M.PinsLayer() ~= "above" and natural > WP_LAYER_BELOW then
+        return WP_LAYER_BELOW
+    end
+    return natural
 end
 
 local wpDlvCache
@@ -5231,6 +5348,7 @@ function M.SyncWorldQuestPins()
     local data = wpStatic()
     local cfg = wpCfg()
     local sc2 = cfg.scope
+    local takeOnly = sc2.take ~= false
     local lv = (UnitLevel and UnitLevel("player")) or 0
     local side = DG.PlayerSide and DG.PlayerSide() or nil
     local nOn = (sc2.lv and 1 or 0) + (sc2.reco and 1 or 0) + (sc2.enter and 1 or 0)
@@ -5285,6 +5403,7 @@ function M.SyncWorldQuestPins()
     end
     local function qHit(q)
         if DG.QuestRepeat and DG.QuestRepeat(q[1]) then return false end
+        if takeOnly and DG.QuestTakeable and not DG.QuestTakeable(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
         if not wpClassOK(q[15]) then return false end
         if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
@@ -5317,6 +5436,7 @@ function M.SyncWorldQuestPins()
     end
     local function segOk(seg)
         if (DG.QuestState and DG.QuestState(seg)) ~= "todo" then return false end
+        if takeOnly and DG.QuestTakeable and not DG.QuestTakeable(seg) then return false end
         local sq = DG.QuestRowByID and DG.QuestRowByID(seg)
         local qlv
         if sq then
@@ -5698,7 +5818,7 @@ local function wpCreatePanel()
             { "below", L["Questie 之下"] },
         },
             function() return wpCfg().layer end,
-            function(v) wpCfg().layer = v end)
+            function(v) M.SetPinsLayer(v) end)
         syncers[#syncers + 1] = function() row:sync() end
     end
     f.syncAll = function()

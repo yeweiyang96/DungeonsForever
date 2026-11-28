@@ -127,6 +127,7 @@ local function Cfg()
     if c.enemy == nil then c.enemy = false end
     if c.neutral == nil then c.neutral = true end
     if c.search == nil then c.search = "" end
+    if type(c.fav) ~= "table" then c.fav = {} end
     return c
 end
 
@@ -268,6 +269,25 @@ function FV:MarkQM()
     end
 end
 
+function FV:SyncFav()
+    local fb = FV.favBtn
+    if not fb then return end
+    local x = FacBySel(Cfg().sel)
+    local on = (x and Cfg().fav[x.id]) and true or false
+    fb:SetText(on and L["已收藏"] or L["收藏"])
+    SetButtonSelected(fb, on, "tab")
+end
+
+function FV:ToggleFav()
+    local x = FacBySel(Cfg().sel)
+    if not x then return end
+    local c = Cfg()
+    if c.fav[x.id] then c.fav[x.id] = nil else c.fav[x.id] = true end
+    ns.PlaySound(1)
+    FV:SyncFav()
+    FV:PaintList()
+end
+
 function FV:ShowQMTip(owner)
     if not GameTooltip then return end
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
@@ -293,16 +313,80 @@ local function SideAllowed(x, pside, c)
     return c.enemy and true or false
 end
 
+local FACTION_ALIAS = {
+    [890] = { "战歌峡谷", "银翼哨兵" },
+    [889] = { "战歌峡谷" },
+    [730] = { "奥特兰克", "奥特兰克山谷" },
+    [729] = { "奥特兰克", "奥特兰克山谷" },
+}
+
 local function SearchHit(x, needle)
     if needle == "" then return true end
+    local nd = needle:lower()
     local nm = FacName(x):lower()
-    if nm:find(needle, 1, true) then return true end
+    if nm:find(nd, 1, true) then return true end
     local fb = (x.name or ""):lower()
-    return fb:find(needle, 1, true) ~= nil
+    if fb:find(nd, 1, true) then return true end
+    local al = FACTION_ALIAS[x.id]
+    if al then
+        for _, k in ipairs(al) do
+            if k:lower():find(nd, 1, true) then return true end
+        end
+    end
+    return false
+end
+
+local BATTLE_FACTION = {
+    [509] = { src = "battle", bg = "ab", side = "A" },
+    [510] = { src = "battle", bg = "ab", side = "H" },
+    [890] = { src = "battle", bg = "wsg", side = "A" },
+    [889] = { src = "battle", bg = "wsg", side = "H" },
+    [730] = { src = "battle", bg = "av", side = "A" },
+    [729] = { src = "battle", bg = "av", side = "H" },
+    [2799] = { src = "spear", side = "A" },
+    [2798] = { src = "spear", side = "H" },
+}
+
+local function EnsurePvPData()
+    if type(ns.PvPSetData) == "table" then return ns.PvPSetData end
+    local loader
+    if type(C_AddOns) == "table" and type(C_AddOns.LoadAddOn) == "function" then
+        loader = function() C_AddOns.LoadAddOn("DungeonsForeverPvP") end
+    else
+        local legacy = rawget(_G, "LoadAddOn")
+        if type(legacy) == "function" then loader = function() legacy("DungeonsForeverPvP") end end
+    end
+    if loader then pcall(loader) end
+    return type(ns.PvPSetData) == "table" and ns.PvPSetData or nil
+end
+
+local function BattleRewards(x)
+    local m = type(x) == "table" and BATTLE_FACTION[x.id]
+    if not m then return nil end
+    local pv = EnsurePvPData()
+    if not pv then return nil end
+    local src = (m.src == "spear") and pv.spear or (type(pv.battle) == "table" and pv.battle[m.bg])
+    if type(src) ~= "table" then return nil end
+    local out = {}
+    local any = false
+    for _, key in ipairs(REWARD_TIERS) do
+        local tier = src[key]
+        local ids = type(tier) == "table" and (tier[m.side] or tier.A)
+        if type(ids) == "table" and #ids > 0 then out[key] = ids; any = true end
+    end
+    if not any then return nil end
+    return out
+end
+
+local function RewardsOf(x)
+    if type(x) ~= "table" then return nil end
+    local r = BattleRewards(x)
+    if r then return r end
+    return x.rewards
 end
 
 local function HasRewards(x)
-    local r = x.rewards
+    local r = RewardsOf(x)
     if type(r) ~= "table" then return false end
     for _, key in ipairs(REWARD_TIERS) do
         local ids = r[key]
@@ -313,7 +397,10 @@ end
 
 local function PassFilter(x, pside, c)
     if not SideAllowed(x, pside, c) then return false end
-    if not HasRewards(x) then return false end
+    if not HasRewards(x) then
+        local qs = type(ns.FactionQuests) == "table" and ns.FactionQuests[x.id]
+        if not (type(qs) == "table" and #qs > 0) then return false end
+    end
     return SearchHit(x, c.search or "")
 end
 
@@ -1403,10 +1490,25 @@ FV.Build = function(page)
     qb:SetScript("OnLeave", function() GameTooltip:Hide() end)
     FV.qmBtn = qb
 
+    local fb = NewButton(rightCard, L["收藏"], 78, 24, 14)
+    fb:SetPoint("TOPRIGHT", rightCard, "TOPRIGHT", -14 - 104 - 6, -8)
+    fb.__huiKeepTextColor = true
+    fb:SetScript("OnClick", function() FV:ToggleFav() end)
+    fb:SetScript("OnEnter", function(self)
+        if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(L["点击：收藏该阵营并置顶显示"], 1, 0.82, 0)
+            GameTooltip:Show()
+        end
+    end)
+    fb:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    FV.favBtn = fb
+
     FV.built = true
     FV.building = false
     FV:SyncTabShown()
     FV:PaintTab()
+    FV:SyncFav()
     if FV:Tab() == "quest" then
         FV:PaintQuestList()
         FV:PaintQuestDetail()
@@ -1535,6 +1637,7 @@ function FV:SelectFaction(fid)
     Cfg().sel = fid
     local tab = FV:Tab()
     if tab == "quest" then FV:WarmQuests(fid) end
+    FV:SyncFav()
     FV:PaintTab()
     FV:PaintList()
     if tab == "quest" then
@@ -1619,9 +1722,13 @@ function FV:PaintList()
     local pside = PlayerSide()
     FV.lCull = {}
     local list = {}
+    local rest = {}
     for _, x in ipairs(FD) do
-        if PassFilter(x, pside, c) then list[#list + 1] = x end
+        if PassFilter(x, pside, c) then
+            if c.fav[x.id] then list[#list + 1] = x else rest[#rest + 1] = x end
+        end
     end
+    for i = 1, #rest do list[#list + 1] = rest[i] end
     local pitch = FV.ROW_PITCH
     local n = #list
     local totalH = n * pitch
@@ -1666,7 +1773,7 @@ function FV:PaintList()
             r.__vtop = y
             r.__vh = FV.ROW_H
             r.__fid = x.id
-            r.name:SetText(FacName(x))
+            r.name:SetText((c.fav[x.id] and Q_INK_GOLD .. "★ " .. Q_END or "") .. FacName(x))
             local __lv = LiveValue(x.id) or x.start
             local __ti = StandingIdx(__lv)
             local __sc = STANDINGS[__ti].color
@@ -1686,6 +1793,7 @@ function FV:PaintList()
                 end
             end
             r.__tip = FacName(x) .. "\n" .. SIDE_INFO[x.side].text .. " · " .. L["起始声望"] .. " " .. NumStr(x.start)
+                .. ((c.fav[x.id] and "\n" .. Q_INK_GOLD .. L["已收藏"] .. Q_END) or "")
             r:ClearAllPoints()
             r:SetPoint("TOPLEFT", FV.lChild, "TOPLEFT", 0, -y)
             r:Show()
@@ -1702,10 +1810,14 @@ function FV:PaintList()
     if FV.UpdateLeftBar then FV.UpdateLeftBar() end
 end
 
-local function CostOf(x, key)
+local function CostOf(x, key, id)
     local c = (type(x) == "table") and x.cost
     if type(c) ~= "table" then return nil end
     local item, n = c.item, c[key]
+    if type(c.prices) == "table" then
+        local p = type(id) == "number" and c.prices[id]
+        if type(p) == "number" and p > 0 then n = p end
+    end
     if type(item) == "number" and type(n) == "number" and n > 0 then return item, n end
     return nil
 end
@@ -1728,7 +1840,7 @@ function FV:PaintRewardCard(f, id, fam, key)
         f.name:SetTextColor(Unpack(C_GREY))
         if DG and DG.RequestItem then DG.RequestItem(id) end
     end
-    local cItem, cNum = CostOf(fam, key)
+    local cItem, cNum = CostOf(fam, key, id)
     if cItem then
         if DG and DG.RequestItem then DG.RequestItem(cItem) end
         f.priceTex:ClearAllPoints()
@@ -1763,7 +1875,7 @@ function FV.OnItemData(itemID)
         if f:IsShown() then
             if f.__id == itemID then
                 FV:PaintRewardCard(f, itemID, f.__fam, f.__key)
-            elseif CostOf(f.__fam, f.__key) == itemID then
+            elseif CostOf(f.__fam, f.__key, f.__id) == itemID then
                 FV:PaintRewardCard(f, f.__id, f.__fam, f.__key)
             end
         end
@@ -1779,6 +1891,7 @@ function FV:PaintDetail()
     if not FV.segs then return end
     local c = Cfg()
     local x = FacBySel(c.sel)
+    local rw = x and RewardsOf(x) or nil
     FV.dCull = {}
     for _, seg in ipairs(FV.segs) do seg:Hide() end
     for _, tk in ipairs(FV.ticks) do tk:Hide() end
@@ -1899,7 +2012,7 @@ function FV:PaintDetail()
 
     local nSep = 0
     for _, key in ipairs(REWARD_TIERS) do
-        local ids = x.rewards and x.rewards[key]
+        local ids = rw and rw[key]
         if type(ids) == "table" and #ids > 0 then
             nSep = nSep + 1
             local s = FV.rSeps[nSep]

@@ -211,6 +211,7 @@ end
 
 function DS.ItemName(id) return DS.Text("item", id) end
 function DS.SpellName(id) return DS.Text("spell", id) end
+function DS.SpellEffect(id) return DS.RawText("spell_effect", id) end
 function DS.NpcName(id) return DS.Text("npc", id) end
 function DS.NpcTag(id) return DS.RawText("npc_tag", id) end
 function DS.NpcClassification(id) return DS.RawText("npc_classification", id) end

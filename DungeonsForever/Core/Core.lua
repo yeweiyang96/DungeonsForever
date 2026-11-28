@@ -89,6 +89,23 @@ function ns.ModuleOn(tabKey)
     return ns.AddonLoaded(m.addon)
 end
 
+function ns.QuestSearchDownText()
+    local L = ns.L
+    if not ns.AddonLoaded("DungeonsForeverQuest") then
+        return L["无法跳转到搜索：搜索模块（DungeonsForeverQuest）未启用，请在插件列表中启用后再试"]
+    end
+    if not ns.QuestieOn() then
+        return L["无法跳转到搜索：本功能依赖 Questie 任务插件（含 QuestieDB），请安装并启用后再试"]
+    end
+    return L["搜索模块未启用，暂时无法跳转"]
+end
+
+function ns.NotifySearchDown()
+    local t = ns.QuestSearchDownText()
+    if ns.ShowTopToast then ns.ShowTopToast(t) end
+    return t
+end
+
 function ns.ModuleDesc(tabKey)
     return ns.MODULE_BY_TAB[tabKey]
 end
@@ -148,7 +165,7 @@ if ns.options.buttonSound == nil then ns.options.buttonSound = true end
 ns.QUICK_VER = 1
 ns.QUICK_GROUPS = { "dungeon", "prof", "explore", "tier" }
 ns.QUICK_EXPLORE = { "books", "bag" }
-ns.QUICK_TIER = { "class", "prep" }
+ns.QUICK_TIER = { "class", "bis", "prep" }
 ns.QUICK_TABS = { "Dungeons", "Raids", "Professions", "Explore", "Collections", "Factions", "Bis", "Tier", "PvP", "Gear", "QuestSearch" }
 
 local QUICK_EXPLORE_SET = {}
@@ -214,7 +231,7 @@ function ns.SetProfModule(on)
     ns.QuickCfg().tabs.Professions = on and true or false
 end
 
-local bootDone = false
+local initsDrained = false
 
 function ns.EnsureProfAPI()
     if type(ns.ProfAPI) == "table" then return ns.ProfAPI end
@@ -230,7 +247,7 @@ function ns.EnsureProfAPI()
         if ok and state == 0 then return nil end
     end
     local sink, prevSink
-    if bootDone then
+    if initsDrained then
         sink = {}
         prevSink = rawget(ns, "__inits")
         ns.__inits = sink
@@ -621,15 +638,21 @@ boot:SetScript("OnEvent", function(self, event, name)
     if name ~= addonName then return end
     self:UnregisterEvent("ADDON_LOADED")
     DB()
-    for _, fn in ipairs(loadedFuncs) do
+    initsDrained = true
+    local idx = 1
+    local function step()
+        local fn = loadedFuncs[idx]
+        if not fn then return end
+        idx = idx + 1
         local ok, err = xpcall(fn, function(e)
             return tostring(e) .. "\n" .. debugstack(2)
         end)
         if not ok then
             print("|cffff5040[无限副本手册] 初始化回调出错（已跳过，不影响后续模块）：|r\n" .. tostring(err))
         end
+        C_Timer.After(0, step)
     end
-    bootDone = true
+    step()
     end)
 end)
 
@@ -684,9 +707,21 @@ do
 end
 
 function ns.Init(fn)
-    loadedFuncs[#loadedFuncs + 1] = fn
     local sink = rawget(ns, "__inits")
-    if sink then sink[#sink + 1] = fn end
+    if sink then
+        sink[#sink + 1] = fn
+        return
+    end
+    if initsDrained then
+        local ok, err = xpcall(fn, function(e)
+            return tostring(e) .. "\n" .. debugstack(2)
+        end)
+        if not ok then
+            print("|cffff5040[无限副本手册] 初始化回调出错（已跳过，不影响后续模块）：|r\n" .. tostring(err))
+        end
+        return
+    end
+    loadedFuncs[#loadedFuncs + 1] = fn
 end
 
 function ns.PlaySound(id)
@@ -786,6 +821,16 @@ function ns.CreateEditBox(parent, size)
     eb:HookScript("OnEscapePressed", function(self) self:ClearFocus() end)
     eb:HookScript("OnEnterPressed", function(self) self:ClearFocus() end)
     return eb
+end
+
+function ns.FocusEdit(e)
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(0, function()
+            if e:IsShown() then e:SetFocus() end
+        end)
+    else
+        e:SetFocus()
+    end
 end
 
 function ns.SkinPopupFont(p)

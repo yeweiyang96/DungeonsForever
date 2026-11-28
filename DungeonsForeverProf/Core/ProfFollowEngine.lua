@@ -49,8 +49,8 @@ local function hostLocale()
     if b and type(b.Locale) == "function" then
         return b.Locale() or "zhCN"
     end
-    if type(_G.DF_Locale) == "function" then
-        local ok, loc = pcall(_G.DF_Locale)
+    if type(_G.GetLocale) == "function" then
+        local ok, loc = pcall(_G.GetLocale)
         if ok and type(loc) == "string" and loc ~= "" then return loc end
     end
     return "zhCN"

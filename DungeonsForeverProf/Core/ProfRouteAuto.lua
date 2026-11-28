@@ -3172,6 +3172,11 @@ local function registerDelegate()
         impl.VendorPrice = RA.VendorPrice
         impl.EffectiveCost = RA.EffectiveCost
         impl.MatPriceOf = RA.MatPriceOf
+        impl.Available = RA.Available
+        impl.MoneyStr = RA.MoneyStr
+        impl.MoneyStrTip = RA.MoneyStrTip
+        impl.MatListCost = RA.MatListCost
+        impl.OnPricesChanged = RA.OnPricesChanged
         if type(impl.NPCSellPriceOf) ~= "function" then impl.NPCSellPriceOf = RA.NPCSellPriceOf end
 
         local prevInv = type(prev) == "table" and type(prev.Invalidate) == "function" and prev.Invalidate or nil

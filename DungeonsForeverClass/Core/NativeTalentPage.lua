@@ -120,16 +120,6 @@ local skinRegistered = false
 
 local euiBG = { 0.05, 0.05, 0.06, 0.62 }
 
-local function SkinTabEUI()
-    local b = NP.tab
-    if not (b and skinFacade and skinFacade.Tab) then return false end
-    local ok = pcall(skinFacade.Tab, b, { darkActive = true })
-    if ok and skinFacade.SetTabSelection then
-        pcall(skinFacade.SetTabSelection, b, b.__check == true)
-    end
-    return ok
-end
-
 local function SkinButtonEUI(b)
     if not b or b.__dfSkin then return end
     b.__dfSkin = true
@@ -152,6 +142,37 @@ local function SkinButtonEUI(b)
     local PP = _G.EllesmereUI and _G.EllesmereUI.PanelPP
     if PP and PP.CreateBorder then
         pcall(PP.CreateBorder, b, 0.30, 0.30, 0.30, 0.85, 1, 'OVERLAY', 7)
+    end
+end
+
+local function NativeTabSkinned()
+    local T = NP.frame or (_G.PlayerSpellsFrame and _G.PlayerSpellsFrame.TalentsFrame)
+    local ts = T and T.TabSystem
+    local t = ts and ts.tabs and ts.tabs[1]
+    if not (t and t.Left and t.Left.GetTexture) then return false end
+    local tex = t.Left:GetTexture()
+    return tex == nil or tex == '' or tex == 0
+end
+
+local function SkinTabEUI()
+    local b = NP.tab
+    if not (b and skinFacade and skinFacade.Tab) then return false end
+    if not NativeTabSkinned() then return false end
+    local ok = pcall(skinFacade.Tab, b, { darkActive = true })
+    if ok and skinFacade.SetTabSelection then
+        pcall(skinFacade.SetTabSelection, b, b.__check == true)
+    end
+    return ok
+end
+
+local function ScheduleTabSkin()
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.3, SkinTabEUI)
+        C_Timer.After(1.0, SkinTabEUI)
+        C_Timer.After(2.0, SkinTabEUI)
+        C_Timer.After(3.5, SkinTabEUI)
+    else
+        SkinTabEUI()
     end
 end
 
@@ -384,6 +405,7 @@ local function NodeOf(t, i)
 end
 
 local Refresh
+local LiveBase
 local ShowPlanMenu, SaveBuild
 
 local function NewText(parent, size, r, g, b, anchor)
@@ -533,6 +555,7 @@ local function BuildNode(t, i, nd)
                 pts[self.idx] = cur - 1
                 if pts[self.idx] <= 0 then pts[self.idx] = nil end
                 Refresh()
+                if ns.ReliveTalentTip then ns.ReliveTalentTip(pts[self.idx] or 0) end
             end
             return
         end
@@ -554,6 +577,7 @@ local function BuildNode(t, i, nd)
         end
         pts[self.idx] = cur + 1
         Refresh()
+        if ns.ReliveTalentTip then ns.ReliveTalentTip(pts[self.idx] or 0) end
     end)
 
     b:SetScript('OnEnter', function(self)
@@ -864,13 +888,18 @@ local function PlanList()
     local out = {}
     for i = 1, #plans do
         local p = plans[i]
-        out[#out + 1] = { label = p.name or string.format(L['方案%d'], i), plan = p, idx = i }
+        local nm = p.name or string.format(L['方案%d'], i)
+        local cat = 'other'
+        if string.find(nm, '·升级', 1, true) then cat = 'leveling'
+        elseif string.find(nm, '·PvE', 1, true) then cat = 'pve'
+        elseif string.find(nm, '·PvP', 1, true) then cat = 'pvp' end
+        out[#out + 1] = { label = nm, plan = p, idx = i, cat = cat }
     end
     local bl = DB().builds[NP.cls] or {}
     local bn = #bl
     if bn > MAX_MENU_ROWS then bn = MAX_MENU_ROWS end
     for i = 1, bn do
-        out[#out + 1] = { label = bl[i].name, alloc = bl[i].alloc, idx = #plans + i, blIdx = i }
+        out[#out + 1] = { label = bl[i].name, alloc = bl[i].alloc, idx = #plans + i, blIdx = i, cat = 'custom' }
     end
     return out
 end
@@ -1008,7 +1037,7 @@ local function SeqOf(plan)
     return nil
 end
 
-local function PendingSeq(base)
+local function PendingSeq(base, liveOnly)
     local seq = SeqOf(NP.plan or NP.RecPlan())
     local out = {}
     if not seq then return out end
@@ -1017,7 +1046,7 @@ local function PendingSeq(base)
     local have = (base and base.have) or NP.pts
     local baseSpent = (base and base.spent) or TotalSpent()
     local capLv = (base and base.lv) or 60
-    local overview = NP.viewMode == 'plan' or (base and base.all) or false
+    local overview = (not liveOnly) and (NP.viewMode == 'plan' or (base and base.all) or false)
     local early, late = {}, {}
     local baseLvOff = StartLv() - 1
     for i = 1, #seq do
@@ -1147,7 +1176,6 @@ end
 
 local function SeqMap(pending)
     local map = { {}, {}, {} }
-    local off = StartLv() - 1
     for i = 1, #pending do
         local p = pending[i]
         local m = map[p.t]
@@ -1156,7 +1184,7 @@ local function SeqMap(pending)
             list = {}
             m[p.i] = list
         end
-        list[#list + 1] = (p.lv or (off + i)) - off
+        list[#list + 1] = i
     end
     return map
 end
@@ -1194,12 +1222,15 @@ local function BuildSeqMap(pending)
     if NP.seqOn == nil then NP.seqOn = DB().seqOn ~= false end
     if not NP.seqOn or not NP.cls or not (NP.plan or NP.RecPlan()) then
         NP.seqMap = nil
+        NP.seqMapLive = nil
         NP.nextPending = nil
         return nil
     end
     pending = pending or PendingSeq()
     NP.seqMap = SeqMap(pending)
-    local first = pending[1]
+    local live = PendingSeq(LiveBase(true), true)
+    NP.seqMapLive = SeqMap(live)
+    local first = live[1]
     NP.nextPending = first and { t = first.t, i = first.i } or nil
     return NP.seqMap
 end
@@ -1294,7 +1325,7 @@ local function RefreshNativeSeq()
         NP.SeqGlowStop()
         return
     end
-    local nos = NP.seqMap
+    local nos = NP.seqMapLive
     local L = SeqLayer()
     if L then
         local T = NP.frame
@@ -1378,8 +1409,8 @@ local function LiveCached()
     return read
 end
 
-local function LiveBase()
-    if NP.viewMode == 'plan' then return nil end
+LiveBase = function(force)
+    if not force and NP.viewMode == 'plan' then return nil end
     local read = LiveCached()
     if not read then return nil end
     local c = NP.liveBaseCache
@@ -1782,19 +1813,71 @@ function NP.ApplyLive()
     StaticPopup_Show('DF_TALENT_SIM_APPLY')
 end
 
+local function PlanTabHighlight(btn, on)
+    if not btn then return end
+    local fs = btn.GetFontString and btn:GetFontString()
+    if fs then
+        if on then fs:SetTextColor(1, 0.82, 0.2)
+        else fs:SetTextColor(0.72, 0.76, 0.82) end
+    end
+    if btn.__dfBg then
+        if on then btn.__dfBg:SetColorTexture(0.45, 0.37, 0.13, 0.9)
+        else btn.__dfBg:SetColorTexture(euiBG[1], euiBG[2], euiBG[3], euiBG[4]) end
+    end
+end
+
 ShowPlanMenu = function(anchor)
     local menu = MenuUtil and MenuUtil.CreateContextMenu and nil
     local rows = PlanList()
     NP.planMenuAnchor = anchor
     if NP.planMenu then NP.planMenu:Hide() end
+    local hasCat = { leveling = false, pve = false, pvp = false, custom = false }
+    for i = 1, #rows do
+        local c = rows[i].cat
+        if hasCat[c] ~= nil then hasCat[c] = true end
+    end
+    local tabs = { { key = 'all', text = L['全部'] } }
+    if hasCat.leveling then tabs[#tabs + 1] = { key = 'leveling', text = L['升级'] } end
+    if hasCat.pve then tabs[#tabs + 1] = { key = 'pve', text = 'PvE' } end
+    if hasCat.pvp then tabs[#tabs + 1] = { key = 'pvp', text = 'PvP' } end
+    if hasCat.custom then tabs[#tabs + 1] = { key = 'custom', text = L['自定义'] } end
+    local cat = DB().planCat or 'all'
+    local valid = false
+    for i = 1, #tabs do
+        if tabs[i].key == cat then valid = true break end
+    end
+    if not valid then cat = 'all' end
+    DB().planCat = cat
+    local view = {}
+    for i = 1, #rows do
+        if cat == 'all' or rows[i].cat == cat then view[#view + 1] = rows[i] end
+    end
+    local TAB_TOP, TAB_H, TAB_GAP, TAB_W = 4, 22, 4, 50
+    local ROW_TOP = TAB_TOP + TAB_H + 6
+    rows = view
     local f = CreateFrame('Frame', 'DungeonsForeverTalentPlanMenu', UIParent, 'BackdropTemplate')
-    f:SetSize(352, (#rows + 1) * 24 + 12)
+    f:SetSize(352, ROW_TOP + (#rows + 1) * 24 + 6)
     f:SetPoint('TOPLEFT', anchor, 'BOTTOMLEFT', 0, -2)
     f:SetFrameStrata('FULLSCREEN_DIALOG')
     f:SetFrameLevel(200)
     f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
     f:SetBackdropColor(0.05, 0.05, 0.06, 0.96)
     f:SetBackdropBorderColor(0.7, 0.6, 0.3, 1)
+    local tx = 6
+    for i = 1, #tabs do
+        local tb = MakeButton(f, TAB_W, tabs[i].text, tx, -TAB_TOP)
+        local tfs = tb:GetFontString()
+        if tfs then tfs:SetFont(ns.FONT, 12, '') end
+        PlanTabHighlight(tb, tabs[i].key == cat)
+        local cc = tabs[i].key
+        tb:SetScript('OnClick', function()
+            if DB().planCat ~= cc then
+                DB().planCat = cc
+                if NP.planMenu and NP.planMenuAnchor then ShowPlanMenu(NP.planMenuAnchor) end
+            end
+        end)
+        tx = tx + TAB_W + TAB_GAP
+    end
 
     local catcher = CreateFrame('Frame', nil, UIParent)
     catcher:SetAllPoints(UIParent)
@@ -1807,17 +1890,42 @@ ShowPlanMenu = function(anchor)
     for i = 1, #rows do
         local r = CreateFrame('Button', nil, f)
         r:SetSize(340, 24)
-        r:SetPoint('TOPLEFT', f, 'TOPLEFT', 6, -(6 + (i - 1) * 24))
+        r:SetPoint('TOPLEFT', f, 'TOPLEFT', 6, -(ROW_TOP + (i - 1) * 24))
         r:SetHighlightTexture(WHITE, 'ADD')
         local hl = r:GetHighlightTexture()
         hl:SetVertexColor(1, 1, 1, 0.1)
         local fs = NewText(r, 14, 0.92, 0.92, 0.92, 'LEFT')
-        fs:SetPoint('LEFT', r, 'LEFT', 3, 0)
-        fs:SetWidth(76)
+        fs:SetPoint('LEFT', r, 'LEFT', 22, 0)
+        fs:SetWidth(92)
         fs:SetJustifyH('LEFT')
         fs:SetWordWrap(false)
         fs:SetText(rows[i].label)
-        local alloc = rows[i].alloc or (rows[i].plan and rows[i].plan.alloc) or {}
+        local rawAlloc = rows[i].alloc or (rows[i].plan and rows[i].plan.alloc)
+        local alloc = rawAlloc or {}
+        if rawAlloc then
+            local bi, best = 1, -1
+            for t = 1, 3 do
+                local s = 0
+                for _, v in pairs(alloc[t] or {}) do s = s + (tonumber(v) or 0) end
+                if s > best then best = s bi = t end
+            end
+            local specIdx = bi
+            if string.upper(NP.cls or '') == 'DRUID' and bi == 3 then specIdx = 4 end
+            local specs = ns.ClassTier and ns.ClassTier.specs and ns.ClassTier.specs[string.upper(NP.cls or '')]
+            local sp = specs and specs[specIdx]
+            local iconPath = sp and sp.icon
+            if not iconPath then
+                local tree = d and d.trees and d.trees[bi]
+                if tree and tree.icon then iconPath = 'Interface\\Icons\\' .. tostring(tree.icon) end
+            end
+            if iconPath then
+                local ic = r:CreateTexture(nil, 'ARTWORK')
+                ic:SetSize(16, 16)
+                ic:SetPoint('LEFT', r, 'LEFT', 3, 0)
+                ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+                ic:SetTexture(iconPath)
+            end
+        end
         local total, x = 0, 120
         for t = 1, 3 do
             local tree = d and d.trees[t]
@@ -1943,7 +2051,7 @@ ShowPlanMenu = function(anchor)
     end
     local add = CreateFrame('Button', nil, f)
     add:SetSize(340, 24)
-    add:SetPoint('TOPLEFT', f, 'TOPLEFT', 6, -(6 + #rows * 24))
+    add:SetPoint('TOPLEFT', f, 'TOPLEFT', 6, -(ROW_TOP + #rows * 24))
     add:SetHighlightTexture(WHITE, 'ADD')
     local ahl = add:GetHighlightTexture()
     if ahl then ahl:SetVertexColor(1, 1, 1, 0.1) end
@@ -2148,13 +2256,13 @@ end
 local function TabMark(tab, on)
     if not tab then return end
     if tab.SetTabSelected then pcall(tab.SetTabSelected, tab, on and true or false) end
-    if skinFacade and skinFacade.SetTabSelection then pcall(skinFacade.SetTabSelection, tab, on and true or false) end
+    if NativeTabSkinned() and skinFacade and skinFacade.SetTabSelection then pcall(skinFacade.SetTabSelection, tab, on and true or false) end
 end
 
 local function NativeTabSelect(on)
     local ts = NP.frame and NP.frame.TabSystem
     local tabs = ts and ts.tabs
-    if not (tabs and skinFacade and skinFacade.SetTabSelection) then return end
+    if not (tabs and NativeTabSkinned() and skinFacade and skinFacade.SetTabSelection) then return end
     for i = 1, #tabs do
         local t = tabs[i]
         if t then
@@ -2657,6 +2765,7 @@ local function BuildTab(ts)
     btn.__dfMine = true
     NP.tab = btn
     SkinTabEUI()
+    ScheduleTabSkin()
     return true
 end
 
@@ -2672,6 +2781,7 @@ local function Follow()
             if pfShown then
                 if NP.needBuild and NP.Init then NP.Init() end
                 if NP.ours then NP.SyncShow() end
+                ScheduleTabSkin()
             elseif NP.RequestNativeTab then
                 NP.RequestNativeTab()
             end
@@ -2680,8 +2790,8 @@ local function Follow()
         local spentNow = liveSpent and liveSpent.spent or nil
         if spentNow and spentNow ~= NP.liveSpentSeen then
             NP.liveSpentSeen = spentNow
-            if not Mine() and NP.viewMode ~= 'plan' then
-                NP.SyncFromLive()
+            if not Mine() then
+                if NP.viewMode ~= 'plan' then NP.SyncFromLive() end
                 NP.SyncPlan()
             end
         end
@@ -2733,7 +2843,7 @@ end
 NP.Init = Init
 
 ns.Init(function()
-    if IsLoggedIn and IsLoggedIn() then Init() end
+    if IsLoggedIn and IsLoggedIn() then C_Timer.After(1.5, function() pcall(Init) end) end
     if EventUtil and EventUtil.ContinueOnAddOnLoaded then
         EventUtil.ContinueOnAddOnLoaded('Blizzard_PlayerSpells', function() Init() end)
     end

@@ -59,6 +59,68 @@ ns.MainFrame = f
 ns.TalentSimFrame = f
 
 do
+    local toast
+    local toastText
+
+    function ns.ShowTopToast(text)
+        if not f then return end
+        if type(text) ~= "string" or text == "" then return end
+        if not toast then
+            toast = CreateFrame("Frame", nil, f, "BackdropTemplate")
+            toast:SetHeight(28)
+            toast:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 10, 8)
+            toast:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -10, 8)
+            toast:SetFrameLevel(f:GetFrameLevel() + 200)
+            toast:EnableMouse(false)
+            toast:SetAlpha(0)
+            local amber = { 0.30, 0.21, 0.06, 0.97 }
+            if ns.hui and ns.hui.BuildRoundedBG then
+                ns.hui.BuildRoundedBG(toast, 8, amber, "both", true)
+            else
+                toast:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8x8",
+                    edgeFile = "Interface\\Buttons\\WHITE8x8",
+                    edgeSize = 1,
+                })
+                toast:SetBackdropColor(amber[1], amber[2], amber[3], amber[4])
+                toast:SetBackdropBorderColor(1, 0.82, 0.35, 0.9)
+            end
+            toastText = toast:CreateFontString(nil, "OVERLAY")
+            toastText:SetFont(ns.FONT, 13, "")
+            toastText:SetPoint("LEFT", toast, "LEFT", 16, 0)
+            toastText:SetPoint("RIGHT", toast, "RIGHT", -16, 0)
+            toastText:SetJustifyH("CENTER")
+            toastText:SetTextColor(1, 0.90, 0.62)
+            toast:SetScript("OnUpdate", function(self, elapsed)
+                local target = (self.__fadingOut and 0) or 1
+                local a = self:GetAlpha() or 0
+                local d = elapsed / 0.28
+                if a < target then
+                    a = math.min(target, a + d)
+                elseif a > target then
+                    a = math.max(target, a - d)
+                end
+                self:SetAlpha(a)
+            end)
+        end
+        toast.__ver = (toast.__ver or 0) + 1
+        local ver = toast.__ver
+        toast.__fadingOut = false
+        toastText:SetText(text)
+        toast:SetAlpha(0)
+        toast:Show()
+        C_Timer.After(5, function()
+            if toast.__ver ~= ver then return end
+            toast.__fadingOut = true
+            C_Timer.After(0.4, function()
+                if toast.__ver ~= ver then return end
+                toast:Hide()
+            end)
+        end)
+    end
+end
+
+do
     if ns.hui and ns.hui.SkinPopup then
         ns.hui.SkinPopup(f, 8, nil, ns.hui.layer and ns.hui.layer.L0 or nil)
     else
@@ -391,7 +453,6 @@ function BuildAbout()
             p.eb:SetFocus()
         end
     end
-
 
     local rows = {
         { key = L["作者"], parts = { { t = L["圆圆"] } } },
@@ -924,17 +985,17 @@ settingsBtn:SetScript("OnClick", function()
         if ns.LootFilterUI and ns.LootFilterUI.CloseConfig then ns.LootFilterUI:CloseConfig() end
         if ns.CloseExploreMapSettings then ns.CloseExploreMapSettings() end
         if ns.CloseQuestPinSettings then ns.CloseQuestPinSettings() end
-        if ns.CloseBisSettings then ns.CloseBisSettings() end
     end
     if show and ns.QuickBar then ns.QuickBar:SyncSettings() end
     if show then BuildTipCard() end
     if show then BuildAppearanceCard() end
     if show then BuildEnhCard() end
+    if show then BuildKeybindRow() end
     settingsPop:SetShown(show)
     SyncSettingsGlyph()
 end)
 
-local ENH_CARD_H = 110
+local ENH_CARD_H = 130
 
 settingsPop = CreateFrame("Frame", nil, f, "BackdropTemplate")
 settingsPop:SetFrameLevel(512)
@@ -1139,6 +1200,18 @@ local mapToggle
 local instanceMapToggle
 local zoneToggle
 local legacyToggle
+local bgArrowToggle
+local bgArrowScope
+
+local function BagScopeShort()
+    local s = ns.BagArrow and ns.BagArrow.Scope and ns.BagArrow.Scope() or nil
+    if s == "all" then
+        return L["任一专精"]
+    elseif s == "manual" then
+        return L["跟随选择"]
+    end
+    return L["当前天赋"]
+end
 
 local function SpellBlocked()
     return (ns.SpellTabsTaken and ns.SpellTabsTaken()) and true or false
@@ -1170,6 +1243,25 @@ local function SyncEnhCard()
     end
     if legacyToggle then
         legacyToggle:SetChecked((ns.LegacyEnhOn and ns.LegacyEnhOn()) and true or false)
+    end
+    if bgArrowToggle then
+        local on = (ns.BagArrow and ns.BagArrow.On and ns.BagArrow.On()) and true or false
+        bgArrowToggle:SetChecked(on)
+        if ns.BagArrow then
+            bgArrowToggle:Enable()
+            bgArrowToggle:SetAlpha(1)
+        else
+            bgArrowToggle:Disable()
+            bgArrowToggle:SetAlpha(0.4)
+        end
+    end
+    if bgArrowScope then
+        if ns.BagArrow then
+            bgArrowScope:Show()
+        else
+            bgArrowScope:Hide()
+        end
+        if bgArrowScope.lbl then bgArrowScope.lbl:SetText(BagScopeShort()) end
     end
 end
 
@@ -1254,6 +1346,16 @@ function BuildEnhCard()
     zoneToggle = EnhCell(card, 113, -58, L["地图待办"], L["进入地图时在屏幕左侧显示待办角标"])
     legacyToggle = EnhCell(card, 2, -82, L["传承点增强"], L["在原生传承界面增加推荐加点卡片与方案页"])
     instanceMapToggle = EnhCell(card, 113, -82, L["副本内地图"], L["进入副本后用手册地图替换原生副本地图，关闭则保留原生副本地图"])
+    bgArrowToggle = EnhCell(card, 2, -106, L["背包提升箭头"], L["在背包/银行物品图标上显示相对当前配装的提升箭头"])
+    bgArrowScope = ns.CreateButton(card)
+    do
+        local afs = bgArrowScope:GetFontString()
+        if afs then afs:SetFont(ns.FONT, 14, "") end
+    end
+    bgArrowScope:SetSize(92, 24)
+    bgArrowScope:SetPushedTextOffset(0, 0)
+    bgArrowScope:SetPoint("TOPLEFT", card, "TOPLEFT", 113, -104)
+    bgArrowScope.lbl = bgArrowScope:GetFontString()
 
     spellToggle:SetScript("OnClick", function(self)
         if SpellBlocked() then return end
@@ -1299,11 +1401,135 @@ function BuildEnhCard()
         if ns.SetLegacyEnh then ns.SetLegacyEnh(nv) end
         SyncEnhCard()
     end)
+    bgArrowToggle:SetScript("OnClick", function(self)
+        if not (ns.BagArrow and ns.BagArrow.SetOn and ns.BagArrow.On) then return end
+        ns.PlaySound(1)
+        local nv = not ns.BagArrow.On()
+        self:SetChecked(nv)
+        ns.BagArrow.SetOn(nv)
+        SyncEnhCard()
+    end)
+    bgArrowScope:SetScript("OnClick", function()
+        if not (ns.BagArrow and ns.BagArrow.CycleScope) then return end
+        ns.PlaySound(1)
+        ns.BagArrow.CycleScope()
+        SyncEnhCard()
+    end)
+    bgArrowScope:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(L["作用范围"], 1, 1, 1, true)
+        local full = (ns.BisModule and ns.BisModule.ArrowScopeText and ns.BisModule.ArrowScopeText()) or BagScopeShort()
+        GameTooltip:AddLine(full, 0.78, 0.80, 0.84, true)
+        GameTooltip:Show()
+    end)
+    bgArrowScope:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     SyncEnhCard()
 end
 ns.BuildEnhCard = BuildEnhCard
 
 ns.SyncZoneHintCard = SyncEnhCard
+
+local keybindBtn
+local keybindReopen
+local keybindHooked
+
+local function AnchorKeybindRow()
+    if not keybindBtn then return end
+    keybindBtn:ClearAllPoints()
+    local up = enhCard or appearanceCard or tipCard
+    if up then
+        keybindBtn:SetPoint("TOPLEFT", up, "BOTTOMLEFT", 0, -8)
+        keybindBtn:SetPoint("TOPRIGHT", up, "BOTTOMRIGHT", 0, -8)
+    else
+        keybindBtn:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
+        keybindBtn:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
+    end
+end
+
+local function JumpKeybinds()
+    local cat = BINDING_HEADER_DUNGEONSFOREVER
+    if not (cat and Settings and Settings.KEYBINDINGS_CATEGORY_ID and Settings.OpenToCategory) then
+        if KeyBindingFrame_LoadUI then KeyBindingFrame_LoadUI() end
+        if KeyBindingFrame then ShowUIPanel(KeyBindingFrame) end
+        return
+    end
+    local wasShown = f:IsShown()
+    if wasShown then f:Hide() end
+    local ok = pcall(Settings.OpenToCategory, Settings.KEYBINDINGS_CATEGORY_ID, cat)
+    if not ok then
+        if wasShown then f:Show() end
+        return
+    end
+    local sb = SettingsPanel and SettingsPanel.Container and SettingsPanel.Container.SettingsList
+        and SettingsPanel.Container.SettingsList.ScrollBox
+    if sb then
+        C_Timer.After(0, function()
+            local _, frames = sb:EnumerateFrames()
+            for _, fr in pairs(frames) do
+                if fr.Button and fr.Button.Text and fr.Button.Text:GetText() == cat then
+                    if fr.Controls and fr.Controls[1] and fr.Controls[1].IsShown and not fr.Controls[1]:IsShown() then
+                        fr.Button:Click()
+                        C_Timer.After(0, function() sb:ScrollIncrease(3) end)
+                    end
+                    break
+                end
+            end
+        end)
+    end
+    local win = SettingsPanel or KeyBindingFrame
+    if wasShown and win and win:IsShown() then
+        keybindReopen = true
+        if not keybindHooked then
+            keybindHooked = true
+            win:HookScript("OnHide", function()
+                if keybindReopen and f then ns.Open() end
+                keybindReopen = false
+            end)
+        end
+    elseif wasShown then
+        f:Show()
+    end
+end
+
+ns.OpenKeybindSettings = JumpKeybinds
+
+function BuildKeybindRow()
+    if keybindBtn then
+        AnchorKeybindRow()
+        return
+    end
+    local bt = ns.CreateButton(settingsPop)
+    bt:SetHeight(24)
+    bt.__huiKeepTextColor = true
+    local fs = bt:GetFontString()
+    if fs then
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 10, 0)
+        fs:SetPoint("RIGHT", bt, "RIGHT", -10, 0)
+        fs:SetJustifyH("LEFT")
+        fs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+        fs:SetText(L["开关插件快捷键设置"])
+    end
+    bt:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(L["开关插件快捷键设置"], 1, 1, 1, true)
+        GameTooltip:AddLine(L["打开按键设置并定位到本插件的绑定行，为主界面开关设置快捷键。"], 0.78, 0.80, 0.84, true)
+        GameTooltip:Show()
+    end)
+    bt:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    bt:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        JumpKeybinds()
+    end)
+    keybindBtn = bt
+    AnchorKeybindRow()
+end
 
 local function AnchorTipCard(card)
     local qbCard = ns.QuickBar and ns.QuickBar.cardBg
@@ -1522,7 +1748,6 @@ function ns.OpenTipSettings()
     if ns.LootFilterUI and ns.LootFilterUI.CloseConfig then ns.LootFilterUI:CloseConfig() end
     if ns.CloseExploreMapSettings then ns.CloseExploreMapSettings() end
     if ns.CloseQuestPinSettings then ns.CloseQuestPinSettings() end
-    if ns.CloseBisSettings then ns.CloseBisSettings() end
     if ns.QuickBar then ns.QuickBar:SyncSettings() end
     BuildTipCard()
     BuildAppearanceCard()
@@ -1555,7 +1780,6 @@ function ns.LayoutSettingsStack()
     end
     AnchorEnhCard()
 end
-
 
 local SCALE_MIN, SCALE_MAX, SCALE_STEP = 60, 140, 5
 
@@ -2113,6 +2337,10 @@ end)
 SLASH_DUNGEONSFOREVER1 = "/df"
 SLASH_DUNGEONSFOREVER2 = L["/副本手册"]
 SLASH_DUNGEONSFOREVER3 = "/fbsc"
+
+BINDING_HEADER_DUNGEONSFOREVER = L["无限副本手册"]
+BINDING_NAME_DUNGEONSFOREVER_TOGGLE = L["显示/隐藏主界面"]
+DUNGEONSFOREVER_TOGGLE = function() ns.Toggle() end
 
 SLASH_DUNGEONSFOREVERLANG1 = "/dfcn"
 SLASH_DUNGEONSFOREVERLANG2 = L["/df中文"]

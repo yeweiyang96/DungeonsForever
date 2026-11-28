@@ -33,10 +33,18 @@ local function Gold(str)
     return "|cffffd100" .. tostring(str) .. "|r"
 end
 
+local function GetProfAPI()
+    if type(ns.EnsureProfAPI) == "function" then
+        local api = ns.EnsureProfAPI()
+        if type(api) == "table" then return api end
+    end
+    return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+end
+
 local function StrW(txt, size)
-    local PM = ns.ProfModule
-    if PM and PM.TextW then
-        local ok, w = pcall(PM.TextW, txt, size or 14)
+    local api = GetProfAPI()
+    if api and type(api.MeasureTextWidth) == "function" then
+        local ok, w = pcall(api.MeasureTextWidth, txt, size or 14)
         if ok and type(w) == "number" and w > 0 then return w end
     end
     return #tostring(txt) * (size or 14) * 0.55
@@ -247,9 +255,9 @@ local function RepBand(rep)
 end
 
 local function MatPrice(id)
-    local RA = ns.ProfRouteAuto
-    if not RA or not RA.AHPriceOf then return nil end
-    local p = RA.AHPriceOf(id)
+    local api = GetProfAPI()
+    if not (api and type(api.AHPriceOf) == "function") then return nil end
+    local p = api.AHPriceOf(id)
     if type(p) == "number" and p > 0 then return p end
     return nil
 end
@@ -264,9 +272,9 @@ local function ShortMoney(c)
 end
 
 local function MoneyStr(c)
-    local RA = ns.ProfRouteAuto
-    if RA and RA.MoneyStr then
-        local ok, s = pcall(RA.MoneyStr, c)
+    local api = GetProfAPI()
+    if api and type(api.MoneyStr) == "function" then
+        local ok, s = pcall(api.MoneyStr, c)
         if ok and type(s) == "string" then return s end
     end
     local g = math.floor(c / 10000)
@@ -624,9 +632,9 @@ local function Build(EG, page)
     end
 
     local function TextW(txt, size)
-        local PM = ns.ProfModule
-        if PM and PM.TextW then
-            local ok, w = pcall(PM.TextW, txt, size or 14)
+        local api = GetProfAPI()
+        if api and type(api.MeasureTextWidth) == "function" then
+            local ok, w = pcall(api.MeasureTextWidth, txt, size or 14)
             if ok and type(w) == "number" and w > 0 then return w end
         end
         return #tostring(txt) * (size or 14)
@@ -950,9 +958,9 @@ local function Build(EG, page)
     local VY = PAD + 14 + 12
     local SY = VY + 16 + 6
     local TW = function(txt, size)
-        local PM = ns.ProfModule
-        if PM and PM.TextW then
-            local ok, w = pcall(PM.TextW, txt, size or 14)
+        local api = GetProfAPI()
+        if api and type(api.MeasureTextWidth) == "function" then
+            local ok, w = pcall(api.MeasureTextWidth, txt, size or 14)
             if ok and type(w) == "number" and w > 0 then return w end
         end
         return #tostring(txt) * (size or 14)
@@ -1216,8 +1224,14 @@ local function Build(EG, page)
     local tNat = tc1:GetHeight()
 
     local tc3 = NewCard(tp, tcW1 + GAP, 0, tcW, L["算一算"], L["按拍卖行单价，声望算次数"], nil, nil, true)
-    local impW = math.max(88, (ns.ProfModule and ns.ProfModule.TextW
-        and select(2, pcall(ns.ProfModule.TextW, L["导入拍卖行"], 14)) or 84) + 20)
+    local impW = math.max(88, (function()
+        local api = GetProfAPI()
+        if api and type(api.MeasureTextWidth) == "function" then
+            local ok, w = pcall(api.MeasureTextWidth, L["导入拍卖行"], 14)
+            if ok and type(w) == "number" and w > 0 then return w end
+        end
+        return 84
+    end)() + 20)
     local impBtn = NewButton(tc3, L["导入拍卖行"], impW, BTN_H, 14)
     impBtn:SetPoint("TOPRIGHT", tc3, "TOPRIGHT", -PAD, -PAD)
     impBtn:SetScript("OnEnter", function(self)
@@ -1229,7 +1243,7 @@ local function Build(EG, page)
     end)
     impBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     impBtn:SetScript("OnClick", function()
-        local AB = ns.AuctionBridge
+        local api = GetProfAPI()
         local items = {}
         local tot = {}
         for _, e in ipairs(EG.dmPlan or {}) do
@@ -1238,7 +1252,9 @@ local function Build(EG, page)
         for id, need in pairs(tot) do
             items[#items + 1] = { name = DG.ItemName(id), need = need }
         end
-        if AB and AB.DoImport then AB.DoImport(L["暗月马戏团"], items) end
+        if api and type(api.ImportShoppingList) == "function" then
+            api.ImportShoppingList(L["暗月马戏团"], items)
+        end
         ns.PlaySound(1)
     end)
     local lab = MakeFS(tc3, 14, C_GREY, "RIGHT")
@@ -1420,13 +1436,13 @@ local function Build(EG, page)
     end
 
     local function UpdateScan()
-        local AB = ns.AuctionBridge
+        local api = GetProfAPI()
         local priced, tot = 0, 0
         for _, r in ipairs(EG.dmMatRows) do
             tot = tot + 1
             if MatPrice(r.id) then priced = priced + 1 end
         end
-        local snap = AB and AB.FullScanSnapshotStatus and AB.FullScanSnapshotStatus()
+        local snap = api and type(api.FullScanSnapshotStatus) == "function" and api.FullScanSnapshotStatus() or nil
         if snap and snap.status == "available" and snap.observedAt then
             local age = math.max(0, (time() - snap.observedAt))
             scanStat:SetText(format(L["拍卖行 %d/%d 有价 · 扫描于 %s"], priced, tot, AgeStr(age)))
@@ -1971,8 +1987,9 @@ local function Build(EG, page)
     UpdateScan()
     LayoutTicket()
 
-    if ns.AuctionBridge and ns.AuctionBridge.OnChanged then
-        ns.AuctionBridge.OnChanged(function()
+    local profApi = GetProfAPI()
+    if profApi and type(profApi.OnAuctionDataChanged) == "function" then
+        profApi.OnAuctionDataChanged(function()
             if EG.dmScanTimer then return end
             EG.dmScanTimer = true
             C_Timer.After(0.4, function()
@@ -1984,8 +2001,8 @@ local function Build(EG, page)
         end)
     end
 
-    if ns.ProfRouteAuto and ns.ProfRouteAuto.OnPricesChanged then
-        ns.ProfRouteAuto.OnPricesChanged(function()
+    if profApi and type(profApi.OnPricesChanged) == "function" then
+        profApi.OnPricesChanged(function()
             if not EG.dmPaintPrices then return end
             pcall(EG.dmPaintPrices)
             if EG.DarkmoonRecalc then pcall(EG.DarkmoonRecalc) end

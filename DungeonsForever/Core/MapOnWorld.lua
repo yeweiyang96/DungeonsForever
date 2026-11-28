@@ -55,7 +55,6 @@ local function setMap(id)
     applyMap(id)
 end
 
-
 local regen = CreateFrame("Frame")
 regen:RegisterEvent("PLAYER_REGEN_ENABLED")
 regen:SetScript("OnEvent", function()
@@ -414,7 +413,6 @@ local function areaOffset()
     if type(ox) ~= "number" or type(oy) ~= "number" then return 0, 0 end
     return ox, oy
 end
-
 
 local function mapAreaSize()
     local a = area()
@@ -785,7 +783,7 @@ local function paintArt(view, id, idx, cw, ch)
         for i = 1, #lay do
             local p = lay[i]
             local t = view.tiles[p.n]
-            t:SetTexture((fixTile and fixTile[p.n]) or (path .. p.n))
+            M.SetTile(t, id, idx, path, p.n, fixTile and fixTile[p.n])
             t:SetTexCoord(p.u0, p.u1, p.v0, p.v1)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", view.canvas, "TOPLEFT", p.x, -p.y)
@@ -885,7 +883,6 @@ end
 
 local function syncRoute(view, id, floor, cw, ch)
     if ns.PaintJob then ns.PaintJob.Cancel(routeJobKey(view)) end
-    local used = view.routeUsed or 0
     local hv = M.NewSegHover(view.route, function(si, on) paintSegWorld(view, si, on) end)
     if hv.seg then hv:Set(nil) end
     view.routeUsed = 0
@@ -966,7 +963,7 @@ local function syncRoute(view, id, floor, cw, ch)
             end
         end
         if n == 0 then hv:HideAll() end
-        for i = n + 1, used do
+        for i = n + 1, #view.routePool do
             local e = view.routePool[i]
             if e then
                 e.o:Hide()
@@ -1567,16 +1564,23 @@ local function ensurePinLogo()
     bt.ring:SetSize(54, 54)
     bt.ring:SetPoint("TOPLEFT")
     bt:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
+    bt:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     bt:SetScript("OnEnter", function(self)
         GameTooltip:ClearLines()
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine("|T" .. PINLOGO_TEX .. ":18|t " .. L["无限副本手册"], 1, 0.82, 0, true)
         GameTooltip:AddLine(L[pinLogoOn() and "左键：隐藏地图图例" or "左键：显示地图图例"], 0.75, 0.75, 0.75, true)
+        local lay = (ns.MapModule and ns.MapModule.PinsLayer and ns.MapModule.PinsLayer()) or "above"
+        GameTooltip:AddLine(L["右键：切换图例层级（当前：%s）"]:format(L[lay == "above" and "Questie 之上" or "Questie 之下"]), 0.75, 0.75, 0.75, true)
         GameTooltip:Show()
     end)
     bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
     bt:SetScript("OnClick", function(_, button)
-        if button ~= "LeftButton" then return end
+        if button == "RightButton" then
+            if ns.MapModule and ns.MapModule.TogglePinsLayer then pcall(ns.MapModule.TogglePinsLayer) end
+            syncPinLogo()
+            return
+        end
         pinLogoSet(not pinLogoOn())
     end)
     W.pinLogo = bt
@@ -2946,6 +2950,7 @@ function Provider:RefreshAllData()
         if ok2 and type(lv) == "number" then level = lv end
     end
     level = math.max(level, ArtTopLevel())
+    if ns.MapPinLevel then level = ns.MapPinLevel(level) end
     local n = math.min(#groups, PIN_ENTRY_MAX)
     for i = 1, n do
         local g = groups[i]
@@ -3012,6 +3017,7 @@ local function driveEntryPins()
     local sig = table.concat({
         tostring(mapID), tostring(cs), tostring(cw), tostring(ch),
         W.Active() and "1" or "0", tostring(ArtTopLevel()),
+        tostring(ns.MapModule and ns.MapModule.PinsLayer and ns.MapModule.PinsLayer() or "above"),
     }, "|")
     if sig == epSig then return end
     epSig = sig
@@ -3171,16 +3177,34 @@ local function buildPinPool(view)
                 end
                 return
             end
+            local v = self.__dfView or W.view
+            local MWm = ns.MapWindowModule
+            local hosted = (v and (v.__mapWin or v.__mini) and MWm) and true or false
+            if hosted and MWm.curId == M.curId and MWm.curLayer then
+                M.curLayer = MWm.curLayer
+            end
             W.arrive = nil
             if p and (kind == "prev" or kind == "next" or (kind == "entrance" and p.to)) then
                 W.arrive = { from = M.CurFloorNum(), kind = kind, tox = p.tox, toy = p.toy }
             end
             local was = M.curLayer
             M.PinOnClick(self, true)
-            W.Sync()
+            if hosted then
+                if M.curLayer ~= was then
+                    MWm.curLayer = M.curLayer
+                    MWm.subFollow = false
+                end
+                if v.__mini and MWm.MiniSync then
+                    MWm.MiniSync(true)
+                elseif MWm.Sync then
+                    MWm.Sync()
+                end
+            else
+                W.Sync()
+            end
             local a = W.arrive
             if a and a.from and M.curLayer ~= was then
-                M.ArriveAt(a.from, a.kind, a.tox, a.toy, self.__dfView or W.view)
+                M.ArriveAt(a.from, a.kind, a.tox, a.toy, v)
             end
         end)
         bt:SetScript("OnEnter", function(self)
@@ -3382,7 +3406,6 @@ function W.Build()
     taskBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     taskBtn:Hide()
     view.taskBtn = taskBtn
-
 
     local btns = {}
     for i = 1, M.MAX_LAYERS do

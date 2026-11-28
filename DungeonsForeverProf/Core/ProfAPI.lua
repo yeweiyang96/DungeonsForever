@@ -263,6 +263,173 @@ function API.CraftProfessionOf(itemID)
   return nil
 end
 
+local craftRecipesMemo = {}
+local enchantEntriesMemo = nil
+local enchantEntriesLocale = nil
+local armorKitEntriesMemo = nil
+local armorKitEntriesLocale = nil
+
+local function copyReagentsAsPairs(reagents)
+  local out = {}
+  if type(reagents) ~= "table" then return out end
+  for i = 1, #reagents do
+    local m = reagents[i]
+    if type(m) == "table" and type(m.itemID) == "number" and m.itemID > 0 then
+      out[#out + 1] = { m.itemID, tonumber(m.count) or 1 }
+    end
+  end
+  return out
+end
+
+local function extractShortEnchantName(fullName)
+  if type(fullName) ~= "string" or fullName == "" then return "" end
+  local afterDash = fullName:match("%s%-%s(.+)$") or fullName:match("：(.+)$")
+  if type(afterDash) == "string" and afterDash ~= "" then
+    return afterDash
+  end
+  return fullName
+end
+
+local function fallbackSpellDescription(spellID)
+  if type(spellID) ~= "number" or spellID <= 0 then return nil end
+  if type(_G.C_Spell) == "table" and type(_G.C_Spell.GetSpellDescription) == "function" then
+    local ok, txt = pcall(_G.C_Spell.GetSpellDescription, spellID)
+    if ok and type(txt) == "string" and txt ~= "" then return txt end
+  end
+  if type(_G.GetSpellDescription) == "function" then
+    local ok, txt = pcall(_G.GetSpellDescription, spellID)
+    if ok and type(txt) == "string" and txt ~= "" then return txt end
+  end
+  return nil
+end
+
+function API.CraftRecipesForItem(itemID)
+  local id = tonumber(itemID)
+  if not id or id <= 0 then return nil end
+  local cached = craftRecipesMemo[id]
+  if cached ~= nil then
+    return cached ~= false and cached or nil
+  end
+  local DS = getDS()
+  if not DS then return nil end
+  local spells = DS.CraftIndex(id)
+  if type(spells) ~= "table" or #spells == 0 then
+    craftRecipesMemo[id] = false
+    return nil
+  end
+  local out = {}
+  for i = 1, #spells do
+    local sid = tonumber(spells[i])
+    local slug = sid and DS.RecipeProfession(sid) or nil
+    if sid and slug then
+      local bucket = DS.EnsureRecipes(slug)
+      local rec = type(bucket) == "table" and type(bucket.recipes) == "table" and bucket.recipes[sid] or nil
+      if type(rec) == "table" and rec.availability == "live" then
+        out[#out + 1] = {
+          slug = slug,
+          spellID = sid,
+          count = tonumber(rec.outputCountMin) or 1,
+          learnedAt = tonumber(rec.learnedAt) or 0,
+          mats = copyReagentsAsPairs(rec.reagents),
+        }
+      end
+    end
+  end
+  if #out == 0 then
+    craftRecipesMemo[id] = false
+    return nil
+  end
+  craftRecipesMemo[id] = out
+  return out
+end
+
+function API.EnchantEntries()
+  local DS = getDS()
+  if not DS then return {} end
+  local curLoc = type(DS.GetLocale) == "function" and DS.GetLocale() or "default"
+  if enchantEntriesMemo and enchantEntriesLocale == curLoc then
+    return enchantEntriesMemo
+  end
+  local bucket = DS.EnsureRecipes("enchanting")
+  local recipes = type(bucket) == "table" and type(bucket.recipes) == "table" and bucket.recipes or nil
+  if not recipes then return {} end
+  local sids = {}
+  for sid, rec in pairs(recipes) do
+    if type(sid) == "number" and type(rec) == "table"
+       and rec.availability == "live" and rec.outputKind == "enchant"
+       and type(rec.enchantSlot) == "string" and rec.enchantSlot ~= "" then
+      sids[#sids + 1] = sid
+    end
+  end
+  table.sort(sids)
+  local out = {}
+  for i = 1, #sids do
+    local sid = sids[i]
+    local rec = recipes[sid]
+    local fullName = DS.RawText("spell", sid) or DS.SpellName(sid) or ""
+    local eff = (type(DS.SpellEffect) == "function" and DS.SpellEffect(sid))
+      or DS.RawText("spell_effect", sid)
+      or fallbackSpellDescription(sid)
+      or ""
+    out[#out + 1] = {
+      spellID = sid,
+      enchantSlot = rec.enchantSlot,
+      name = fullName,
+      shortName = extractShortEnchantName(fullName),
+      effect = eff,
+      learnedAt = tonumber(rec.learnedAt) or nil,
+      mats = copyReagentsAsPairs(rec.reagents),
+    }
+  end
+  enchantEntriesMemo = out
+  enchantEntriesLocale = curLoc
+  return out
+end
+
+function API.ArmorKitEntries()
+  local DS = getDS()
+  if not DS then return {} end
+  local curLoc = type(DS.GetLocale) == "function" and DS.GetLocale() or "default"
+  if armorKitEntriesMemo and armorKitEntriesLocale == curLoc then
+    return armorKitEntriesMemo
+  end
+  local bucket = DS.EnsureRecipes("leatherworking")
+  local recipes = type(bucket) == "table" and type(bucket.recipes) == "table" and bucket.recipes or nil
+  if not recipes then return {} end
+  local sids = {}
+  for sid, rec in pairs(recipes) do
+    if type(sid) == "number" and type(rec) == "table"
+       and rec.availability == "live" and rec.categoryKey == "armor_kits"
+       and type(rec.outputItemID) == "number" and rec.outputItemID > 0 then
+      sids[#sids + 1] = sid
+    end
+  end
+  table.sort(sids)
+  local out = {}
+  for i = 1, #sids do
+    local sid = sids[i]
+    local rec = recipes[sid]
+    local iid = rec.outputItemID
+    local eff = (type(DS.SpellEffect) == "function" and DS.SpellEffect(sid))
+      or DS.RawText("spell_effect", sid)
+      or fallbackSpellDescription(sid)
+      or ""
+    local reqIlvl = type(rec.stats) == "table" and tonumber(rec.stats.reqItemLevel) or nil
+    out[#out + 1] = {
+      spellID = sid,
+      itemID = iid,
+      name = DS.RawText("item", iid) or DS.ItemName(iid) or "",
+      effect = eff,
+      learnedAt = tonumber(rec.learnedAt) or nil,
+      reqItemLevel = reqIlvl,
+      mats = copyReagentsAsPairs(rec.reagents),
+    }
+  end
+  armorKitEntriesMemo = out
+  armorKitEntriesLocale = curLoc
+  return out
+end
+
 function API.PatternIndex()
   local fn = pickExportFn("PatternIndex")
   if fn then
@@ -706,6 +873,141 @@ function API.NPCSellPriceOf(itemID)
   local DS = getDS()
   local item = DS and DS.Item(itemID) or nil
   return item and item.sellPriceCopper or nil
+end
+
+function API.AHAvailable()
+  local pricing = delegates.pricing
+  if pricing and type(pricing.Available) == "function" then
+    local ok, v = pcall(pricing.Available)
+    return (ok and v) and true or false
+  end
+  local ra = ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+  if ra and type(ra.Available) == "function" then
+    local ok, v = pcall(ra.Available)
+    return (ok and v) and true or false
+  end
+  return false
+end
+
+local function fallbackMoneyStr(copper)
+  local v = tonumber(copper)
+  if not v then return "—" end
+  local sign = v < 0 and "-" or ""
+  local a = math.floor(math.abs(v) + 0.5)
+  local g = math.floor(a / 10000)
+  local s = math.floor(a / 100) % 100
+  local c = a % 100
+  if g > 0 then
+    return string.format("%s%dg %ds", sign, g, s)
+  elseif s > 0 then
+    return string.format("%s%ds %dc", sign, s, c)
+  end
+  return string.format("%s%dc", sign, c)
+end
+
+function API.MoneyStr(copper, opt)
+  local pricing = delegates.pricing
+  if pricing and type(pricing.MoneyStr) == "function" then
+    local ok, s = pcall(pricing.MoneyStr, copper, opt)
+    if ok and type(s) == "string" then return s end
+  end
+  local ra = ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+  if ra and type(ra.MoneyStr) == "function" then
+    local ok, s = pcall(ra.MoneyStr, copper, opt)
+    if ok and type(s) == "string" then return s end
+  end
+  return fallbackMoneyStr(copper)
+end
+
+function API.MoneyStrTip(copper)
+  local pricing = delegates.pricing
+  if pricing and type(pricing.MoneyStrTip) == "function" then
+    local ok, s = pcall(pricing.MoneyStrTip, copper)
+    if ok and type(s) == "string" then return s end
+  end
+  local ra = ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+  if ra and type(ra.MoneyStrTip) == "function" then
+    local ok, s = pcall(ra.MoneyStrTip, copper)
+    if ok and type(s) == "string" then return s end
+  end
+  return fallbackMoneyStr(copper)
+end
+
+function API.MatListCost(mats, ctx)
+  local pricing = delegates.pricing
+  if pricing and type(pricing.MatListCost) == "function" then
+    return pricing.MatListCost(mats, ctx)
+  end
+  local ra = ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+  if ra and type(ra.MatListCost) == "function" then
+    return ra.MatListCost(mats, ctx)
+  end
+  if type(mats) ~= "table" then return 0, 0 end
+  local total, unpriced = 0, 0
+  for i = 1, #mats do
+    local m = mats[i]
+    local id = type(m) == "table" and tonumber(m[1]) or tonumber(m)
+    local cnt = type(m) == "table" and (tonumber(m[2]) or 1) or 1
+    if id and id > 0 then
+      local unit = API.MatPriceOf(id, ctx)
+      if type(unit) == "number" and unit > 0 then
+        total = total + unit * cnt
+      else
+        unpriced = unpriced + 1
+      end
+    end
+  end
+  return total, unpriced
+end
+
+function API.OnPricesChanged(fn)
+  if type(fn) ~= "function" then return end
+  local pricing = delegates.pricing
+  if pricing and type(pricing.OnPricesChanged) == "function" then
+    return pricing.OnPricesChanged(fn)
+  end
+  local ra = ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+  if ra and type(ra.OnPricesChanged) == "function" then
+    return ra.OnPricesChanged(fn)
+  end
+end
+
+function API.FullScanSnapshotStatus()
+  local scanner = ns.ProfAuctionScanner or (type(gns) == "table" and gns.ProfAuctionScanner) or nil
+  if scanner and type(scanner.FullScanSnapshotStatus) == "function" then
+    local ok, snap = pcall(scanner.FullScanSnapshotStatus)
+    if ok then return snap end
+  end
+  return nil
+end
+
+function API.OnAuctionDataChanged(fn)
+  if type(fn) ~= "function" then return end
+  local scanner = ns.ProfAuctionScanner or (type(gns) == "table" and gns.ProfAuctionScanner) or nil
+  if scanner and type(scanner.OnChanged) == "function" then
+    return scanner.OnChanged(fn)
+  end
+end
+
+function API.ImportShoppingList(listName, items)
+  local se = ns.ProfShoppingExport or (type(gns) == "table" and gns.ProfShoppingExport) or nil
+  if se and type(se.DoImport) == "function" then
+    return se.DoImport(listName, items)
+  end
+  local scanner = ns.ProfAuctionScanner or (type(gns) == "table" and gns.ProfAuctionScanner) or nil
+  if scanner and type(scanner.DoImport) == "function" then
+    return scanner.DoImport(listName, items)
+  end
+  return false
+end
+
+function API.MeasureTextWidth(text, fontSize)
+  local ui = delegates.ui
+  if ui and type(ui.TextW) == "function" then
+    local ok, w = pcall(ui.TextW, text, fontSize or 14)
+    if ok and type(w) == "number" and w > 0 then return w end
+  end
+  return #tostring(text or "") * (tonumber(fontSize) or 14) * 0.55
 end
 
 function API.InvalidatePricing()

@@ -9509,7 +9509,8 @@ end
 
 local function RestoreMainFrameStrata()
     PD.__mapGuard = nil
-    local mf = _G.DungeonsForever_MainFrame
+    local hb = getBridge()
+    local mf = hb and hb.MainFrame and hb.MainFrame() or nil
     if mf and PD.__mapYieldStrata then
         local prev = PD.__mapYieldStrata
         PD.__mapYieldStrata = nil
@@ -9518,7 +9519,8 @@ local function RestoreMainFrameStrata()
 end
 
 local function YieldMainFrameForWorldMap()
-    local mf = _G.DungeonsForever_MainFrame
+    local hb = getBridge()
+    local mf = hb and hb.MainFrame and hb.MainFrame() or nil
     if not (mf and mf.IsShown and mf:IsShown() and mf.GetFrameStrata and mf.SetFrameStrata) then return end
     local cur = mf:GetFrameStrata()
     if cur == "HIGH" or cur == "DIALOG" or cur == "FULLSCREEN" or cur == "FULLSCREEN_DIALOG" or cur == "MEDIUM" then
@@ -12870,7 +12872,10 @@ function PD.EnchantSpec(en)
     local slotRaw = slotKey and ds and ds.RawText and ds.RawText("category", slotKey)
     local slotLabel = (slotKey and ((type(slotRaw) == "string" and slotRaw ~= "" and slotRaw) or ENCH_SLOT_LABELS[slotKey] or slotKey))
         or tostring((not isV2 and en[3]) or "")
-    local effectTx = (isV2 and formatEnchantStats(en.stats)) or tostring((not isV2 and en[4]) or "")
+    local spellEffectRaw = isV2 and spell and ds and type(ds.SpellEffect) == "function" and ds.SpellEffect(spell) or nil
+    local effectTx = (type(spellEffectRaw) == "string" and spellEffectRaw ~= "" and spellEffectRaw)
+        or (isV2 and formatEnchantStats(en.stats))
+        or tostring((not isV2 and en[4]) or "")
     local effectShort = ""
     if effectTx ~= "" then
         local cand = effectTx
@@ -24259,6 +24264,7 @@ do
             Show = PD.Show,
             OnItemData = PD.OnItemData,
             Fit = PD.Fit,
+            TextW = PD.TextW,
             HoverRow = function() return PD.hoverRow end,
             WrapRenderForProfile = PD.WrapRenderForProfile,
             ProfLearned = PD.ProfLearned,

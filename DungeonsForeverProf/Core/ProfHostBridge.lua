@@ -536,6 +536,10 @@ function B.ExternalAuctionBridge()
     return type(ab) == "table" and ab or nil
 end
 
+function B.MainFrame()
+    return _G.DungeonsForever_MainFrame
+end
+
 ns.ProfHostBridge = B
 if type(gns) == "table" and gns ~= ns then
     gns.ProfHostBridge = B

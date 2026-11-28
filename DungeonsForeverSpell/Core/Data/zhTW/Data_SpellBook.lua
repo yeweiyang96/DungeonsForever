@@ -9,7 +9,7 @@ ns.SpellBookData = {
     version = "2026-11-13",
     classes = {
     DRUID = {
-        total = 59,
+        total = 55,
         tabs = {
         {
             name = "平衡",
@@ -120,7 +120,6 @@ ns.SpellBookData = {
                 { rank = 4, learn = 42, id = 9747 },
                 { rank = 5, learn = 52, id = 9898 },
                 } },
-                { name = "低吼", icon = "Interface\\Icons\\Ability_Physical_Taunt", id = 6795, learnLv = 10 },
                 { name = "槌擊", icon = "Interface\\Icons\\Ability_Druid_Maul", id = 9881, learnLv = 10, ranks = {
                 { rank = 1, learn = 10, id = 6807 },
                 { rank = 2, learn = 18, id = 6808 },
@@ -178,11 +177,10 @@ ns.SpellBookData = {
                 { rank = 3, learn = 44, id = 1824 },
                 { rank = 4, learn = 54, id = 9904 },
                 } },
-                { name = "原始撕咬", icon = "Interface\\Icons\\Ability_Racial_Cannibalize", id = 1238073, learnLv = 25, isTalent = true, ranks = {
+{ name = "原始撕咬", icon = "Interface\\Icons\\Ability_Racial_Cannibalize", id = 1238070, learnLv = 25, isTalent = true, ranks = {
                 { rank = 1, learn = 25, id = 407995 },
                 { rank = 2, learn = 36, id = 1238069 },
                 { rank = 3, learn = 48, id = 1238070 },
-                { rank = 4, learn = 60, id = 1238073 },
                 } },
                 { name = "急奔", icon = "Interface\\Icons\\Ability_Druid_Dash", id = 9821, learnLv = 26, ranks = {
                 { rank = 1, learn = 26, id = 1850 },
@@ -195,13 +193,12 @@ ns.SpellBookData = {
                 { rank = 3, learn = 52, id = 9892 },
                 } },
                 { name = "旅行形態", icon = "Interface\\Icons\\Ability_Druid_Travelform", id = 783, learnLv = 30 },
-                { name = "兇猛撕咬", icon = "Interface\\Icons\\Ability_Druid_Ferociousbite", id = 31018, learnLv = 24, ranks = {
+{ name = "兇猛撕咬", icon = "Interface\\Icons\\Ability_Druid_Ferociousbite", id = 22829, learnLv = 24, ranks = {
                 { rank = 1, learn = 24, id = 1328618 },
                 { rank = 2, learn = 32, id = 22568 },
                 { rank = 3, learn = 40, id = 22827 },
                 { rank = 4, learn = 48, id = 22828 },
                 { rank = 5, learn = 56, id = 22829 },
-                { rank = 6, learn = 60, id = 31018 },
                 } },
                 { name = "毀滅", icon = "Interface\\Icons\\Ability_Druid_Ravage", id = 9867, learnLv = 32, ranks = {
                 { rank = 1, learn = 32, id = 6785 },
@@ -305,10 +302,6 @@ ns.SpellBookData = {
                 { rank = 2, learn = 50, id = 1238214 },
                 { rank = 3, learn = 60, id = 1238215 },
                 } },
-                { name = "野性賜福", icon = "Interface\\Icons\\Spell_Nature_Regeneration", id = 21850, learnLv = 50, ranks = {
-                { rank = 1, learn = 50, id = 21849 },
-                { rank = 2, learn = 60, id = 21850 },
-                } },
                 { name = "迅捷治癒", icon = "Interface\\Icons\\Inv_Relics_Idolofrejuvenation", id = 18562, isTalent = true },
                 { name = "自然迅捷", icon = "Interface\\Icons\\Spell_Nature_Ravenform", id = 17116, isTalent = true },
             },
@@ -316,17 +309,12 @@ ns.SpellBookData = {
         },
     },
     HUNTER = {
-        total = 58,
+        total = 50,
         tabs = {
         {
             name = "野獸控制",
             icon = "Interface\\Icons\\Ability_Hunter_Beasttaming",
             spells = {
-                { name = "馴服野獸", icon = "Interface\\Icons\\Ability_Hunter_Beasttaming", id = 13481, ranks = {
-                { id = 13535 },
-                { learn = 10, id = 1515 },
-                { learn = 10, id = 13481 },
-                } },
                 { name = "靈猴守護", icon = "Interface\\Icons\\Ability_Hunter_Aspectofthemonkey", id = 13163, learnLv = 4 },
                 { name = "雄鷹守護", icon = "Interface\\Icons\\Spell_Nature_Ravenform", id = 25296, learnLv = 10, ranks = {
                 { rank = 1, learn = 10, id = 13165 },
@@ -376,7 +364,6 @@ ns.SpellBookData = {
                 { rank = 1, learn = 46, id = 20043 },
                 { rank = 2, learn = 56, id = 20190 },
                 } },
-                { name = "寧神射擊", icon = "Interface\\Icons\\Spell_Nature_Drowsy", id = 19801, learnLv = 60 },
                 { name = "脅迫", icon = "Interface\\Icons\\Ability_Devour", id = 19577, isTalent = true },
                 { name = "狂野怒火", icon = "Interface\\Icons\\Ability_Druid_Ferociousbite", id = 19574, isTalent = true },
             },
@@ -385,7 +372,6 @@ ns.SpellBookData = {
             name = "射擊",
             icon = "Interface\\Icons\\Ability_Marksmanship",
             spells = {
-                { name = "自動射擊", icon = "Interface\\Icons\\Ability_Whirlwind", id = 75, learnLv = 1 },
                 { name = "毒蛇釘刺", icon = "Interface\\Icons\\Ability_Hunter_Quickshot", id = 25295, learnLv = 4, ranks = {
                 { rank = 1, learn = 4, id = 1978 },
                 { rank = 2, learn = 10, id = 13549 },
@@ -514,12 +500,6 @@ ns.SpellBookData = {
                 { name = "追蹤元素生物", icon = "Interface\\Icons\\Spell_Frost_Summonwaterelemental", id = 19880, learnLv = 26 },
                 { name = "冰霜陷阱", icon = "Interface\\Icons\\Spell_Frost_Freezingbreath", id = 13809, learnLv = 28 },
                 { name = "假死", icon = "Interface\\Icons\\Ability_Rogue_Feigndeath", id = 5384, learnLv = 30 },
-                { name = "割傷", icon = "Interface\\Icons\\Ability_Gouge", id = 1299332, learnLv = 30, ranks = {
-                { rank = 1, learn = 30, id = 24118 },
-                { rank = 2, learn = 40, id = 24119 },
-                { rank = 3, learn = 50, id = 24120 },
-                { rank = 4, learn = 60, id = 1299332 },
-                } },
                 { name = "追蹤惡魔", icon = "Interface\\Icons\\Spell_Shadow_Summonfelhunter", id = 19878, learnLv = 32 },
                 { name = "爆炸陷阱", icon = "Interface\\Icons\\Spell_Fire_Selfdestruct", id = 14317, learnLv = 34, ranks = {
                 { rank = 1, learn = 34, id = 13813 },
@@ -542,7 +522,7 @@ ns.SpellBookData = {
         },
     },
     MAGE = {
-        total = 61,
+        total = 49,
         tabs = {
         {
             name = "奧術",
@@ -656,10 +636,7 @@ ns.SpellBookData = {
                 { name = "製造魔法黃水晶", icon = "Interface\\Icons\\Inv_Misc_Gem_Opal_01", id = 10053, learnLv = 48 },
                 { name = "傳送門：達納蘇斯", icon = "Interface\\Icons\\Spell_Arcane_Portaldarnassus", id = 11419, learnLv = 50, races = "侏儒/高階會天裔/人類" },
                 { name = "傳送門：雷霆崖", icon = "Interface\\Icons\\Spell_Arcane_Portalthunderbluff", id = 11420, learnLv = 50, races = "獸人/巨魔/亡靈" },
-                { name = "傳送：達拉然", icon = "Interface\\Icons\\Spell_Arcane_Teleporthalloftheguardian", id = 1297659, learnLv = 50, races = "侏儒/高階會天裔/人類" },
-                { name = "奧術光輝", icon = "Interface\\Icons\\Spell_Holy_Arcaneintellect", id = 23028, learnLv = 56 },
                 { name = "製造魔法紅寶石", icon = "Interface\\Icons\\Inv_Misc_Gem_Ruby_01", id = 10054, learnLv = 58 },
-                { name = "變形術：奶牛", icon = "Interface\\Icons\\Spell_Nature_Polymorph_Cow", id = 28270, learnLv = 60 },
                 { name = "氣定神閒", icon = "Interface\\Icons\\Spell_Nature_Enchantarmor", id = 12043, isTalent = true },
                 { name = "奧術強化", icon = "Interface\\Icons\\Spell_Nature_Lightning", id = 12042, isTalent = true },
             },
@@ -737,7 +714,6 @@ ns.SpellBookData = {
                 { rank = 2, learn = 50, id = 1237312 },
                 { rank = 3, learn = 60, id = 1237313 },
                 } },
-                { name = "魔火", icon = "Interface\\Icons\\Spell_Fire_Fireball", id = 24530, learnLv = 60 },
                 { name = "燃燒", icon = "Interface\\Icons\\Spell_Fire_Sealoffire", id = 11129, isTalent = true },
             },
         },
@@ -819,20 +795,12 @@ ns.SpellBookData = {
             name = "理解",
             icon = "Interface\\Icons\\Spell_Holy_Mindsooth",
             spells = {
-                { name = "理解卷軸", icon = "Interface\\Icons\\Inv_Misc_Questionmark", id = 1310030, learnLv = 6, ranks = {
-                { learn = 6, id = 1296017 },
-                { learn = 6, id = 1309973 },
-                { learn = 6, id = 1309965 },
-                { learn = 6, id = 1310029 },
-                { learn = 6, id = 1310030 },
-                } },
-                { name = "學習", icon = "Interface\\Icons\\Inv_Misc_Book_08", id = 1302508, learnLv = 6 },
             },
         },
         },
     },
     PALADIN = {
-        total = 51,
+        total = 49,
         tabs = {
         {
             name = "神聖",
@@ -1083,17 +1051,13 @@ ns.SpellBookData = {
             name = "坐騎",
             icon = "Interface\\Icons\\Ability_Hunter_Catlikereflexes",
             spells = {
-                { name = "召喚軍馬", icon = "Interface\\Icons\\Spell_Nature_Swiftness", id = 1279399, learnLv = 40, ranks = {
-                { learn = 40, id = 13819 },
-                { learn = 40, id = 1279399 },
-                } },
                 { name = "召喚戰馬", icon = "Interface\\Icons\\Ability_Mount_Charger", id = 23214, learnLv = 60, races = "矮人/人類" },
             },
         },
         },
     },
     PRIEST = {
-        total = 56,
+        total = 48,
         tabs = {
         {
             name = "戒律",
@@ -1181,10 +1145,6 @@ ns.SpellBookData = {
                 { rank = 4, learn = 60, id = 1316995 },
                 } },
                 { name = "漂浮術", icon = "Interface\\Icons\\Spell_Holy_Layonhands", id = 1706, learnLv = 34 },
-                { name = "堅韌禱言", icon = "Interface\\Icons\\Spell_Holy_Prayeroffortitude", id = 21564, learnLv = 48, ranks = {
-                { rank = 1, learn = 48, id = 21562 },
-                { rank = 2, learn = 60, id = 21564 },
-                } },
                 { name = "精神禱言", icon = "Interface\\Icons\\Spell_Holy_Prayerofspirit", id = 27681, learnLv = 60 },
                 { name = "心靈專注", icon = "Interface\\Icons\\Spell_Frost_Windwalkon", id = 14751, isTalent = true },
                 { name = "能量灌注", icon = "Interface\\Icons\\Spell_Holy_Powerinfusion", id = 10060, isTalent = true },
@@ -1302,16 +1262,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 52, id = 10964 },
                 { rank = 4, learn = 58, id = 10965 },
                 { rank = 5, learn = 60, id = 25314 },
-                } },
-                { name = "光明之泉", icon = "Interface\\Icons\\Spell_Holy_Summonlightwell", id = 27871, learnLv = 40, ranks = {
-                { rank = 1, learn = 40, id = 724 },
-                { rank = 2, learn = 50, id = 27870 },
-                { rank = 3, learn = 60, id = 27871 },
-                } },
-                { name = "光明之泉回覆", icon = "Interface\\Icons\\Spell_Holy_Summonlightwell", id = 27874, learnLv = 40, ranks = {
-                { rank = 1, learn = 40, id = 7001 },
-                { rank = 2, learn = 50, id = 27873 },
-                { rank = 3, learn = 60, id = 27874 },
                 } },
                 { name = "癒合禱言", icon = "Interface\\Icons\\Spell_Holy_Prayerofmendingtga", id = 1240827, learnLv = 40, isTalent = true, ranks = {
                 { rank = 1, learn = 40, id = 401859 },
@@ -1431,7 +1381,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 48, id = 1309635 },
                 { rank = 4, learn = 56, id = 1309636 },
                 } },
-                { name = "暗影防護禱言", icon = "Interface\\Icons\\Spell_Holy_Prayerofshadowprotection", id = 27683, learnLv = 56 },
                 { name = "吸血鬼的擁抱", icon = "Interface\\Icons\\Spell_Shadow_Unsummonbuilding", id = 15286, isTalent = true },
                 { name = "沉默", icon = "Interface\\Icons\\Spell_Shadow_Impphaseshift", id = 15487, isTalent = true },
                 { name = "暗影形態", icon = "Interface\\Icons\\Spell_Shadow_Shadowform", id = 15473, isTalent = true },
@@ -1440,13 +1389,13 @@ ns.SpellBookData = {
         },
     },
     ROGUE = {
-        total = 56,
+        total = 52,
         tabs = {
         {
             name = "奇襲",
             icon = "Interface\\Icons\\Ability_Rogue_Eviscerate",
             spells = {
-                { name = "刺骨", icon = "Interface\\Icons\\Ability_Rogue_Eviscerate", id = 31016, learnLv = 1, ranks = {
+{ name = "刺骨", icon = "Interface\\Icons\\Ability_Rogue_Eviscerate", id = 11300, learnLv = 1, ranks = {
                 { rank = 1, learn = 1, id = 2098 },
                 { rank = 2, learn = 8, id = 6760 },
                 { rank = 3, learn = 16, id = 6761 },
@@ -1455,7 +1404,6 @@ ns.SpellBookData = {
                 { rank = 6, learn = 40, id = 8624 },
                 { rank = 7, learn = 48, id = 11299 },
                 { rank = 8, learn = 56, id = 11300 },
-                { rank = 9, learn = 60, id = 31016 },
                 } },
                 { name = "切割", icon = "Interface\\Icons\\Ability_Rogue_Slicedice", id = 6774, learnLv = 10, ranks = {
                 { rank = 1, learn = 10, id = 5171 },
@@ -1498,10 +1446,9 @@ ns.SpellBookData = {
                 { rank = 2, learn = 50, id = 8643 },
                 } },
                 { name = "毀傷", icon = "Interface\\Icons\\Ability_Rogue_Deadlybrew", id = 1241584, learnLv = 30, isTalent = true, ranks = {
-                { rank = 1, learn = 30, id = 1310707 },
-                { rank = 2, learn = 40, id = 399956 },
-                { rank = 3, learn = 50, id = 1241582 },
-                { rank = 4, learn = 60, id = 1241584 },
+                { rank = 1, learn = 40, id = 399956 },
+                { rank = 2, learn = 50, id = 1241582 },
+                { rank = 3, learn = 60, id = 1241584 },
                 } },
                 { name = "冷血", icon = "Interface\\Icons\\Spell_Ice_Lament", id = 14177, isTalent = true },
             },
@@ -1520,7 +1467,7 @@ ns.SpellBookData = {
                 { rank = 7, learn = 46, id = 11293 },
                 { rank = 8, learn = 54, id = 11294 },
                 } },
-                { name = "背刺", icon = "Interface\\Icons\\Ability_Backstab", id = 25300, learnLv = 4, ranks = {
+{ name = "背刺", icon = "Interface\\Icons\\Ability_Backstab", id = 11281, learnLv = 4, ranks = {
                 { rank = 1, learn = 4, id = 53 },
                 { rank = 2, learn = 12, id = 2589 },
                 { rank = 3, learn = 20, id = 2590 },
@@ -1529,7 +1476,6 @@ ns.SpellBookData = {
                 { rank = 6, learn = 44, id = 11279 },
                 { rank = 7, learn = 52, id = 11280 },
                 { rank = 8, learn = 60, id = 11281 },
-                { rank = 9, learn = 60, id = 25300 },
                 } },
                 { name = "鑿擊", icon = "Interface\\Icons\\Ability_Gouge", id = 11286, learnLv = 6, ranks = {
                 { rank = 1, learn = 6, id = 1776 },
@@ -1550,12 +1496,11 @@ ns.SpellBookData = {
                 { rank = 3, learn = 42, id = 1768 },
                 { rank = 4, learn = 58, id = 1769 },
                 } },
-                { name = "佯攻", icon = "Interface\\Icons\\Ability_Rogue_Feint", id = 25302, learnLv = 16, ranks = {
+{ name = "佯攻", icon = "Interface\\Icons\\Ability_Rogue_Feint", id = 11303, learnLv = 16, ranks = {
                 { rank = 1, learn = 16, id = 1966 },
                 { rank = 2, learn = 28, id = 6768 },
                 { rank = 3, learn = 40, id = 8637 },
                 { rank = 4, learn = 52, id = 11303 },
-                { rank = 5, learn = 60, id = 25302 },
                 } },
                 { name = "還擊", icon = "Interface\\Icons\\Ability_Warrior_Challange", id = 14251, isTalent = true },
                 { name = "劍刃亂舞", icon = "Interface\\Icons\\Ability_Warrior_Punishingblow", id = 13877, isTalent = true },
@@ -1605,7 +1550,6 @@ ns.SpellBookData = {
             icon = "Interface\\Icons\\Trade_Brewpoison",
             spells = {
                 { name = "致殘毒藥", icon = "Interface\\Icons\\Ability_Poisonsting", id = 3420, learnLv = 20 },
-                { name = "速效毒藥", icon = "Interface\\Icons\\Ability_Poisons", id = 8681, learnLv = 20 },
                 { name = "毒藥", icon = "Interface\\Icons\\Trade_Brewpoison", id = 2842, learnLv = 20 },
                 { name = "麻痹藥膏", icon = "Interface\\Icons\\Spell_Nature_Nullifydisease", id = 5763, learnLv = 24 },
                 { name = "速效毒藥 II", icon = "Interface\\Icons\\Ability_Poisons", id = 8687, learnLv = 28 },
@@ -1624,14 +1568,13 @@ ns.SpellBookData = {
                 { name = "麻痹毒藥 III", icon = "Interface\\Icons\\Spell_Nature_Nullifydisease", id = 11400, learnLv = 52 },
                 { name = "致命毒藥 IV", icon = "Interface\\Icons\\Ability_Rogue_Dualweild", id = 11358, learnLv = 54 },
                 { name = "致傷毒藥 IV", icon = "Interface\\Icons\\Inv_Misc_Herb_16", id = 13230, learnLv = 56 },
-                { name = "致命毒藥 V", icon = "Interface\\Icons\\Ability_Rogue_Dualweild", id = 25347, learnLv = 60 },
                 { name = "速效毒藥 VI", icon = "Interface\\Icons\\Ability_Poisons", id = 11343, learnLv = 60 },
             },
         },
         },
     },
     SHAMAN = {
-        total = 56,
+        total = 54,
         tabs = {
         {
             name = "元素戰鬥",
@@ -1879,10 +1822,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 46, id = 10496 },
                 { rank = 4, learn = 56, id = 10497 },
                 } },
-                { name = "復生", icon = "Interface\\Icons\\Spell_Nature_Reincarnation", id = 21169, learnLv = 30, ranks = {
-                { learn = 30, id = 20608 },
-                { learn = 30, id = 21169 },
-                } },
                 { name = "祛病圖騰", icon = "Interface\\Icons\\Spell_Nature_Diseasecleansingtotem", id = 8170, learnLv = 38 },
                 { name = "治療鏈", icon = "Interface\\Icons\\Spell_Nature_Healingwavegreater", id = 10623, learnLv = 40, ranks = {
                 { rank = 1, learn = 40, id = 1064 },
@@ -1901,7 +1840,7 @@ ns.SpellBookData = {
         },
     },
     WARLOCK = {
-        total = 56,
+        total = 54,
         tabs = {
         {
             name = "痛苦",
@@ -2081,7 +2020,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 60, id = 17728 },
                 } },
                 { name = "地獄火", icon = "Interface\\Icons\\Spell_Shadow_Summoninfernal", id = 1122, learnLv = 50 },
-                { name = "召喚傳送門", icon = "Interface\\Icons\\Inv_Misc_Rune_10", id = 437169, learnLv = 60 },
                 { name = "末日儀式", icon = "Interface\\Icons\\Spell_Shadow_Antimagicshell", id = 18540, learnLv = 60 },
                 { name = "惡魔犧牲", icon = "Interface\\Icons\\Spell_Shadow_Psychicscream", id = 18788, isTalent = true },
                 { name = "惡魔支配", icon = "Interface\\Icons\\Spell_Nature_Removecurse", id = 18708, isTalent = true },
@@ -2172,14 +2110,13 @@ ns.SpellBookData = {
         },
     },
     WARRIOR = {
-        total = 42,
+        total = 40,
         tabs = {
         {
             name = "武器",
             icon = "Interface\\Icons\\Ability_Rogue_Eviscerate",
             spells = {
-                { name = "戰鬥姿態", icon = "Interface\\Icons\\Ability_Warrior_Offensivestance", id = 2457, learnLv = 1 },
-                { name = "英勇打擊", icon = "Interface\\Icons\\Ability_Rogue_Ambush", id = 25286, learnLv = 1, ranks = {
+{ name = "英勇打擊", icon = "Interface\\Icons\\Ability_Rogue_Ambush", id = 11567, learnLv = 1, ranks = {
                 { rank = 1, learn = 1, id = 78 },
                 { rank = 2, learn = 8, id = 284 },
                 { rank = 3, learn = 16, id = 285 },
@@ -2188,7 +2125,6 @@ ns.SpellBookData = {
                 { rank = 6, learn = 40, id = 11565 },
                 { rank = 7, learn = 48, id = 11566 },
                 { rank = 8, learn = 56, id = 11567 },
-                { rank = 9, learn = 60, id = 25286 },
                 } },
                 { name = "衝鋒", icon = "Interface\\Icons\\Ability_Warrior_Charge", id = 11578, learnLv = 4, ranks = {
                 { rank = 1, learn = 4, id = 100 },
@@ -2247,14 +2183,13 @@ ns.SpellBookData = {
             name = "狂怒",
             icon = "Interface\\Icons\\Ability_Warrior_Innerrage",
             spells = {
-                { name = "戰鬥怒吼", icon = "Interface\\Icons\\Ability_Warrior_Battleshout", id = 25289, learnLv = 1, ranks = {
+{ name = "戰鬥怒吼", icon = "Interface\\Icons\\Ability_Warrior_Battleshout", id = 11551, learnLv = 1, ranks = {
                 { rank = 1, learn = 1, id = 6673 },
                 { rank = 2, learn = 12, id = 5242 },
                 { rank = 3, learn = 22, id = 6192 },
                 { rank = 4, learn = 32, id = 11549 },
                 { rank = 5, learn = 42, id = 11550 },
                 { rank = 6, learn = 52, id = 11551 },
-                { rank = 7, learn = 60, id = 25289 },
                 } },
                 { name = "挫志怒吼", icon = "Interface\\Icons\\Ability_Warrior_Warcry", id = 11556, learnLv = 14, ranks = {
                 { rank = 1, learn = 14, id = 1160 },
@@ -2328,13 +2263,12 @@ ns.SpellBookData = {
                 { rank = 2, learn = 32, id = 1671 },
                 { rank = 3, learn = 52, id = 1672 },
                 } },
-                { name = "復仇", icon = "Interface\\Icons\\Ability_Warrior_Revenge", id = 25288, learnLv = 14, ranks = {
+{ name = "復仇", icon = "Interface\\Icons\\Ability_Warrior_Revenge", id = 11601, learnLv = 14, ranks = {
                 { rank = 1, learn = 14, id = 6572 },
                 { rank = 2, learn = 24, id = 6574 },
                 { rank = 3, learn = 34, id = 7379 },
                 { rank = 4, learn = 44, id = 11600 },
                 { rank = 5, learn = 54, id = 11601 },
-                { rank = 6, learn = 60, id = 25288 },
                 } },
                 { name = "盾牌格擋", icon = "Interface\\Icons\\Ability_Defend", id = 2565, learnLv = 16 },
                 { name = "繳械", icon = "Interface\\Icons\\Ability_Warrior_Disarm", id = 676, learnLv = 18 },

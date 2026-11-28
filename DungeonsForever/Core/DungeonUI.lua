@@ -41,6 +41,38 @@ local function DB()
     return s
 end
 
+local function CharKey()
+    local n = UnitName("player") or "?"
+    local realm
+    if UnitFullName then
+        local _, r = UnitFullName("player")
+        realm = r
+    end
+    if realm == nil or realm == "" then
+        if GetNormalizedRealmName then realm = GetNormalizedRealmName() end
+        if realm == nil or realm == "" then
+            realm = GetRealmName and GetRealmName() or "?"
+        end
+    end
+    return n .. "-" .. realm
+end
+
+local function ItemDoneSaved(qid)
+    local t = DB().charItemDone
+    if type(t) ~= "table" then return false end
+    local mine = t[CharKey()]
+    if type(mine) ~= "table" then return false end
+    return mine[qid] == true
+end
+
+local function SaveItemDone(qid)
+    local s = DB()
+    if type(s.charItemDone) ~= "table" then s.charItemDone = {} end
+    local key = CharKey()
+    if type(s.charItemDone[key]) ~= "table" then s.charItemDone[key] = {} end
+    s.charItemDone[key][qid] = true
+end
+
 local function IsHui()
     return ns.huiTheme == "hui"
 end
@@ -82,6 +114,20 @@ local function FSH(fs, dflt)
     local t = fs and fs.GetText and fs:GetText()
     if type(t) == "string" and #t > 0 then return 14 end
     return dflt or 14
+end
+
+local function FitName(fs)
+    if not (fs and fs.SetFont and fs.GetWidth) then return end
+    local mw = fs:GetWidth()
+    if type(mw) ~= "number" or mw <= 0 then return end
+    local face, _, flags = Fnt(14)
+    fs:SetFont(face, 14, flags)
+    if FSW(fs) <= mw then return end
+    for s = 13, 11, -1 do
+        local f2, _, g2 = Fnt(s)
+        fs:SetFont(f2, s, g2)
+        if FSW(fs) <= mw then return end
+    end
 end
 
 local function NewButton(parent, text, w, h, size)
@@ -2225,6 +2271,41 @@ function DG.EnsureQuestLane()
     U.dungeonQDetName:SetWordWrap(false)
     U.dungeonQDetName:SetWidth(DG.Q_DET_W - 8)
     U.dungeonQDetSt = MakeFS(qdchild, 14, C_GREY, "LEFT")
+    do
+        local sb = NewButton(qdchild, L["跳转搜索"], 88, 24, 14)
+        local tw = sb:GetFontString() and sb:GetFontString():GetStringWidth() or 0
+        if type(tw) ~= "number" or tw <= 0 then tw = 56 end
+        sb:SetWidth(tw + 18)
+        sb:EnableMouseWheel(true)
+        sb:SetScript("OnMouseWheel", function(_, delta)
+            DG.WheelScroll(U.dungeonQDet, U.dungeonQDetChild, delta)
+        end)
+        sb:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(L["在搜索模块中查看这个任务"], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        sb:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        sb:SetScript("OnClick", function(self)
+            local qid = self.__qid
+            if not qid then return end
+            if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
+                if ns.NotifySearchDown then ns.NotifySearchDown() end
+                return
+            end
+            if ns.PlaySound then ns.PlaySound(1) end
+            ns.OpenPage("QuestSearch")
+            local QS = ns.QuestSearchModule
+            if QS and QS.OpenAt then
+                local qn = DG.QuestName and DG.QuestName(qid)
+                if type(qn) ~= "string" or qn == "" then qn = tostring(qid) end
+                QS.OpenAt(qid, "quest", qn)
+            end
+        end)
+        sb:Hide()
+        U.dungeonQDetSearch = sb
+    end
 
     local function questPlate()
         local p = CreateFrame("Frame", nil, detail, "BackdropTemplate")
@@ -2348,7 +2429,7 @@ function DG.EnsureQuestLane()
         if IsShiftKeyDown() then
             sf:SetHorizontalScroll(sf:GetHorizontalScroll() - step)
         else
-            sf:SetVerticalScroll(sf:GetVerticalScroll() + step)
+            sf:SetVerticalScroll(sf:GetVerticalScroll() - step)
         end
         clampScroll()
     end
@@ -2965,9 +3046,7 @@ function DG.PaintQuestOverview(d)
                 if self.__q then
                     DG.OpenQuest(self.__q[1])
                 elseif self.__ext then
-                    U.dungeonQDetExt = self.__ext
-                    U:RenderDungeonQuests()
-                    ns.PlaySound(1)
+                    DG.OpenQuest(self.__ext)
                 end
             end)
             pool.node[nNode] = n
@@ -5254,6 +5333,8 @@ function DG.BroadcastItemData(itemID)
     if BM and BM.OnItemData then BM.OnItemData(itemID) end
     local CQM = ns.ClassQuestUI
     if CQM and CQM.OnItemData then CQM.OnItemData(itemID) end
+    local CBT = ns.ClassBisUI
+    if CBT and CBT.OnItemData then CBT.OnItemData(itemID) end
     local MM = ns.MapModule
     if MM and MM.OnItemData then MM.OnItemData(itemID) end
     local profApi = ns.ProfAPI
@@ -5341,6 +5422,7 @@ function DG.PaintItemChip(c, itemID)
     if not (c and c.name and itemID) then return end
     local nm, hasName = DG.ItemName(itemID)
     c.name:SetText(nm)
+    FitName(c.name)
     if hasName then
         local qr, qg, qb = DG.QColor(DG.QualOf(itemID))
         if qr then
@@ -5612,6 +5694,7 @@ function DG.SweepMissingNames()
                         local nm = DG.HarvestTipName(it[1])
                         if nm and c.name then
                             c.name:SetText(nm)
+                            FitName(c.name)
                             local col = DG.__tipColor
                             if col then
                                 c.name:SetTextColor(col[1] or 1, col[2] or 1, col[3] or 1)
@@ -5911,6 +5994,28 @@ function U:SetQuestSide(key)
     ns.PlaySound(1)
 end
 
+function U:SelectDungeonQuest(qid)
+    if not qid then return end
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local side = (type(row) == "table") and row[2] or nil
+    if side ~= "A" and side ~= "H" then
+        local ext = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo() or nil
+        local info = (type(ext) == "table") and ext[qid] or nil
+        side = (type(info) == "table") and info.side or nil
+    end
+    U.dungeonQView = "list"
+    U.dungeonQFlow = nil
+    U.dungeonQDetExt = nil
+    if side == "A" or side == "H" then U.dungeonQSide = side end
+    if U.dungeonQFilter == "todo" and DG.QuestDone and DG.QuestDone(qid) then
+        U.dungeonQFilter = "all"
+    end
+    U.dungeonQuestSel = qid
+    U.dungeonQListKey = nil
+    U.dungeonQDetKey = nil
+    U:RenderDungeonQuests()
+end
+
 function U:ShowDungeonDetail(d)
     if not U.dungeonBuilt then return end
     DG.EnsureDetailBuilt()
@@ -5930,6 +6035,7 @@ function U:ShowDungeonDetail(d)
     U.dungeonQFlow = nil
     U.dungeonQDetKey = nil
     U.dungeonQListKey = nil
+    if U.dungeonTab == "quest" then DG.QuestPageDefault(d) end
     if U.dungeonBack then U.dungeonBack:SetText(d.raid and L["团本"] or L["副本"]) end
     DG.PrewarmLoot(d)
 
@@ -6577,6 +6683,7 @@ function DG.LootModelApply(m, npc, disp)
     if disp and type(m.SetDisplayInfo) == "function" then
         pcall(m.SetDisplayInfo, m, disp)
     elseif npc then
+        if m.ClearModel then pcall(m.ClearModel, m) end
         pcall(m.SetCreature, m, npc)
     end
 end
@@ -6762,6 +6869,27 @@ function DG.InvalidateQuestDone(doneID)
     end
 end
 
+DG.QUEST_DONE_BY_ITEM = { [9240] = 9240 }
+
+local function ItemDoneNow(id)
+    if ItemDoneSaved(id) then return true end
+    local item = DG.QUEST_DONE_BY_ITEM[id]
+    if item and DG.BagItemCount(item) > 0 then
+        SaveItemDone(id)
+        return true
+    end
+    return false
+end
+
+function DG.SyncItemDone()
+    for id in pairs(DG.QUEST_DONE_BY_ITEM) do
+        if not ItemDoneSaved(id) then
+            local item = DG.QUEST_DONE_BY_ITEM[id]
+            if DG.BagItemCount(item) > 0 then SaveItemDone(id) end
+        end
+    end
+end
+
 function DG.QuestDone(id)
     if not id then return false end
     local sim = DG.questSim
@@ -6769,6 +6897,7 @@ function DG.QuestDone(id)
         local st = sim[id]
         if st ~= nil then return st == "done" end
     end
+    if DG.QUEST_DONE_BY_ITEM[id] and ItemDoneNow(id) then return true end
     if DG.questDoneCache[id] == true then return true end
     local set = DG.questDoneSet
     if set and set[id] then return true end
@@ -6881,6 +7010,7 @@ if type(SlashCmdList) == "table" then
         end
         local n = out and #out or 0
         if ns.ShowDungeonDetail then ns.ShowDungeonDetail(d.id) end
+        U.dungeonQFlow = nil
         U.dungeonQView = "overview"
         if U.dungeonBuilt then U:RenderDungeonQuests() end
         local sub = (b == "done" or b == "ready" or b == "active" or b == "none") and ("全部 " .. DG.QUEST_SIM_TEXT[b]) or "四态轮转"
@@ -7213,7 +7343,10 @@ function DG.QuestObjectiveList(id)
     local out = {}
     for _, o in ipairs(list) do
         if type(o) == "table" and type(o.text) == "string" and o.text ~= "" then
-            out[#out + 1] = { o.text, tonumber(o.numFilled) or 0, tonumber(o.numRequired) or 0 }
+            local need = tonumber(o.numRequired) or 0
+            local done = tonumber(o.numFulfilled)
+            if done == nil then done = (o.finished and need) or 0 end
+            out[#out + 1] = { o.text, done, need }
         end
     end
     if #out == 0 then return nil end
@@ -7277,7 +7410,13 @@ end
 
 function DG.ApplyChipBadge(c)
     if not (c and c.badge) then return end
-    if not c.__q then c.badge:Hide() return end
+    local full = (c:GetWidth() or 0) - 54
+    if full < 40 then full = 40 end
+    if c.sub then c.sub:SetWidth(full) end
+    if not c.__q then
+        c.badge:Hide()
+        return
+    end
     local have, need = DG.ItemObjectiveProgress(c.__q, c.__it and c.__it[1])
     if have then
         c.badge:SetText(format("%d/%d", have, need))
@@ -7287,6 +7426,7 @@ function DG.ApplyChipBadge(c)
             c.badge:SetTextColor(Unpack(C_GREY))
         end
         c.badge:Show()
+        if c.sub then c.sub:SetWidth(full - 50) end
     else
         c.badge:Hide()
     end
@@ -7441,6 +7581,7 @@ function DG.EnsureQuestListener()
     ev:RegisterEvent("QUEST_LOG_UPDATE")
     pcall(ev.RegisterEvent, ev, "QUEST_ACCEPTED")
     pcall(ev.RegisterEvent, ev, "QUEST_REMOVED")
+    pcall(ev.RegisterEvent, ev, "BAG_UPDATE_DELAYED")
     ev:SetScript("OnEvent", function(_, event, arg1)
         C_Timer.After(0, function()
             if event == "QUEST_TURNED_IN" then
@@ -7457,8 +7598,12 @@ function DG.EnsureQuestListener()
                 DG.InvalidateQuestDone()
             elseif event == "QUEST_REMOVED" then
                 DG.InvalidateQuestDone()
+            elseif event == "BAG_UPDATE_DELAYED" then
+                DG.__bagGen = (DG.__bagGen or 0) + 1
+                DG.SyncItemDone()
             else
                 DG.BuildQuestSnap()
+                DG.SyncItemDone()
             end
             if U.RefreshQuestRows then U.RefreshQuestRows() end
         end)
@@ -7528,7 +7673,12 @@ function DG.ShowQuestTip(owner, q)
     end
     do
         local en = DG.QuestEndNpc(q[1])
-        if en then
+        if DG.Q_END_INSTANCE[q[1]] and en then
+            local label = (en[6] and en[6] ~= "") and en[6] or L["副本内"]
+            local nm = (en[2] and en[2] ~= "") and en[2] or ""
+            local idp = en[1] and (" #" .. en[1]) or ""
+            GameTooltip:AddLine(L["结束："] .. label .. " " .. nm .. idp, 0.75, 0.75, 0.75, true)
+        elseif en then
             local txt = (en[2] and en[2] ~= "" and en[2]) or ""
             if en[1] then txt = (txt ~= "" and (txt .. " #" .. en[1]) or ("#" .. en[1])) end
             if (not en[1]) and DG.Q_END_OBJ[q[1]] == true and txt ~= "" then
@@ -7594,6 +7744,8 @@ DG.Q_BADGE_BUY_BG = { 0.16, 0.38, 0.62, 1 }
 DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_BADGE_PROF_BG = { 0.62, 0.36, 0.18, 1 }
 DG.Q_BADGE_ELITE_BG = { 0.85, 0.45, 0.10, 1 }
+DG.Q_BADGE_T05_BG = { 0.36, 0.24, 0.55, 1 }
+DG.Q_BADGE_NOREC_BG = { 0.55, 0.07, 0.07, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
 function DG.QuestRaceOK(qid)
@@ -7977,6 +8129,16 @@ function DG.IsEliteQuest(id)
     return (ex and ex.elite == true) or false
 end
 
+function DG.IsT05Quest(id)
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
+    return (ex and ex.t05 == true) or false
+end
+
+function DG.IsNoRecQuest(id)
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
+    return (ex and ex.norec == true) or false
+end
+
 function DG.QuestList(d)
     local alias = ns.DungeonQuestAlias and ns.DungeonQuestAlias[d.id]
     if alias then
@@ -8094,7 +8256,7 @@ function DG.QuestProgress(d)
         local q = list[i]
         local qid = type(q) == "table" and q[1] or nil
         local side = type(q) == "table" and q[2] or nil
-        if type(qid) == "number" and not opt[qid]
+        if type(qid) == "number" and not opt[qid] and not DG.IsT05Quest(qid)
             and (not side or side == "" or side == ps)
             and DG.QuestClassOK(qid) and DG.QuestRaceOK(qid) then
             if not DG.QuestRepeat(qid) then
@@ -8562,14 +8724,15 @@ function U:RenderDungeonQuests()
     U.dungeonQuestSum:Hide()
     if U.dungeonQDoneTg then U.dungeonQDoneTg:SetChecked(status ~= "todo") end
 
-    local groups = { { kind = 1, rows = {} }, { kind = 2, rows = {} }, { kind = 3, rows = {} }, { kind = 4, rows = {} } }
+    local groups = { { kind = 1, rows = {} }, { kind = 2, rows = {} }, { kind = 3, rows = {} }, { kind = 4, rows = {} }, { kind = 5, rows = {} } }
     for i = 1, nAll do
         local q = list[i]
         if q[2] == side or not q[2] then
             local qn = q[5] or ""
             local isItem = qn:find("^由物品", 1, true) ~= nil
                 or (qn == "" and q[8] and true or false)
-            local key = DG.IsOptQuest(q[1]) and 4 or (isItem and 3 or (q[8] and 2 or 1))
+            local gate = (ns.DungeonQuestGateDone and ns.DungeonQuestGateDone[q[1]]) and true or false
+            local key = DG.IsOptQuest(q[1]) and 4 or (gate and 5 or (isItem and 3 or (q[8] and 2 or 1)))
             local st = DG.QuestState(q[1])
             local hit = true
             if status == "done" then hit = (st == "done")
@@ -8582,14 +8745,14 @@ function U:RenderDungeonQuests()
     end
 
     local selOk = false
-    for gi = 1, 4 do
+    for gi = 1, 5 do
         for _, q in ipairs(groups[gi].rows) do
             if q[1] == U.dungeonQuestSel then selOk = true break end
         end
         if selOk then break end
     end
     if not selOk and not selInFull and not U.dungeonQDetExt and not U.dungeonQFlow then
-        local first = groups[1].rows[1] or groups[2].rows[1] or groups[3].rows[1] or groups[4].rows[1]
+        local first = groups[1].rows[1] or groups[2].rows[1] or groups[3].rows[1] or groups[5].rows[1] or groups[4].rows[1]
         U.dungeonQuestSel = first and first[1] or nil
     end
 
@@ -8663,6 +8826,8 @@ function U:RenderDungeonQuests()
             r.shareB = DG.MakeBadge(r, DG.Q_BADGE_SHARE_BG)
             r.raceB = DG.MakeBadge(r, DG.Q_BADGE_RACE_BG)
             r.profB = DG.MakeBadge(r, DG.Q_BADGE_PROF_BG)
+            r.t05B = DG.MakeBadge(r, DG.Q_BADGE_T05_BG)
+            r.norecB = DG.MakeBadge(r, DG.Q_BADGE_NOREC_BG)
             r.meta = MakeFS(r, DG.Q_FS_META, C_GREY, "RIGHT")
             r.meta:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -(DG.Q_ROW_H - DG.Q_FS_META) / 2 - 1)
             r:SetScript("OnEnter", function(self)
@@ -8680,7 +8845,7 @@ function U:RenderDungeonQuests()
         return r
     end
 
-    for gi = 1, 4 do
+    for gi = 1, 5 do
         local g = groups[gi]
         if #g.rows > 0 then
             nH = nH + 1
@@ -8691,7 +8856,7 @@ function U:RenderDungeonQuests()
                 hdr[nH] = hd
             end
             hd.name:SetText(g.kind == 4 and L["可选任务"] or (g.kind == 2 and L["副本内接取"]
-                or (g.kind == 3 and L["拾取物品接取"] or L["进本前先去接"])))
+                or (g.kind == 3 and L["拾取物品接取"] or (g.kind == 5 and L["副本门口外完成"] or L["进本前先去接"]))))
             hd.name:ClearAllPoints()
             hd.name:SetPoint("TOPLEFT", child, "TOPLEFT", DG.Q_PAD + 4, y)
             hd.__vtop, hd.__vh, hd.__vgen = -y, DG.Q_HDR_H, DG.__vgen
@@ -8743,6 +8908,16 @@ function U:RenderDungeonQuests()
                 local bmax = DG.Q_X_LOC - 4
                 local bx = DG.Q_X_NAME + FSW(r.name) + DG.Q_BADGE_GAP
                 local ci = 0
+                if hasName and DG.IsNoRecQuest(q[1]) then
+                    bx = DG.PlaceBadge(r.norecB, bx, L["不推荐"], bmax)
+                else
+                    r.norecB:Hide()
+                end
+                if hasName and DG.IsT05Quest(q[1]) then
+                    bx = DG.PlaceBadge(r.t05B, bx, L["T0.5"], bmax)
+                else
+                    r.t05B:Hide()
+                end
                 if hasName and DG.IsOptQuest(q[1]) then
                     bx = DG.PlaceBadge(r.optB, bx, L["可选"], bmax)
                 else
@@ -8943,6 +9118,11 @@ DG.Q_END_OBJ = {
     [2953] = true,
     [3373] = true,
     [7761] = true,
+}
+
+DG.Q_END_INSTANCE = {
+    [5463] = true,
+    [8945] = true,
 }
 
 function DG.TriggerItemName(s)
@@ -9175,6 +9355,18 @@ function DG.CurQuestFlow(d)
     return f
 end
 
+function DG.QuestPageDefault(d)
+    local ps = DG.PlayerSide()
+    U.dungeonQSide = (ps == "A" or ps == "H") and ps or "A"
+    U.dungeonQView = "list"
+    U.dungeonQuestSel = nil
+    U.dungeonQDetExt = nil
+    U.dungeonQFlow = nil
+    if d and DG.CurQuestFlow(d) then
+        U.dungeonQFlow = true
+    end
+end
+
 function DG.FlowQuestRow(id)
     if not id then return nil end
     DG.EnsureRowByID()
@@ -9262,6 +9454,7 @@ function DG.HideDetailRows(pool)
     pool.nBadge = 0
     if U.dungeonQDetName then U.dungeonQDetName:Hide() end
     if U.dungeonQDetSt then U.dungeonQDetSt:Hide() end
+    if U.dungeonQDetSearch then U.dungeonQDetSearch:Hide() end
 end
 
 function DG.FlowTakeTxt(child, pool)
@@ -10164,10 +10357,12 @@ function U:RenderQuestDetail()
         U.dungeonQDetGains = nil
         name:ClearAllPoints()
         name:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -DG.Q_PAD)
+        name:SetWidth(DG.Q_DET_W - 8)
         name:SetText(L["点左侧任务查看详情"])
         name:SetTextColor(Unpack(C_GREY))
         name:Show()
         stf:Hide()
+        if U.dungeonQDetSearch then U.dungeonQDetSearch:Hide() end
         child:SetHeight(DG.Q_PAD + 24 + DG.Q_PAD)
         return
     end
@@ -10184,6 +10379,14 @@ function U:RenderQuestDetail()
     name:ClearAllPoints()
     name:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -DG.Q_PAD)
     name:Show()
+    local qsBtn = U.dungeonQDetSearch
+    if qsBtn then
+        qsBtn.__qid = q[1]
+        qsBtn:ClearAllPoints()
+        qsBtn:SetPoint("TOPRIGHT", child, "TOPRIGHT", 0, -DG.Q_PAD)
+        qsBtn:Show()
+        name:SetWidth(detW - 8 - qsBtn:GetWidth() - 8)
+    end
     y = -(DG.Q_PAD + 26)
     stf:SetText(hasName and (L["状态："] .. (DG.Q_STATUS_TAG[st] or "")) or L["暂时没有客户端数据"])
     stf:SetTextColor(Unpack(hasName and col or C_DARKGREY))
@@ -10393,7 +10596,14 @@ function U:RenderQuestDetail()
     end
     do
         local en = DG.QuestEndNpc(q[1])
-        if en then
+        if DG.Q_END_INSTANCE[q[1]] and en then
+            local label = (en[6] and en[6] ~= "") and en[6] or L["副本内"]
+            local nm = (en[2] and en[2] ~= "") and en[2] or ""
+            local idp = en[1] and format(" #%d", en[1]) or ""
+            local f = takeKv()
+            f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. label .. " " .. nm .. idp)
+            put(f, 24)
+        elseif en then
             local enid, ename, emap, ex, ey, ezone = en[1], en[2], en[3], en[4], en[5], en[6]
             local endObj = (not enid) and DG.Q_END_OBJ[q[1]] == true
             local txt
@@ -10730,7 +10940,6 @@ function U:RenderQuestDetail()
             local nw = colW - 46 - 8
             if questID then
                 r.__q = questID
-                nw = nw - 46 - 4
             else
                 r.__q = nil
             end
@@ -10742,6 +10951,7 @@ function U:RenderQuestDetail()
             end
             local inm, iok = DG.ItemName(iid)
             r.name:SetText(inm)
+            FitName(r.name)
             r.sub:SetText(DG.ItemMeta(iid) or "")
             if iok then
                 local qr, qg, qb = DG.QColor(DG.QualOf(iid))
@@ -11040,6 +11250,7 @@ function U:SetDungeonTab(tab)
     DB().dungeonTab = t
     U.dungeonQDetKey = nil
     U.dungeonQListKey = nil
+    if t == "quest" then DG.QuestPageDefault(U.dungeonDetailCur) end
     U:RenderDungeonTab()
     ns.PlaySound(1)
 end
